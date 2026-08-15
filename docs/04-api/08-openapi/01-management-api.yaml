@@ -1,0 +1,6 @@
+openapi: 3.1.0
+info:
+  title: TraceFlow Management API
+  version: 1.0.0
+  description: Contract nháp cho API quản lý user, workspace, project, application và API key.
+paths: {}

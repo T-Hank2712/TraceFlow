@@ -1,0 +1,6 @@
+openapi: 3.1.0
+info:
+  title: TraceFlow Ingestion API
+  version: 1.0.0
+  description: Contract nháp cho API nhận single log và batch logs.
+paths: {}
