@@ -1,0 +1,81 @@
+# Git
+.git
+.gitignore
+
+# Environment and local configuration
+.env
+.env.*
+!.env.example
+*.local
+
+# Secrets and certificates
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+secrets/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editors / IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/
+
+# .NET build output
+bin/
+obj/
+TestResults/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.nupkg
+packages/
+
+# Go build and test output
+*.test
+*.out
+coverage.out
+coverage.html
+
+# Node / tooling caches
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Docker and local runtime state
+.docker/
+docker-data/
+docker-compose.override.yml
+
+# Databases / local storage
+*.db
+*.sqlite
+*.sqlite3
+data/
+tmp/
+temp/
+
+# Build artifacts and coverage
+dist/
+build/
+out/
+coverage/
+
+# Local service data volumes
+opensearch-data/
+kafka-data/
+zookeeper-data/
+postgres-data/
+redis-data/
