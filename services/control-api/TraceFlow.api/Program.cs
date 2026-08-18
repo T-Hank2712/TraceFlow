@@ -1,8 +1,14 @@
+using Microsoft.EntityFrameworkCore;
+using TraceFlow.api.Data;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+
+builder.Services.AddDbContext<AppDbContext>(options => 
+    options.UseNpgsql(builder.Configuration.GetConnectionString("Postgres")));
 
 var app = builder.Build();
 
@@ -29,4 +35,17 @@ app.MapGet("/health", () =>
 })
 .WithName("HealthCheck");
 
+app.MapGet("/health/database", async (AppDbContext dbContext) =>
+{
+    try
+    {
+        await dbContext.Database.CanConnectAsync();
+        return Results.Ok("Database is reachable.");
+    }
+    catch (Exception)
+    {
+        return Results.BadRequest("Failed to connect to the database.");
+    }
+})
+.WithName("DatabaseHealthCheck");
 app.Run();
