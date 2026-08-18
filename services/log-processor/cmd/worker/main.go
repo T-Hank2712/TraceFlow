@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 
+	"github.com/T-Hank2712/traceflow/log-processor/internal/config"
 	"github.com/T-Hank2712/traceflow/log-processor/internal/consumer"
 	"github.com/T-Hank2712/traceflow/log-processor/internal/service"
 )
@@ -11,11 +12,12 @@ func main() {
 	log.Println("Log Processor started")
 
 	logService := service.NewLogService()
+	cfg := config.Load()
 
 	kafkaConsumer, err := consumer.NewKafkaConsumer(
-		"localhost:9092",
+		cfg.KafkaBootstrapServers,
 		"traceflow-log-processor",
-		"traceflow.logs",
+		cfg.KafkaTopic,
 		logService,
 	)
 
