@@ -9,7 +9,13 @@ import (
 
 type Config struct {
 	KafkaBootstrapServers string
+	KafkaConsumerGroup    string
 	KafkaTopic            string
+
+	OpenSearchURL      string
+	OpenSearchUsername string
+	OpenSearchPassword string
+	OpenSearchIndex    string
 }
 
 func Load() Config {
@@ -19,6 +25,11 @@ func Load() Config {
 
 	return Config{
 		KafkaBootstrapServers: os.Getenv("KAFKA_BOOTSTRAP_SERVERS"),
+		KafkaConsumerGroup:    os.Getenv("KAFKA_CONSUMER_GROUP"),
 		KafkaTopic:            os.Getenv("KAFKA_TOPIC"),
+		OpenSearchURL:         os.Getenv("OPENSEARCH_URL"),
+		OpenSearchUsername:    os.Getenv("OPENSEARCH_USERNAME"),
+		OpenSearchPassword:    os.Getenv("OPENSEARCH_PASSWORD"),
+		OpenSearchIndex:       os.Getenv("OPENSEARCH_INDEX"),
 	}
 }
