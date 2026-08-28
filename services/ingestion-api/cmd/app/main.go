@@ -17,7 +17,7 @@ func main() {
 		cfg.KafkaTopic,
 	)
 	log.Print(cfg.KafkaTopic)
-	log.Print(cfg.KafkaBootstrapServers)
+	log.Print("Kafka Bootstrap Servers: " + cfg.KafkaBootstrapServers)
 	if err != nil {
 		log.Fatalf("Failed to create Kafka producer: %v", err)
 	}
@@ -27,6 +27,7 @@ func main() {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/health", handler.HealthHandler)
+	mux.HandleFunc("/health/kafka", handler.KafkaHealthHandler(kafkaProducer))
 	mux.HandleFunc("/logs", logHandler.Handle)
 
 	log.Println("Ingestion API listening on :8080")

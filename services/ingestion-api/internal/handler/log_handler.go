@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/T-Hank2712/traceflow/ingestion-api/internal/model"
 	"github.com/T-Hank2712/traceflow/ingestion-api/internal/producer"
@@ -50,6 +51,7 @@ func (h *LogHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		req.Level,
 		req.Message,
 	)
+	log.Printf("Publishing log at %s", time.Now().Format(time.RFC3339Nano))
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusAccepted)

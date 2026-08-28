@@ -5,18 +5,30 @@ import (
 
 	"github.com/T-Hank2712/traceflow/log-processor/internal/config"
 	"github.com/T-Hank2712/traceflow/log-processor/internal/consumer"
+	"github.com/T-Hank2712/traceflow/log-processor/internal/repository"
 	"github.com/T-Hank2712/traceflow/log-processor/internal/service"
 )
 
 func main() {
 	log.Println("Log Processor started")
 
-	logService := service.NewLogService()
+	OpenSearchRepository, err := repository.NewOpenSearchRepository(
+		config.Load().OpenSearchURL,
+		config.Load().OpenSearchUsername,
+		config.Load().OpenSearchPassword,
+		config.Load().OpenSearchIndex,
+	)
+
+	if err != nil {
+		log.Fatalf("Failed to create OpenSearch repository: %v", err)
+	}
+
+	logService := service.NewLogService(OpenSearchRepository)
 	cfg := config.Load()
 
 	kafkaConsumer, err := consumer.NewKafkaConsumer(
 		cfg.KafkaBootstrapServers,
-		"traceflow-log-processor",
+		cfg.KafkaConsumerGroup,
 		cfg.KafkaTopic,
 		logService,
 	)

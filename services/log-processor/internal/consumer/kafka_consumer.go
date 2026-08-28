@@ -3,6 +3,7 @@ package consumer
 import (
 	"encoding/json"
 	"log"
+	"time"
 
 	"github.com/T-Hank2712/traceflow/log-processor/internal/model"
 	"github.com/T-Hank2712/traceflow/log-processor/internal/service"
@@ -46,6 +47,7 @@ func (k *KafkaConsumer) Subscribe() error {
 	for {
 		log.Println("Waiting for Kafka message...")
 		message, err := k.consumer.ReadMessage(-1)
+		log.Printf("Received Kafka message at %s", time.Now().Format(time.RFC3339Nano))
 		if err != nil {
 			log.Printf("Failed to read Kafka message: %v", err)
 			continue

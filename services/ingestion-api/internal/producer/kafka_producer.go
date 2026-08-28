@@ -36,3 +36,8 @@ func (k *KafkaProducer) Publish(value []byte) error {
 		nil,
 	)
 }
+
+func (k *KafkaProducer) HealthCheck() error {
+	_, err := k.producer.GetMetadata(nil, true, 200)
+	return err
+}
