@@ -5,16 +5,30 @@ using TraceFlow.Api.Application.Common.Behaviors;
 using MediatR;
 using TraceFlow.Api.Middleware;
 using TraceFlow.Api.Application.Common.Security;
-using Microsoft.AspNetCore.Identity;
+using DotNetEnv;
 
 var builder = WebApplication.CreateBuilder(args);
+var envPath = Path.Combine(
+    builder.Environment.ContentRootPath,
+    ".env");
+
+if (File.Exists(envPath))
+{
+    Env.Load(envPath);
+    builder.Configuration.AddEnvironmentVariables();
+}
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
-builder.Services.AddDbContext<AppDbContext>(options => 
-    options.UseNpgsql(builder.Configuration.GetConnectionString("Postgres")));
+var postgresConnectionString =
+    builder.Configuration.GetConnectionString("Postgres")
+    ?? throw new InvalidOperationException(
+        "Postgres connection string is not configured.");
+
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(postgresConnectionString));
 
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
@@ -47,11 +61,6 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.MapControllers();
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
 app.MapGet("/health", () =>
 {
     return Results.Ok("TraceFlow Control API is running.");
@@ -62,13 +71,54 @@ app.MapGet("/health/database", async (AppDbContext dbContext) =>
 {
     try
     {
-        await dbContext.Database.CanConnectAsync();
-        return Results.Ok("Database is reachable.");
+        var connection = dbContext.Database.GetDbConnection();
+
+        await connection.OpenAsync();
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = "select current_database()";
+
+        var databaseName = await command.ExecuteScalarAsync();
+
+        return Results.Ok(new
+        {
+            message = "Database is reachable.",
+            database = databaseName
+        });
     }
-    catch (Exception)
+    catch (Exception ex)
     {
-        return Results.BadRequest("Failed to connect to the database.");
+        return Results.BadRequest(new
+        {
+            message = "Failed to connect to the database.",
+            error = ex.Message
+        });
     }
-})
-.WithName("DatabaseHealthCheck");
+});
+
+app.MapGet("/health/database/config", (IConfiguration configuration, IWebHostEnvironment env) =>
+{
+    var connectionString = configuration.GetConnectionString("Postgres");
+
+    if (string.IsNullOrWhiteSpace(connectionString))
+    {
+        return Results.Ok(new
+        {
+            env.ContentRootPath,
+            connectionString = "empty"
+        });
+    }
+
+    var builder = new Npgsql.NpgsqlConnectionStringBuilder(connectionString);
+
+    return Results.Ok(new
+    {
+        env.ContentRootPath,
+        builder.Host,
+        builder.Port,
+        builder.Database,
+        builder.Username
+    });
+});
+
 app.Run();
