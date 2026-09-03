@@ -9,7 +9,7 @@ namespace TraceFlow.Api.Domain.Entities.User
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
         public string PasswordHash { get; set; } = string.Empty;
-        public string Role { get; set; } = "viewer";
+        public string Role { get; set; } = "user";
         public string Status { get; set; } = "active";
 
         // public ICollection<WorkspaceMember> WorkspaceMemberships { get; set; }

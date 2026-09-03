@@ -3,20 +3,21 @@ using Microsoft.EntityFrameworkCore;
 using TraceFlow.Api.Domain.Entities.User;
 using TraceFlow.Api.Infrastructure.Persistence;
 using TraceFlow.Api.Application.Common.Security;
+using TraceFlow.api.Application.Auth.Register;
 
 namespace TraceFlow.Api.Application.Users.Commands.CreateUser;
 
-public class CreateUserCommandHandler : IRequestHandler<CreateUserCommand, Ulid>
+public class RegisterCommandHandler : IRequestHandler<RegisterCommand, RegisterResponse>
 {
     private readonly AppDbContext _dbContext;
     private readonly PasswordHasher _passwordHasher;
-    public CreateUserCommandHandler(AppDbContext dbContext, PasswordHasher passwordHasher)
+    public RegisterCommandHandler(AppDbContext dbContext, PasswordHasher passwordHasher)
     {
         _dbContext = dbContext;
         _passwordHasher = passwordHasher;
     }
-    public async Task<Ulid> Handle(
-        CreateUserCommand request,
+    public async Task<RegisterResponse> Handle(
+        RegisterCommand request,
         CancellationToken cancellationToken)
     {
         var emailExists = await _dbContext.Users
@@ -45,6 +46,13 @@ public class CreateUserCommandHandler : IRequestHandler<CreateUserCommand, Ulid>
         await _dbContext.SaveChangesAsync(
             cancellationToken);
 
-        return user.Id;
+        var reponse = new RegisterResponse(
+            request.Email,
+            request.UserName,
+            request.FirstName,
+            request.LastName
+        );
+
+        return reponse;
     }
 }

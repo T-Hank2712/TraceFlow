@@ -1,7 +1,7 @@
 using FluentValidation;
 
 namespace TraceFlow.Api.Application.Users.Commands.CreateUser;
-public class CreateUserCommandValidator : AbstractValidator<CreateUserCommand>
+public class CreateUserCommandValidator : AbstractValidator<RegisterCommand>
 {
     public CreateUserCommandValidator()
     {

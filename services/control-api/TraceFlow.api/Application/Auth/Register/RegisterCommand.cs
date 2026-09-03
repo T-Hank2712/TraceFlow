@@ -1,11 +1,12 @@
 using MediatR;
+using TraceFlow.api.Application.Auth.Register;
 
 namespace TraceFlow.Api.Application.Users.Commands.CreateUser;
-public record CreateUserCommand(
+public record RegisterCommand(
     string Email,
     string UserName,
     string FirstName,
     string LastName,
     string Password,
     string ConfirmPassword
-) : IRequest<Ulid>;
+) : IRequest<RegisterResponse>;
