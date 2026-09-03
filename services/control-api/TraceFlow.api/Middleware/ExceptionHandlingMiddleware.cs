@@ -1,9 +1,9 @@
 using System.Net;
 using System.Text.Json;
 using FluentValidation;
-using TraceFlow.api.Application.Common.Exceptions;
+using TraceFlow.Api.Application.Common.Exceptions;
 
-namespace TraceFlow.api.Middleware
+namespace TraceFlow.Api.Middleware
 {
     public class ExceptionHandlingMiddleware
     {

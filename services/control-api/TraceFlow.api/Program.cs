@@ -3,7 +3,9 @@ using Microsoft.EntityFrameworkCore;
 using TraceFlow.Api.Infrastructure.Persistence;
 using TraceFlow.Api.Application.Common.Behaviors;
 using MediatR;
-using TraceFlow.api.Middleware;
+using TraceFlow.Api.Middleware;
+using TraceFlow.Api.Application.Common.Security;
+using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,6 +24,7 @@ builder.Services.AddMediatR(config =>
 });
 
 builder.Services.AddControllers();
+builder.Services.AddScoped<PasswordHasher>();
 
 builder.Services.AddTransient(
     typeof(IPipelineBehavior<,>),

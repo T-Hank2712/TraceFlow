@@ -1,4 +1,4 @@
-namespace TraceFlow.api.Application.Common.Exceptions
+namespace TraceFlow.Api.Application.Common.Exceptions
 {
     public class NotFoundException : Exception
     {
