@@ -39,6 +39,8 @@ builder.Services.AddMediatR(config =>
 
 builder.Services.AddControllers();
 builder.Services.AddScoped<PasswordHasher>();
+builder.Services.AddScoped<JwtTokenGenerator>();
+builder.Services.AddScoped<RefreshTokenGenerator>();
 
 builder.Services.AddTransient(
     typeof(IPipelineBehavior<,>),

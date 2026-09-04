@@ -1,4 +1,4 @@
-namespace TraceFlow.api.Application.Auth.Register;
+namespace TraceFlow.Api.Application.Auth.Register;
 
 public record RegisterResponse(
     string Email,

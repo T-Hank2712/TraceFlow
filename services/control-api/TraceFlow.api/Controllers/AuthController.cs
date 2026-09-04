@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using TraceFlow.Api.Application.Users.Commands.CreateUser;
+using TraceFlow.Api.Application.Auth.Register;
+using TraceFlow.Api.Application.Auth.Login;
 // using TraceFlow.Api.Application.Users.Commands.DeleteUser;
 // using TraceFlow.Api.Application.Users.Commands.UpdateUser;
 
@@ -26,6 +27,12 @@ public class AuthController : ControllerBase
         return CreatedAtAction(nameof(Register), new { email = result.Email }, result);
     }
 
+    [HttpPost("login")]
+    public async Task<IActionResult> Login(LoginCommand command, CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(command, cancellationToken);
+        return Ok(result);
+    }
     // [HttpGet("{id}")]
     // public async Task<IActionResult> GetById(
     //     Ulid id,

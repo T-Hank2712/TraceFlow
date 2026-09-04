@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using TraceFlow.Api.Domain.Entities.User;
+using TraceFlow.Api.Domain.Entities;
 
 namespace TraceFlow.Api.Infrastructure.Persistence.Configurations;
 

@@ -1,7 +1,6 @@
 using MediatR;
-using TraceFlow.api.Application.Auth.Register;
 
-namespace TraceFlow.Api.Application.Users.Commands.CreateUser;
+namespace TraceFlow.Api.Application.Auth.Register;
 public record RegisterCommand(
     string Email,
     string UserName,

@@ -1,6 +1,6 @@
 using TraceFlow.Api.Domain.Common;
 
-namespace TraceFlow.Api.Domain.Entities.User
+namespace TraceFlow.Api.Domain.Entities
 {
     public class User : Entity
     {
@@ -12,8 +12,12 @@ namespace TraceFlow.Api.Domain.Entities.User
         public string Role { get; set; } = "user";
         public string Status { get; set; } = "active";
 
+        public ICollection<RefreshToken> RefreshTokens { get; private set; }
+        = new List<RefreshToken>();
+
         // public ICollection<WorkspaceMember> WorkspaceMemberships { get; set; }
         //     = new List<WorkspaceMember>();
+        private User() {}
         public User(string Email, string UserName, string FirstName, string LastName, string PasswordHash)
         {
             this.Id = Ulid.NewUlid();

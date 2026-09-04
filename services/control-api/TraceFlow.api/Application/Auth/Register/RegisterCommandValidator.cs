@@ -1,9 +1,9 @@
 using FluentValidation;
 
-namespace TraceFlow.Api.Application.Users.Commands.CreateUser;
-public class CreateUserCommandValidator : AbstractValidator<RegisterCommand>
+namespace TraceFlow.Api.Application.Auth.Register;
+public class RegisterCommandValidator : AbstractValidator<RegisterCommand>
 {
-    public CreateUserCommandValidator()
+    public RegisterCommandValidator()
     {
         RuleFor(command => command.Email)
         .NotEmpty()
