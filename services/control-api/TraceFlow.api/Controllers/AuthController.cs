@@ -1,7 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using TraceFlow.Api.Application.Auth.Commands.Register;
-using TraceFlow.Api.Application.Auth.Login;
+using TraceFlow.Api.Application.Auth.Commands.Login;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using TraceFlow.Api.Application.Auth.Queries.GetCurrentUser;

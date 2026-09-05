@@ -1,6 +1,6 @@
 using FluentValidation;
 
-namespace TraceFlow.Api.Application.Auth.Login;
+namespace TraceFlow.Api.Application.Auth.Commands.Login;
 
 public class LoginCommandValidator : AbstractValidator<LoginCommand>
 {
