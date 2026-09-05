@@ -8,6 +8,7 @@ using TraceFlow.Api.Application.Auth.Queries.GetCurrentUser;
 using TraceFlow.Api.Application.Auth.Commands.RefreshSession;
 using TraceFlow.Api.Application.Auth.Commands.ChangePassword;
 using TraceFlow.Api.Domain.Dtos;
+using TraceFlow.Api.Application.Auth.Commands.Logout;
 
 namespace TraceFlow.Api.Controllers;
 
@@ -63,6 +64,7 @@ public class AuthController : ControllerBase
         var result = await _sender.Send(command, cancellationToken);
         return Ok(result);
     }
+
     [Authorize]
     [HttpPut("change-password")]
     public async Task<IActionResult> ChangePassword(
@@ -83,6 +85,28 @@ public class AuthController : ControllerBase
                 request.CurrentPassword,
                 request.NewPassword,
                 request.ConfirmNewPassword),
+            cancellationToken);
+
+        return Ok(result);
+    }
+    [Authorize]
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout(
+        LogoutRequest request,
+        CancellationToken cancellationToken)
+    {
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrWhiteSpace(userIdValue) ||
+            !Ulid.TryParse(userIdValue, out var userId))
+        {
+            return Unauthorized();
+        }
+
+        var result = await _sender.Send(
+            new LogoutCommand(
+                userId,
+                request.RefreshToken),
             cancellationToken);
 
         return Ok(result);
