@@ -8,7 +8,7 @@ using TraceFlow.Api.Infrastructure.Persistence;
 
 #nullable disable
 
-namespace TraceFlow.api.Migrations
+namespace TraceFlow.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
     [Migration("20260902083859_InitialFoundation")]

@@ -2,7 +2,7 @@
 
 #nullable disable
 
-namespace TraceFlow.api.Migrations
+namespace TraceFlow.Api.Migrations
 {
     /// <inheritdoc />
     public partial class InitialFoundation : Migration
