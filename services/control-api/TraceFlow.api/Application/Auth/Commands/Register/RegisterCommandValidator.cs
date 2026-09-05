@@ -1,6 +1,6 @@
 using FluentValidation;
 
-namespace TraceFlow.Api.Application.Auth.Register;
+namespace TraceFlow.Api.Application.Auth.Commands.Register;
 public class RegisterCommandValidator : AbstractValidator<RegisterCommand>
 {
     public RegisterCommandValidator()

@@ -1,11 +1,10 @@
 using TraceFlow.Api.Domain.Common;
-using TraceFlow.Api.Domain.Entities;
 
 namespace TraceFlow.Api.Domain.Entities;
 public class RefreshToken : Entity
 {
     public Ulid UserId { get; private set; }
-    public User? User { get; set; }
+    public User User { get; private set; } = null!;
     public string TokenHash { get; private set; } = string.Empty;
     public DateTime ExpiresAt { get; private set; }
     public DateTime? RevokedAt { get; private set; }
@@ -15,7 +14,7 @@ public class RefreshToken : Entity
     public bool IsActive => !IsRevoked && !IsExpired;
     private RefreshToken() {}
 
-    public RefreshToken(Ulid UserId,string TokenHash, DateTime ExpiresAt)
+    public RefreshToken(Ulid UserId, string TokenHash, DateTime ExpiresAt)
     {
         this.UserId = UserId;
         this.TokenHash = TokenHash;

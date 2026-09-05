@@ -1,13 +1,11 @@
-
 using MediatR;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TraceFlow.Api.Application.Auth.Login;
 using TraceFlow.Api.Application.Common.Security;
 using TraceFlow.Api.Infrastructure.Persistence;
 using TraceFlow.Api.Domain.Entities;
 
-namespace TraceFlow.Api.Application.Auth;
+namespace TraceFlow.Api.Application.Auth.Login;
 
 public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResponse>
 {

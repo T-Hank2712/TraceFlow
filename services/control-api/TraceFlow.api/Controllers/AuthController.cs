@@ -1,9 +1,11 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using TraceFlow.Api.Application.Auth.Register;
+using TraceFlow.Api.Application.Auth.Commands.Register;
 using TraceFlow.Api.Application.Auth.Login;
-// using TraceFlow.Api.Application.Users.Commands.DeleteUser;
-// using TraceFlow.Api.Application.Users.Commands.UpdateUser;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using TraceFlow.Api.Application.Auth.Queries.GetCurrentUser;
+using TraceFlow.Api.Application.Auth.Commands.RefreshSession;
 
 namespace TraceFlow.Api.Controllers;
 
@@ -33,20 +35,30 @@ public class AuthController : ControllerBase
         var result = await _sender.Send(command, cancellationToken);
         return Ok(result);
     }
-    // [HttpGet("{id}")]
-    // public async Task<IActionResult> GetById(
-    //     Ulid id,
-    //     CancellationToken cancellationToken)
-    // {
-    //     var user = await _sender.Send(
-    //         new GetUserQuery(id),
-    //         cancellationToken);
 
-    //     if (user is null)
-    //     {
-    //         return NotFound();
-    //     }
+    [Authorize]
+    [HttpGet("me")]
+    public async Task<IActionResult> Me(
+        CancellationToken cancellationToken)
+    {
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-    //     return Ok(user);
-    // }
+        if (string.IsNullOrWhiteSpace(userIdValue) ||
+            !Ulid.TryParse(userIdValue, out var userId))
+        {
+            return Unauthorized();
+        }
+
+        var result = await _sender.Send(
+            new GetCurrentUserQuery(userId),
+            cancellationToken);
+
+        return Ok(result);
+    }
+    [HttpPost("refresh-token")]
+    public async Task<IActionResult> RefreshToken(RefreshSessionCommand command, CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(command, cancellationToken);
+        return Ok(result);
+    }
 }
