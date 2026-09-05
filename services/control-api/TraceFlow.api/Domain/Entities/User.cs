@@ -29,12 +29,29 @@ namespace TraceFlow.Api.Domain.Entities
             this.CreatedAt = DateTime.UtcNow;
             this.UpdatedAt = DateTime.UtcNow;
         }
-        public void UpdateProfile(string UserName, string FirstName, string LastName)
+        public void UpdateProfile(string? UserName, string? FirstName, string? LastName)
         {
-            this.UserName = UserName;
-            this.FirstName = FirstName;
-            this.LastName = LastName;
+            if (!string.IsNullOrWhiteSpace(UserName))
+            {
+                this.UserName = UserName.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(FirstName))
+            {
+                this.FirstName = FirstName.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(LastName))
+            {
+                this.LastName = LastName.Trim();
+            }
+
             this.UpdatedAt = DateTime.UtcNow;
+        }
+        public void ChangePassword(string PasswordHash)
+        {
+            this.PasswordHash = PasswordHash;
+            UpdatedAt = DateTime.UtcNow;
         }
     }
 }
