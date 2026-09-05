@@ -48,5 +48,10 @@ namespace TraceFlow.Api.Domain.Entities
 
             this.UpdatedAt = DateTime.UtcNow;
         }
+        public void ChangePassword(string PasswordHash)
+        {
+            this.PasswordHash = PasswordHash;
+            UpdatedAt = DateTime.UtcNow;
+        }
     }
 }
