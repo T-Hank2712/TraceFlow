@@ -2,10 +2,10 @@ using FluentValidation;
 
 namespace TraceFlow.Api.Application.Auth.Commands.RefreshSession;
 
-public class RefreshTokenCommandValidator
+public class RefreshSessionCommandValidator
     : AbstractValidator<RefreshSessionCommand>
 {
-    public RefreshTokenCommandValidator()
+    public RefreshSessionCommandValidator()
     {
         RuleFor(command => command.RefreshToken)
             .NotEmpty();
