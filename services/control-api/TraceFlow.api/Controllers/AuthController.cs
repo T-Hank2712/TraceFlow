@@ -9,6 +9,8 @@ using TraceFlow.Api.Application.Auth.Commands.RefreshSession;
 using TraceFlow.Api.Application.Auth.Commands.ChangePassword;
 using TraceFlow.Api.Domain.Dtos;
 using TraceFlow.Api.Application.Auth.Commands.Logout;
+using TraceFlow.Api.Application.Workspaces.Commands.ArchiveWorkspace;
+using TraceFlow.Api.Domain.Common.Extensions;
 
 namespace TraceFlow.Api.Controllers;
 
@@ -107,6 +109,26 @@ public class AuthController : ControllerBase
             new LogoutCommand(
                 userId,
                 request.RefreshToken),
+            cancellationToken);
+
+        return Ok(result);
+    }
+    [HttpPatch("{workspaceId}/archive")]
+    public async Task<IActionResult> ArchiveWorkspace(
+        Ulid workspaceId,
+        CancellationToken cancellationToken)
+    {
+        var userId = User.GetUserId();
+
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var result = await _sender.Send(
+            new ArchiveWorkspaceCommand(
+                workspaceId,
+                userId.Value),
             cancellationToken);
 
         return Ok(result);

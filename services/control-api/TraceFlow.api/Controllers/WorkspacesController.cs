@@ -8,6 +8,7 @@ using TraceFlow.Api.Domain.Common.Extensions;
 using TraceFlow.Api.Application.Workspaces.Queries.GetWorkspaces;
 using TraceFlow.Api.Application.Workspaces.Queries.GetWorkspaceById;
 using TraceFlow.Api.Application.Workspaces.Commands.UpdateWorkspace;
+using TraceFlow.Api.Application.Workspaces.Commands.ArchiveWorkspace;
 
 namespace TraceFlow.Api.Controllers;
 
@@ -98,6 +99,26 @@ public class WorkspacesController : ControllerBase
                 request.Slug,
                 request.Description),
             cancellationToken);
+        return Ok(result);
+    }
+    [HttpPatch("{workspaceId}/archive")]
+    public async Task<IActionResult> ArchiveWorkspace(
+        Ulid workspaceId,
+        CancellationToken cancellationToken)
+    {
+        var userId = User.GetUserId();
+
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var result = await _sender.Send(
+            new ArchiveWorkspaceCommand(
+                workspaceId,
+                userId.Value),
+            cancellationToken);
+
         return Ok(result);
     }
 }
