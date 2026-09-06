@@ -29,6 +29,15 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, RegisterR
             throw new InvalidOperationException(
                 "A user with this email already exists.");
         }
+        var normalizedUsername = request.UserName.Trim().ToLowerInvariant();
+
+        var usernameExists = await _dbContext.Users
+            .AnyAsync(user => user.NormalizedUsername == normalizedUsername, cancellationToken);
+
+        if (usernameExists)
+        {
+            throw new InvalidOperationException("Username is already taken.");
+        }
 
         var passwordHash = _passwordHasher.Hash(request.Password);
 

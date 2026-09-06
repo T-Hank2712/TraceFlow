@@ -23,12 +23,12 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResponse>
     }
     public async Task<LoginResponse> Handle(LoginCommand request, CancellationToken cancellationToken)
     {
-        var identifier = request.Identifier.Trim().ToLower();
+        var identifier = request.Identifier.Trim().ToLowerInvariant();
 
         var user = await _dbContext.Users
             .FirstOrDefaultAsync(
                 user => user.Email.ToLower() == identifier ||
-                        user.UserName.ToLower() == identifier,
+                        user.NormalizedUsername == identifier,
                 cancellationToken);
 
         if (user is null)

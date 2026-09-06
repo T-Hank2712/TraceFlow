@@ -29,11 +29,11 @@ public class UpdateMyProfileCommandHandler : IRequestHandler<UpdateProfileComman
         }
         if (!string.IsNullOrWhiteSpace(request.UserName))
         {
-            var normalizedUserName = request.UserName.Trim();
+            var normalizedUsername = request.UserName.Trim().ToLowerInvariant();
 
             var userNameExists = await _dbContext.Users
                 .AnyAsync(
-                    user => user.UserName == normalizedUserName &&
+                    user => user.NormalizedUsername == normalizedUsername &&
                             user.Id != request.UserId,
                     cancellationToken);
 

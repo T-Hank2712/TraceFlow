@@ -6,6 +6,7 @@ namespace TraceFlow.Api.Domain.Entities
     {
         public string Email { get; private set; } = string.Empty;
         public string UserName { get; private set; } = string.Empty;
+        public string NormalizedUsername { get; private set; } = string.Empty;
         public string FirstName { get; private set; } = string.Empty;
         public string LastName { get; private set; } = string.Empty;
         public string PasswordHash { get; private set; } = string.Empty;
@@ -22,6 +23,7 @@ namespace TraceFlow.Api.Domain.Entities
             this.Id = Ulid.NewUlid();
             this.Email = Email;
             this.UserName = UserName;
+            this.NormalizedUsername = NormalizeUsername(UserName);
             this.FirstName = FirstName;
             this.LastName = LastName;
             this.PasswordHash = PasswordHash;
@@ -33,6 +35,7 @@ namespace TraceFlow.Api.Domain.Entities
             if (!string.IsNullOrWhiteSpace(UserName))
             {
                 this.UserName = UserName.Trim();
+                this.NormalizedUsername = NormalizeUsername(UserName);
             }
 
             if (!string.IsNullOrWhiteSpace(FirstName))
@@ -51,6 +54,10 @@ namespace TraceFlow.Api.Domain.Entities
         {
             this.PasswordHash = PasswordHash;
             UpdatedAt = DateTime.UtcNow;
+        }
+        private static string NormalizeUsername(string username)
+        {
+            return username.Trim().ToLowerInvariant();
         }
     }
 }
