@@ -45,7 +45,7 @@ public class WorkspacesController : ControllerBase
             cancellationToken);
 
         return CreatedAtAction(
-            nameof(CreateWorkspace),
+            nameof(GetWorkspaceById),
             new { id = result.Id },
             result);
     }

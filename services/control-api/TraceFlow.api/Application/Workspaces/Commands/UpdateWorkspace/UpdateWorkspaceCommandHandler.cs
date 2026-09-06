@@ -38,6 +38,11 @@ public class UpdateWorkspaceCommandHandler
                 "You do not have permission to update this workspace.");
         }
 
+        if (membership.Workspace.Status == "archived")
+        {
+            throw new ConflictException("Archived workspace cannot be updated.");
+        }
+
         if (!string.IsNullOrWhiteSpace(request.Slug))
         {
             var normalizedSlug = request.Slug.Trim().ToLowerInvariant();
