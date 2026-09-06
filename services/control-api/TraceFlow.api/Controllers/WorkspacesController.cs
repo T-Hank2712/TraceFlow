@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using TraceFlow.Api.Application.Workspaces.Commands.CreateWorkspace;
 using TraceFlow.Api.Domain.Dtos;
 using TraceFlow.Api.Domain.Common.Extensions;
+using TraceFlow.Api.Application.Workspaces.Queries.GetWorkspaces;
 
 namespace TraceFlow.Api.Controllers;
 
@@ -44,5 +45,21 @@ public class WorkspacesController : ControllerBase
             nameof(CreateWorkspace),
             new { id = result.Id },
             result);
+    }
+    [HttpGet]
+    public async Task<IActionResult> GetMyWorkspaces(CancellationToken cancellationToken)
+    {
+        var userId = User.GetUserId();
+
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var result = await _sender.Send(
+            new GetWorkspacesQuery(userId.Value),
+            cancellationToken);
+
+        return Ok(result);
     }
 }
