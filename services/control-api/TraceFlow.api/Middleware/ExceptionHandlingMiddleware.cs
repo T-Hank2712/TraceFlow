@@ -14,34 +14,51 @@ namespace TraceFlow.Api.Middleware
             _next = next;
             _logger = logger;
         }
-        public async Task InvokeAsync(HttpContext context)
+    public async Task InvokeAsync(HttpContext context)
+    {
+        try
         {
-            try
-            {
-                await _next(context);
-            }
-            catch(ValidationException ex)
-            {
-                _logger.LogWarning(ex, "Validation Failed.");
-                await HandleValidationExceptionAsync(context, ex);
-            }
-            catch(NotFoundException ex)
-            {
-                _logger.LogWarning(ex, "Resource not found.");
-                await HandleExceptionAsync(context, HttpStatusCode.NotFound, ex.Message);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(
-                    ex,
-                    "Unhandled exception.");
-
-                await HandleExceptionAsync(
-                    context,
-                    HttpStatusCode.InternalServerError,
-                    "An unexpected error occurred.");
-            }
+            await _next(context);
         }
+        catch (ValidationException ex)
+        {
+            _logger.LogWarning(ex, "Validation failed.");
+            await HandleValidationExceptionAsync(context, ex);
+        }
+        catch (UnauthorizedException ex)
+        {
+            _logger.LogWarning(ex, "Unauthorized request.");
+            await HandleExceptionAsync(context, HttpStatusCode.Unauthorized, ex.Message);
+        }
+        catch (ForbiddenException ex)
+        {
+            _logger.LogWarning(ex, "Forbidden request.");
+            await HandleExceptionAsync(context, HttpStatusCode.Forbidden, ex.Message);
+        }
+        catch (NotFoundException ex)
+        {
+            _logger.LogWarning(ex, "Resource not found.");
+            await HandleExceptionAsync(context, HttpStatusCode.NotFound, ex.Message);
+        }
+        catch (ConflictException ex)
+        {
+            _logger.LogWarning(ex, "Conflict occurred.");
+            await HandleExceptionAsync(context, HttpStatusCode.Conflict, ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Business rule conflict.");
+            await HandleExceptionAsync(context, HttpStatusCode.Conflict, ex.Message);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled exception.");
+            await HandleExceptionAsync(
+                context,
+                HttpStatusCode.InternalServerError,
+                "An unexpected error occurred.");
+        }
+    }
         private static async Task HandleExceptionAsync(HttpContext context, HttpStatusCode statusCode, string message)
         {
             context.Response.StatusCode = (int)statusCode;
@@ -52,7 +69,7 @@ namespace TraceFlow.Api.Middleware
         private static async Task HandleValidationExceptionAsync(HttpContext context, ValidationException exception)
         {
             context.Response.StatusCode = StatusCodes.Status400BadRequest;
-            context.Response.ContentType = "pplication/json";
+            context.Response.ContentType = "application/json";
             var errors = exception.Errors
             .GroupBy(error => error.PropertyName)
             .ToDictionary(

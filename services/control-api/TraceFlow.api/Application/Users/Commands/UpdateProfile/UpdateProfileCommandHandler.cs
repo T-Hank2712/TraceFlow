@@ -24,7 +24,7 @@ public class UpdateMyProfileCommandHandler : IRequestHandler<UpdateProfileComman
         }
         if (user.Status != "active")
         {
-            throw new UnauthorizedAccessException(
+            throw new ForbiddenException(
                 "User account is not active.");
         }
         if (!string.IsNullOrWhiteSpace(request.UserName))
@@ -39,7 +39,7 @@ public class UpdateMyProfileCommandHandler : IRequestHandler<UpdateProfileComman
 
             if (userNameExists)
             {
-                throw new InvalidOperationException(
+                throw new ConflictException(
                     "Username is already taken.");
             }
         }

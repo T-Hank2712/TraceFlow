@@ -34,13 +34,13 @@ public class ArchiveWorkspaceCommandHandler
 
         if (membership.Role != "owner")
         {
-            throw new UnauthorizedAccessException(
+            throw new ForbiddenException(
                 "Only workspace owner can archive this workspace.");
         }
 
         if (membership.Workspace.Status == "archived")
         {
-            throw new InvalidOperationException("Archived workspace cannot be updated.");
+            throw new ConflictException("Archived workspace cannot be updated.");
         }
 
         membership.Workspace.Archive();

@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using TraceFlow.Api.Domain.Entities;
 using TraceFlow.Api.Infrastructure.Persistence;
 using TraceFlow.Api.Application.Common.Security;
+using TraceFlow.Api.Application.Common.Exceptions;
 
 namespace TraceFlow.Api.Application.Auth.Commands.Register;
 
@@ -26,7 +27,7 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, RegisterR
 
         if (emailExists)
         {
-            throw new InvalidOperationException(
+            throw new ConflictException(
                 "A user with this email already exists.");
         }
         var normalizedUsername = request.UserName.Trim().ToLowerInvariant();
@@ -36,7 +37,7 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, RegisterR
 
         if (usernameExists)
         {
-            throw new InvalidOperationException("Username is already taken.");
+            throw new ConflictException("Username is already taken.");
         }
 
         var passwordHash = _passwordHasher.Hash(request.Password);

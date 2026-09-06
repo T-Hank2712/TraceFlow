@@ -34,7 +34,7 @@ public class UpdateWorkspaceCommandHandler
 
         if (membership.Role is not "owner" and not "admin")
         {
-            throw new UnauthorizedAccessException(
+            throw new ForbiddenException(
                 "You do not have permission to update this workspace.");
         }
 
@@ -53,7 +53,7 @@ public class UpdateWorkspaceCommandHandler
 
             if (slugExists)
             {
-                throw new InvalidOperationException("Workspace slug is already taken.");
+                throw new ConflictException("Workspace slug is already taken.");
             }
         }
 

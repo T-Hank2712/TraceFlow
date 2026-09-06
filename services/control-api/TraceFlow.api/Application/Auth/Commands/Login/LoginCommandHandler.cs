@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using TraceFlow.Api.Application.Common.Security;
 using TraceFlow.Api.Infrastructure.Persistence;
 using TraceFlow.Api.Domain.Entities;
+using TraceFlow.Api.Application.Common.Exceptions;
 
 namespace TraceFlow.Api.Application.Auth.Commands.Login;
 
@@ -33,20 +34,20 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResponse>
 
         if (user is null)
         {
-            throw new UnauthorizedAccessException("Invalid username/email or password.");
+            throw new UnauthorizedException("Invalid username/email or password.");
         }
 
         var passwordValid = _passwordHasher.Verify(request.Password, user.PasswordHash);
 
         if (!passwordValid)
         {
-            throw new UnauthorizedAccessException(
+            throw new UnauthorizedException(
                 "Invalid username/email or password.");
         }
 
         if (user.Status != "active")
         {
-            throw new UnauthorizedAccessException(
+            throw new NotFoundException(
                 "User account is not found.");
         }
 

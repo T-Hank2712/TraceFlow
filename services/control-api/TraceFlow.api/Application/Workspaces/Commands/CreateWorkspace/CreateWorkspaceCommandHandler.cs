@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using TraceFlow.Api.Domain.Entities;
 using TraceFlow.Api.Infrastructure.Persistence;
+using TraceFlow.Api.Application.Common.Exceptions;
 
 namespace TraceFlow.Api.Application.Workspaces.Commands.CreateWorkspace;
 
@@ -31,7 +32,7 @@ public class CreateWorkspaceCommandHandler
 
         if (slugExists)
         {
-            throw new InvalidOperationException(
+            throw new ConflictException(
                 "Workspace slug is already taken.");
         }
 
