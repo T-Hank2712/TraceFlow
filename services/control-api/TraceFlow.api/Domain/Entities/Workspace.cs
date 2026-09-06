@@ -1,5 +1,4 @@
 using TraceFlow.Api.Domain.Common;
-using TraceFlow.Api.Domain.Entities;
 
 namespace TraceFlow.Api.Domain.Entities;
 
@@ -21,6 +20,24 @@ public class Workspace : Entity
             : Description.Trim();
         Status = "active";
         CreatedAt = DateTime.UtcNow;
+        UpdatedAt = DateTime.UtcNow;
+    }
+    public void UpdateWorkspace(string? Name, string? Slug, string? Description)
+    {
+        if (!string.IsNullOrWhiteSpace(Name))
+        {
+            this.Name = Name.Trim();
+        }
+        if (!string.IsNullOrWhiteSpace(Slug))
+        {
+            this.Slug = Slug.Trim().ToLowerInvariant();
+        }
+        if (Description is not null)
+        {
+            this.Description = string.IsNullOrWhiteSpace(Description)
+                ? null
+                : Description.Trim();
+        }
         UpdatedAt = DateTime.UtcNow;
     }
     public void Archive()
