@@ -1,4 +1,4 @@
-namespace TraceFlow.Api.Domain.Dtos;
+namespace TraceFlow.Api.Domain.Dtos.Auth;
 
 public record ChangePasswordRequest(
     string CurrentPassword,

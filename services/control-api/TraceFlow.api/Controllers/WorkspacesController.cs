@@ -3,7 +3,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TraceFlow.Api.Application.Workspaces.Commands.CreateWorkspace;
-using TraceFlow.Api.Domain.Dtos;
+using TraceFlow.Api.Domain.Dtos.Workspaces;
 using TraceFlow.Api.Domain.Common.Extensions;
 using TraceFlow.Api.Application.Workspaces.Queries.GetWorkspaces;
 using TraceFlow.Api.Application.Workspaces.Queries.GetWorkspaceById;

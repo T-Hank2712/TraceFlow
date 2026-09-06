@@ -1,4 +1,4 @@
-namespace TraceFlow.Api.Domain.Dtos;
+namespace TraceFlow.Api.Domain.Dtos.Users;
 
 public record UpdateProfileRequest(
     string? UserName,
