@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using TraceFlow.Api.Infrastructure.Persistence;
@@ -11,9 +12,11 @@ using TraceFlow.Api.Infrastructure.Persistence;
 namespace TraceFlow.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260906045445_AddNormalizedUsernameToUsers")]
+    partial class AddNormalizedUsernameToUsers
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -136,10 +139,6 @@ namespace TraceFlow.Api.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<string>("OwnerUserId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<string>("Slug")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -155,9 +154,8 @@ namespace TraceFlow.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("OwnerUserId", "Slug")
-                        .IsUnique()
-                        .HasFilter("\"Status\" = 'active'");
+                    b.HasIndex("Slug")
+                        .IsUnique();
 
                     b.ToTable("Workspaces", (string)null);
                 });
@@ -213,17 +211,6 @@ namespace TraceFlow.Api.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("TraceFlow.Api.Domain.Entities.Workspace", b =>
-                {
-                    b.HasOne("TraceFlow.Api.Domain.Entities.User", "Owner")
-                        .WithMany()
-                        .HasForeignKey("OwnerUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Owner");
                 });
 
             modelBuilder.Entity("TraceFlow.Api.Domain.Entities.WorkspaceMember", b =>

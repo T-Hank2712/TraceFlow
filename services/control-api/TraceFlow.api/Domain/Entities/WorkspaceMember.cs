@@ -1,0 +1,40 @@
+using TraceFlow.Api.Domain.Common;
+
+namespace TraceFlow.Api.Domain.Entities;
+public class WorkspaceMember : Entity
+{
+    public Ulid UserId { get; private set; }
+    public User User { get; private set; } = null!;
+    public Ulid WorkspaceId { get; private set; }
+    public Workspace Workspace { get; private set; } = null!;
+    public string Role { get; private set; } = "member";
+    public string Status { get; private set; } = "active";
+    public DateTime JoinedAt { get; private set; }
+    private WorkspaceMember() {}
+    public WorkspaceMember(Ulid WorkspaceId, Ulid UserId, string Role)
+    {
+        Id = Ulid.NewUlid();
+        this.WorkspaceId = WorkspaceId;
+        this.UserId = UserId;
+        this.Role = Role.Trim().ToLower();
+        Status = "active";
+        JoinedAt = DateTime.UtcNow;
+        CreatedAt = DateTime.UtcNow;
+        UpdatedAt = DateTime.UtcNow;
+    }
+    public void ChangeRole(string role)
+    {
+        Role = role.Trim().ToLower();
+        UpdatedAt = DateTime.UtcNow;
+    }
+    public void Remove()
+    {
+        Status = "removed";
+        UpdatedAt = DateTime.UtcNow;
+    }
+    public void Activate()
+    {
+        Status = "active";
+        UpdatedAt = DateTime.UtcNow;
+    }
+}

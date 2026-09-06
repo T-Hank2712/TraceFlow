@@ -29,14 +29,14 @@ public class ChangePasswordCommandHandler : IRequestHandler<ChangePasswordComman
 
         if (user.Status != "active")
         {
-            throw new UnauthorizedAccessException(
+            throw new UnauthorizedException(
                 "User account is not active.");
         }
 
         var currentPasswordValid = _passwordHasher.Verify(request.CurrentPassword, user.PasswordHash);
         if (!currentPasswordValid)
         {
-            throw new UnauthorizedAccessException(
+            throw new UnauthorizedException(
                 "Current password is incorrect.");
         }
 

@@ -24,22 +24,22 @@ public class UpdateMyProfileCommandHandler : IRequestHandler<UpdateProfileComman
         }
         if (user.Status != "active")
         {
-            throw new UnauthorizedAccessException(
+            throw new ForbiddenException(
                 "User account is not active.");
         }
         if (!string.IsNullOrWhiteSpace(request.UserName))
         {
-            var normalizedUserName = request.UserName.Trim();
+            var normalizedUsername = request.UserName.Trim().ToLowerInvariant();
 
             var userNameExists = await _dbContext.Users
                 .AnyAsync(
-                    user => user.UserName == normalizedUserName &&
+                    user => user.NormalizedUsername == normalizedUsername &&
                             user.Id != request.UserId,
                     cancellationToken);
 
             if (userNameExists)
             {
-                throw new InvalidOperationException(
+                throw new ConflictException(
                     "Username is already taken.");
             }
         }

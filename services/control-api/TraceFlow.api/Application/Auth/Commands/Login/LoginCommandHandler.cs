@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using TraceFlow.Api.Application.Common.Security;
 using TraceFlow.Api.Infrastructure.Persistence;
 using TraceFlow.Api.Domain.Entities;
+using TraceFlow.Api.Application.Common.Exceptions;
 
 namespace TraceFlow.Api.Application.Auth.Commands.Login;
 
@@ -23,30 +24,30 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResponse>
     }
     public async Task<LoginResponse> Handle(LoginCommand request, CancellationToken cancellationToken)
     {
-        var identifier = request.Identifier.Trim().ToLower();
+        var identifier = request.Identifier.Trim().ToLowerInvariant();
 
         var user = await _dbContext.Users
             .FirstOrDefaultAsync(
                 user => user.Email.ToLower() == identifier ||
-                        user.UserName.ToLower() == identifier,
+                        user.NormalizedUsername == identifier,
                 cancellationToken);
 
         if (user is null)
         {
-            throw new UnauthorizedAccessException("Invalid username/email or password.");
+            throw new UnauthorizedException("Invalid username/email or password.");
         }
 
         var passwordValid = _passwordHasher.Verify(request.Password, user.PasswordHash);
 
         if (!passwordValid)
         {
-            throw new UnauthorizedAccessException(
+            throw new UnauthorizedException(
                 "Invalid username/email or password.");
         }
 
         if (user.Status != "active")
         {
-            throw new UnauthorizedAccessException(
+            throw new NotFoundException(
                 "User account is not found.");
         }
 

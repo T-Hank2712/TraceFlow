@@ -1,9 +1,9 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using TraceFlow.Api.Application.Common.Security;
 using TraceFlow.Api.Domain.Entities;
 using TraceFlow.Api.Infrastructure.Persistence;
+using TraceFlow.Api.Application.Common.Exceptions;
 
 namespace TraceFlow.Api.Application.Auth.Commands.RefreshSession;
 
@@ -32,19 +32,19 @@ public class RefreshSessionCommandHandler : IRequestHandler<RefreshSessionComman
 
         if (existingRefreshToken is null)
         {
-            throw new UnauthorizedAccessException("Invalid refresh token.");
+            throw new UnauthorizedException("Invalid refresh token.");
         }
 
 
         if (!existingRefreshToken.IsActive)
         {
-            throw new UnauthorizedAccessException(
+            throw new UnauthorizedException(
                 "Refresh token is no longer active.");
         }
 
         if (existingRefreshToken.User.Status != "active")
         {
-            throw new UnauthorizedAccessException(
+            throw new UnauthorizedException(
                 "User account is not active.");
         }
 
