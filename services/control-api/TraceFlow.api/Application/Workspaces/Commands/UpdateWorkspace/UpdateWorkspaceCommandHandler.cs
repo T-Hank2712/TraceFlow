@@ -45,7 +45,9 @@ public class UpdateWorkspaceCommandHandler
             var slugExists = await _dbContext.Workspaces
                 .AnyAsync(
                     workspace =>
+                        workspace.OwnerUserId == membership.Workspace.OwnerUserId &&
                         workspace.Slug == normalizedSlug &&
+                        workspace.Status == "active" &&
                         workspace.Id != request.WorkspaceId,
                     cancellationToken);
 

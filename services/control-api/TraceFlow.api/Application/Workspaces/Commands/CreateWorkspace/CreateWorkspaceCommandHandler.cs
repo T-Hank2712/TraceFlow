@@ -23,7 +23,10 @@ public class CreateWorkspaceCommandHandler
 
         var slugExists = await _dbContext.Workspaces
             .AnyAsync(
-                workspace => workspace.Slug == normalizedSlug,
+                workspace =>
+                    workspace.OwnerUserId == request.UserId &&
+                    workspace.Slug == normalizedSlug &&
+                    workspace.Status == "active",
                 cancellationToken);
 
         if (slugExists)
@@ -33,8 +36,9 @@ public class CreateWorkspaceCommandHandler
         }
 
         var workspace = new Workspace(
+            request.UserId,
             request.Name,
-            normalizedSlug,
+            request.Slug,
             request.Description);
 
         _dbContext.Workspaces.Add(workspace);

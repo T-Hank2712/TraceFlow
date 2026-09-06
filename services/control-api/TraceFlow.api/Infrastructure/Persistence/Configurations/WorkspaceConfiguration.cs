@@ -18,6 +18,15 @@ public class WorkspaceConfiguration : IEntityTypeConfiguration<Workspace>
                 value => Ulid.Parse(value))
             .IsRequired();
 
+        builder.Property(workspace => workspace.OwnerUserId)
+            .HasConversion(id => id.ToString(), value => Ulid.Parse(value))
+            .IsRequired();
+
+        builder.HasOne(workspace => workspace.Owner)
+            .WithMany()
+            .HasForeignKey(workspace => workspace.OwnerUserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.Property(workspace => workspace.Name)
             .IsRequired()
             .HasMaxLength(100);
@@ -26,8 +35,13 @@ public class WorkspaceConfiguration : IEntityTypeConfiguration<Workspace>
             .IsRequired()
             .HasMaxLength(100);
 
-        builder.HasIndex(workspace => workspace.Slug)
-            .IsUnique();
+        builder.HasIndex(workspace => new
+            {
+                workspace.OwnerUserId,
+                workspace.Slug
+            })
+            .IsUnique()
+            .HasFilter("\"Status\" = 'active'");
 
         builder.Property(workspace => workspace.Description)
             .HasMaxLength(500);
