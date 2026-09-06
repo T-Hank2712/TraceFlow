@@ -4,19 +4,18 @@ namespace TraceFlow.Api.Domain.Entities
 {
     public class User : Entity
     {
-        public string Email { get; set; } = string.Empty;
-        public string UserName { get; set; } = string.Empty;
-        public string FirstName { get; set; } = string.Empty;
-        public string LastName { get; set; } = string.Empty;
-        public string PasswordHash { get; set; } = string.Empty;
-        public string Role { get; set; } = "user";
-        public string Status { get; set; } = "active";
+        public string Email { get; private set; } = string.Empty;
+        public string UserName { get; private set; } = string.Empty;
+        public string FirstName { get; private set; } = string.Empty;
+        public string LastName { get; private set; } = string.Empty;
+        public string PasswordHash { get; private set; } = string.Empty;
+        public string Role { get; private set; } = "user";
+        public string Status { get; private set; } = "active";
 
         public ICollection<RefreshToken> RefreshTokens { get; private set; }
         = new List<RefreshToken>();
-
-        // public ICollection<WorkspaceMember> WorkspaceMemberships { get; set; }
-        //     = new List<WorkspaceMember>();
+        public ICollection<WorkspaceMember> WorkspaceMemberships { get; set; }
+            = new List<WorkspaceMember>();
         private User() {}
         public User(string Email, string UserName, string FirstName, string LastName, string PasswordHash)
         {
