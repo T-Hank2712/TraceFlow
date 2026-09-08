@@ -9,6 +9,7 @@ using TraceFlow.Api.Application.Workspaces.Queries.GetWorkspaces;
 using TraceFlow.Api.Application.Workspaces.Queries.GetWorkspaceById;
 using TraceFlow.Api.Application.Workspaces.Commands.UpdateWorkspace;
 using TraceFlow.Api.Application.Workspaces.Commands.ArchiveWorkspace;
+using TraceFlow.Api.Application.Workspaces.Queries.ListMembers;
 
 namespace TraceFlow.Api.Controllers;
 
@@ -115,6 +116,26 @@ public class WorkspacesController : ControllerBase
 
         var result = await _sender.Send(
             new ArchiveWorkspaceCommand(
+                workspaceId,
+                userId.Value),
+            cancellationToken);
+
+        return Ok(result);
+    }
+    [HttpGet("{workspaceId}/members")]
+    public async Task<IActionResult> ListMembers(
+        Ulid workspaceId,
+        CancellationToken cancellationToken)
+    {
+        var userId = User.GetUserId();
+
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var result = await _sender.Send(
+            new ListMembersQuery(
                 workspaceId,
                 userId.Value),
             cancellationToken);
