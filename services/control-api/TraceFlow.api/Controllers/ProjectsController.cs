@@ -7,6 +7,7 @@ using TraceFlow.Api.Domain.Dtos.Projects;
 using TraceFlow.Api.Application.Projects.Queries.ListProjects;
 using TraceFlow.Api.Application.Projects.Queries.GetProjectById;
 using TraceFlow.Api.Application.Projects.Commands.UpdateProject;
+using TraceFlow.Api.Application.Projects.Commands.DeleteProject;
 
 namespace TraceFlow.Api.Controllers;
 
@@ -110,6 +111,28 @@ public class ProjectsController : ControllerBase
                 request.Name,
                 request.Slug,
                 request.Description),
+            cancellationToken);
+
+        return Ok(result);
+    }
+    [HttpDelete("{projectId}")]
+    public async Task<IActionResult> DeleteProject(
+        Ulid workspaceId,
+        Ulid projectId,
+        CancellationToken cancellationToken)
+    {
+        var userId = User.GetUserId();
+
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var result = await _sender.Send(
+            new DeleteProjectCommand(
+                workspaceId,
+                projectId,
+                userId.Value),
             cancellationToken);
 
         return Ok(result);

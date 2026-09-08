@@ -56,4 +56,15 @@ public class Project : Entity
 
         UpdatedAt = DateTime.UtcNow;
     }
+    public void Archive()
+    {
+        Status = ResourceStatuses.Archived;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void Activate()
+    {
+        Status = ResourceStatuses.Active;
+        UpdatedAt = DateTime.UtcNow;
+    }
 }
