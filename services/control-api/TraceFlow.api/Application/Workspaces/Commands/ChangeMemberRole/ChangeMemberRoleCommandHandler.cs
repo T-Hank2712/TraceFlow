@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using TraceFlow.Api.Application.Common.Exceptions;
 using TraceFlow.Api.Infrastructure.Persistence;
+using TraceFlow.Api.Domain.Constants;
 
 namespace TraceFlow.Api.Application.Workspaces.Commands.ChangeMemberRole;
 
@@ -25,7 +26,7 @@ public class ChangeMemberRoleCommandHandler
                 member =>
                     member.WorkspaceId == request.WorkspaceId &&
                     member.UserId == request.ActorUserId &&
-                    member.Status == "active",
+                    member.Status == WorkspaceMemberStatuses.Active,
                 cancellationToken);
 
         if (actorMembership is null)
@@ -33,12 +34,12 @@ public class ChangeMemberRoleCommandHandler
             throw new NotFoundException("Workspace not found.");
         }
 
-        if (actorMembership.Workspace.Status == "archived")
+        if (actorMembership.Workspace.Status == WorkspaceStatuses.Archived)
         {
             throw new ConflictException("Archived workspace cannot be modified.");
         }
 
-        if (actorMembership.Role is not "owner" and not "admin")
+        if (actorMembership.Role is not WorkspaceMemberRoles.Owner and not WorkspaceMemberRoles.Admin)
         {
             throw new ForbiddenException("You do not have permission to change member roles.");
         }
@@ -48,7 +49,7 @@ public class ChangeMemberRoleCommandHandler
                 member =>
                     member.Id == request.MemberId &&
                     member.WorkspaceId == request.WorkspaceId &&
-                    member.Status == "active",
+                    member.Status == WorkspaceMemberStatuses.Active,
                 cancellationToken);
 
         if (targetMember is null)
@@ -58,14 +59,14 @@ public class ChangeMemberRoleCommandHandler
 
         var newRole = request.Role.Trim().ToLowerInvariant();
 
-        if (targetMember.Role == "owner" && newRole != "owner")
+        if (targetMember.Role == WorkspaceMemberRoles.Owner && newRole != WorkspaceMemberRoles.Owner)
         {
             var ownerCount = await _dbContext.WorkspaceMembers
                 .CountAsync(
                     member =>
                         member.WorkspaceId == request.WorkspaceId &&
-                        member.Role == "owner" &&
-                        member.Status == "active",
+                        member.Role == WorkspaceMemberRoles.Owner &&
+                        member.Status == WorkspaceMemberStatuses.Active,
                     cancellationToken);
 
             if (ownerCount <= 1)
@@ -74,7 +75,7 @@ public class ChangeMemberRoleCommandHandler
             }
         }
 
-        if (actorMembership.Role == "admin" && targetMember.Role == "owner")
+        if (actorMembership.Role == WorkspaceMemberRoles.Admin && targetMember.Role == WorkspaceMemberRoles.Owner)
         {
             throw new ForbiddenException("Admin cannot change owner role.");
         }

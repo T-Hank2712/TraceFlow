@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using TraceFlow.Api.Application.Common.Exceptions;
 using TraceFlow.Api.Infrastructure.Persistence;
+using TraceFlow.Api.Domain.Constants;
 
 namespace TraceFlow.Api.Application.Workspaces.Queries.ListMembers;
 
@@ -25,7 +26,7 @@ public class ListMembersQueryHandler
                 member =>
                     member.WorkspaceId == request.WorkspaceId &&
                     member.UserId == request.UserId &&
-                    member.Status == "active",
+                    member.Status == WorkspaceMemberStatuses.Active,
                 cancellationToken);
 
         if (!hasAccess)
@@ -37,9 +38,9 @@ public class ListMembersQueryHandler
             .AsNoTracking()
             .Where(member =>
                 member.WorkspaceId == request.WorkspaceId &&
-                member.Status == "active")
-            .OrderBy(member => member.Role == "owner" ? 0 :
-                               member.Role == "admin" ? 1 : 2)
+                member.Status == WorkspaceMemberStatuses.Active)
+            .OrderBy(member => member.Role == WorkspaceMemberRoles.Owner ? 0 :
+                               member.Role == WorkspaceMemberRoles.Admin ? 1 : 2)
             .ThenBy(member => member.User.UserName)
             .Select(member => new WorkspaceMemberResponse(
                 member.Id,

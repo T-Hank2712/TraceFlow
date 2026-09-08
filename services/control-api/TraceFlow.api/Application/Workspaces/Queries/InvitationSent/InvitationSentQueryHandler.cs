@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using TraceFlow.Api.Application.Common.Exceptions;
 using TraceFlow.Api.Infrastructure.Persistence;
+using TraceFlow.Api.Domain.Constants;
 
 namespace TraceFlow.Api.Application.Workspaces.Queries.InvitationSent;
 
@@ -33,12 +34,12 @@ public class InvitationSentQueryHandler
             throw new NotFoundException("Workspace not found.");
         }
 
-        if (membership.Workspace.Status == "archived")
+        if (membership.Workspace.Status == WorkspaceStatuses.Archived)
         {
             throw new ConflictException("Archived workspace cannot be accessed.");
         }
 
-        if (membership.Role is not "owner" and not "admin")
+        if (membership.Role is not WorkspaceMemberRoles.Owner and not WorkspaceMemberRoles.Admin)
         {
             throw new ForbiddenException("You do not have permission to view workspace invitations.");
         }

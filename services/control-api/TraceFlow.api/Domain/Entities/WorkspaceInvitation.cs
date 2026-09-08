@@ -1,4 +1,5 @@
 using TraceFlow.Api.Domain.Common;
+using TraceFlow.Api.Domain.Constants;
 
 namespace TraceFlow.Api.Domain.Entities;
 
@@ -13,8 +14,8 @@ public class WorkspaceInvitation : Entity
     public Ulid InvitedByUserId { get; private set; }
     public User InvitedByUser { get; private set; } = null!;
 
-    public string Role { get; private set; } = "member";
-    public string Status { get; private set; } = "pending";
+    public string Role { get; private set; } = WorkspaceMemberRoles.Member;
+    public string Status { get; private set; } = WorkspaceInvitationStatuses.Pending;
     public DateTime ExpiresAt { get; private set; }
 
     private WorkspaceInvitation() {}
@@ -31,14 +32,14 @@ public class WorkspaceInvitation : Entity
         InvitedUserId = invitedUserId;
         InvitedByUserId = invitedByUserId;
         Role = role.Trim().ToLowerInvariant();
-        Status = "pending";
+        Status = WorkspaceInvitationStatuses.Pending;
         ExpiresAt = expiresAt;
         CreatedAt = DateTime.UtcNow;
         UpdatedAt = DateTime.UtcNow;
     }
     public void Accept()
     {
-        if (Status != "pending")
+        if (Status != WorkspaceInvitationStatuses.Pending)
         {
             throw new InvalidOperationException("Invitation is not pending.");
         }
@@ -46,12 +47,12 @@ public class WorkspaceInvitation : Entity
         {
             throw new InvalidOperationException("Invitation has expired.");
         }
-        Status = "accepted";
+        Status = WorkspaceInvitationStatuses.Accepted;
         UpdatedAt = DateTime.UtcNow;
     }
     public void Decline()
     {
-        if (Status != "pending")
+        if (Status != WorkspaceInvitationStatuses.Pending)
         {
             throw new InvalidOperationException("Invitation is not pending.");
         }
@@ -61,7 +62,7 @@ public class WorkspaceInvitation : Entity
             throw new InvalidOperationException("Invitation has expired.");
         }
 
-        Status = "declined";
+        Status = WorkspaceInvitationStatuses.Declined;
         UpdatedAt = DateTime.UtcNow;
     }
 }

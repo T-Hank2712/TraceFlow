@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using TraceFlow.Api.Infrastructure.Persistence;
+using TraceFlow.Api.Domain.Constants;
 
 #nullable disable
 
@@ -266,13 +267,13 @@ namespace TraceFlow.Api.Migrations
 
             modelBuilder.Entity("TraceFlow.Api.Domain.Entities.Workspace", b =>
                 {
-                    b.HasOne("TraceFlow.Api.Domain.Entities.User", "Owner")
+                    b.HasOne("TraceFlow.Api.Domain.Entities.User", WorkspaceMemberRoles.Owner)
                         .WithMany()
                         .HasForeignKey("OwnerUserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("Owner");
+                    b.Navigation(WorkspaceMemberRoles.Owner);
                 });
 
             modelBuilder.Entity("TraceFlow.Api.Domain.Entities.WorkspaceInvitation", b =>

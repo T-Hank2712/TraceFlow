@@ -1,4 +1,5 @@
 using FluentValidation;
+using TraceFlow.Api.Domain.Constants;
 
 namespace TraceFlow.Api.Application.Workspaces.Commands.InviteWorkspaceMember;
 
@@ -13,7 +14,7 @@ public class InviteWorkspaceMemberCommandValidator
 
         RuleFor(command => command.Role)
             .NotEmpty()
-            .Must(role => role is "admin" or "member")
+            .Must(role => WorkspaceMemberRoles.Assignable.Contains(role.Trim().ToLowerInvariant()))
             .WithMessage("Role must be either admin or member.");
     }
 }

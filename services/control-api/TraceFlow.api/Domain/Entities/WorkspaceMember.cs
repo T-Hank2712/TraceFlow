@@ -1,4 +1,5 @@
 using TraceFlow.Api.Domain.Common;
+using TraceFlow.Api.Domain.Constants;
 
 namespace TraceFlow.Api.Domain.Entities;
 public class WorkspaceMember : Entity
@@ -7,8 +8,8 @@ public class WorkspaceMember : Entity
     public User User { get; private set; } = null!;
     public Ulid WorkspaceId { get; private set; }
     public Workspace Workspace { get; private set; } = null!;
-    public string Role { get; private set; } = "member";
-    public string Status { get; private set; } = "active";
+    public string Role { get; private set; } = WorkspaceMemberRoles.Member;
+    public string Status { get; private set; } = WorkspaceMemberStatuses.Active;
     public DateTime JoinedAt { get; private set; }
     private WorkspaceMember() {}
     public WorkspaceMember(Ulid WorkspaceId, Ulid UserId, string Role)
@@ -17,7 +18,7 @@ public class WorkspaceMember : Entity
         this.WorkspaceId = WorkspaceId;
         this.UserId = UserId;
         this.Role = Role.Trim().ToLower();
-        Status = "active";
+        Status = WorkspaceMemberStatuses.Active;
         JoinedAt = DateTime.UtcNow;
         CreatedAt = DateTime.UtcNow;
         UpdatedAt = DateTime.UtcNow;
@@ -29,12 +30,12 @@ public class WorkspaceMember : Entity
     }
     public void Remove()
     {
-        Status = "removed";
+        Status = WorkspaceMemberStatuses.Removed;
         UpdatedAt = DateTime.UtcNow;
     }
     public void Activate()
     {
-        Status = "active";
+        Status = WorkspaceMemberStatuses.Active;
         UpdatedAt = DateTime.UtcNow;
     }
 }

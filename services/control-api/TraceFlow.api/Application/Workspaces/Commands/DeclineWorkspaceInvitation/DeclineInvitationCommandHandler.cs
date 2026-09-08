@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using TraceFlow.Api.Application.Common.Exceptions;
 using TraceFlow.Api.Infrastructure.Persistence;
+using TraceFlow.Api.Domain.Constants;
 
 namespace TraceFlow.Api.Application.Workspaces.Commands.DeclineWorkspaceInvitation;
 
@@ -32,7 +33,7 @@ public class DeclineInvitationCommandHandler
             throw new NotFoundException("Invitation not found.");
         }
 
-        if (invitation.Workspace.Status == "archived")
+        if (invitation.Workspace.Status == WorkspaceStatuses.Archived)
         {
             throw new ConflictException("Archived workspace invitation cannot be declined.");
         }

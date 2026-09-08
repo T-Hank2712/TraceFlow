@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using TraceFlow.Api.Application.Common.Exceptions;
 using TraceFlow.Api.Domain.Entities;
 using TraceFlow.Api.Infrastructure.Persistence;
+using TraceFlow.Api.Domain.Constants;
 
 namespace TraceFlow.Api.Application.Workspaces.Commands.InviteWorkspaceMember;
 
@@ -33,12 +34,12 @@ public class InviteWorkspaceMemberCommandHandler
             throw new NotFoundException("Workspace not found.");
         }
 
-        if (inviterMembership.Workspace.Status == "archived")
+        if (inviterMembership.Workspace.Status == WorkspaceStatuses.Archived)
         {
             throw new ConflictException("Archived workspace cannot be modified.");
         }
 
-        if (inviterMembership.Role is not "owner" and not "admin")
+        if (inviterMembership.Role is not WorkspaceMemberRoles.Owner and not WorkspaceMemberRoles.Admin)
         {
             throw new ForbiddenException("You do not have permission to invite workspace members.");
         }
@@ -57,7 +58,7 @@ public class InviteWorkspaceMemberCommandHandler
             throw new NotFoundException("User to invite not found.");
         }
 
-        if (invitedUser.Status != "active")
+        if (invitedUser.Status != UserStatuses.Active)
         {
             throw new ConflictException("Cannot invite inactive user.");
         }
@@ -72,7 +73,7 @@ public class InviteWorkspaceMemberCommandHandler
                 member =>
                     member.WorkspaceId == request.WorkspaceId &&
                     member.UserId == invitedUser.Id &&
-                    member.Status == "active",
+                    member.Status == WorkspaceMemberStatuses.Active,
                 cancellationToken);
 
         if (alreadyMember)
@@ -85,7 +86,7 @@ public class InviteWorkspaceMemberCommandHandler
                 invitation =>
                     invitation.WorkspaceId == request.WorkspaceId &&
                     invitation.InvitedUserId == invitedUser.Id &&
-                    invitation.Status == "pending" &&
+                    invitation.Status == WorkspaceInvitationStatuses.Pending &&
                     invitation.ExpiresAt > DateTime.UtcNow,
                 cancellationToken);
 

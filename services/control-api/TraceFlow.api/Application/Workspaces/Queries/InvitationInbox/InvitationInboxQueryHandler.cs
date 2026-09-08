@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using TraceFlow.Api.Infrastructure.Persistence;
+using TraceFlow.Api.Domain.Constants;
 
 namespace TraceFlow.Api.Application.Workspaces.Queries.InvitationInbox;
 
@@ -22,7 +23,7 @@ public class InvitationInboxQueryHandler
             .AsNoTracking()
             .Where(invitation =>
                 invitation.InvitedUserId == request.UserId &&
-                invitation.Status == "pending" &&
+                invitation.Status == WorkspaceInvitationStatuses.Pending &&
                 invitation.ExpiresAt > DateTime.UtcNow)
             .OrderByDescending(invitation => invitation.CreatedAt)
             .Select(invitation => new InvitationInboxResponse(

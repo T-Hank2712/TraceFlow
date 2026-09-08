@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using TraceFlow.Api.Application.Common.Exceptions;
 using TraceFlow.Api.Domain.Entities;
 using TraceFlow.Api.Infrastructure.Persistence;
+using TraceFlow.Api.Domain.Constants;
 
 namespace TraceFlow.Api.Application.Workspaces.Commands.AcceptWorkspaceInvitation;
 
@@ -33,7 +34,7 @@ public class AcceptInvitationCommandHandler
             throw new NotFoundException("Invitation not found.");
         }
 
-        if (invitation.Workspace.Status == "archived")
+        if (invitation.Workspace.Status == WorkspaceStatuses.Archived)
         {
             throw new ConflictException("Archived workspace cannot be joined.");
         }
@@ -43,7 +44,7 @@ public class AcceptInvitationCommandHandler
                 member =>
                     member.WorkspaceId == invitation.WorkspaceId &&
                     member.UserId == request.UserId &&
-                    member.Status == "active",
+                    member.Status == WorkspaceMemberStatuses.Active,
                 cancellationToken);
 
         if (alreadyMember)
