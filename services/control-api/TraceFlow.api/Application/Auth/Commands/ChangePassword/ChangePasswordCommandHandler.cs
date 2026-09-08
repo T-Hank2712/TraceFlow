@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using TraceFlow.Api.Application.Common.Exceptions;
 using TraceFlow.Api.Application.Common.Security;
 using TraceFlow.Api.Infrastructure.Persistence;
+using TraceFlow.Api.Domain.Constants;
 
 namespace TraceFlow.Api.Application.Auth.Commands.ChangePassword;
 
@@ -27,7 +28,7 @@ public class ChangePasswordCommandHandler : IRequestHandler<ChangePasswordComman
             throw new NotFoundException("User not found.");
         }
 
-        if (user.Status != "active")
+        if (user.Status != UserStatuses.Active)
         {
             throw new UnauthorizedException(
                 "User account is not active.");

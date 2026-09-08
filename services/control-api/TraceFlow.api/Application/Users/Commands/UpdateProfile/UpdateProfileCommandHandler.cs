@@ -4,11 +4,12 @@ using TraceFlow.Api.Application.Common.Exceptions;
 using TraceFlow.Api.Infrastructure.Persistence;
 
 namespace TraceFlow.Api.Application.Users.Commands.UpdateProfile;
+using TraceFlow.Api.Domain.Constants;
 
-public class UpdateMyProfileCommandHandler : IRequestHandler<UpdateProfileCommand, UpdateProfileResponse>
+public class UpdateProfileCommandHandler : IRequestHandler<UpdateProfileCommand, UpdateProfileResponse>
 {
     private readonly AppDbContext _dbContext;
-    public UpdateMyProfileCommandHandler(AppDbContext dbContext)
+    public UpdateProfileCommandHandler(AppDbContext dbContext)
     {
         _dbContext = dbContext;
     }
@@ -22,7 +23,7 @@ public class UpdateMyProfileCommandHandler : IRequestHandler<UpdateProfileComman
         {
             throw new NotFoundException("User not found.");
         }
-        if (user.Status != "active")
+        if (user.Status != UserStatuses.Active)
         {
             throw new ForbiddenException(
                 "User account is not active.");

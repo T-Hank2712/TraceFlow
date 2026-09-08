@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using TraceFlow.Api.Application.Common.Exceptions;
 using TraceFlow.Api.Infrastructure.Persistence;
+using TraceFlow.Api.Domain.Constants;
 
 namespace TraceFlow.Api.Application.Workspaces.Commands.ArchiveWorkspace;
 
@@ -32,13 +33,13 @@ public class ArchiveWorkspaceCommandHandler
             throw new NotFoundException("Workspace not found.");
         }
 
-        if (membership.Role != "owner")
+        if (membership.Role != WorkspaceMemberRoles.Owner)
         {
             throw new ForbiddenException(
                 "Only workspace owner can archive this workspace.");
         }
 
-        if (membership.Workspace.Status == "archived")
+        if (membership.Workspace.Status == WorkspaceStatuses.Archived)
         {
             throw new ConflictException("Archived workspace cannot be updated.");
         }

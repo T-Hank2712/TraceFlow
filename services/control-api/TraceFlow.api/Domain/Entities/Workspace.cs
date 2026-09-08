@@ -1,4 +1,5 @@
 using TraceFlow.Api.Domain.Common;
+using TraceFlow.Api.Domain.Constants;
 
 namespace TraceFlow.Api.Domain.Entities;
 
@@ -9,7 +10,7 @@ public class Workspace : Entity
     public User Owner { get; private set; } = null!;
     public string Slug { get; private set; } = string.Empty;
     public string? Description { get; private set;} = string.Empty;
-    public string Status { get; private set; } = "active";
+    public string Status { get; private set; } = WorkspaceStatuses.Active;
     public ICollection<WorkspaceMember> Members = new List<WorkspaceMember>();
     private Workspace() {}
     public Workspace(Ulid OwnerUserId, string Name, string Slug, string? Description)
@@ -21,7 +22,7 @@ public class Workspace : Entity
         this.Description = string.IsNullOrWhiteSpace(Description)
             ? null
             : Description.Trim();
-        Status = "active";
+        Status = WorkspaceStatuses.Active;
         CreatedAt = DateTime.UtcNow;
         UpdatedAt = DateTime.UtcNow;
     }
@@ -45,13 +46,13 @@ public class Workspace : Entity
     }
     public void Archive()
     {
-        Status = "archived";
+        Status = WorkspaceStatuses.Active;
         UpdatedAt = DateTime.UtcNow;
     }
 
     public void Activate()
     {
-        Status = "active";
+        Status = WorkspaceStatuses.Archived;
         UpdatedAt = DateTime.UtcNow;
     }
 }

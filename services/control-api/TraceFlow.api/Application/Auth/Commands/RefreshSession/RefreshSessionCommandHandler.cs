@@ -4,6 +4,7 @@ using TraceFlow.Api.Application.Common.Security;
 using TraceFlow.Api.Domain.Entities;
 using TraceFlow.Api.Infrastructure.Persistence;
 using TraceFlow.Api.Application.Common.Exceptions;
+using TraceFlow.Api.Domain.Constants;
 
 namespace TraceFlow.Api.Application.Auth.Commands.RefreshSession;
 
@@ -42,7 +43,7 @@ public class RefreshSessionCommandHandler : IRequestHandler<RefreshSessionComman
                 "Refresh token is no longer active.");
         }
 
-        if (existingRefreshToken.User.Status != "active")
+        if (existingRefreshToken.User.Status != UserStatuses.Active)
         {
             throw new UnauthorizedException(
                 "User account is not active.");

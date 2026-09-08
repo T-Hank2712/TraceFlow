@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using TraceFlow.Api.Application.Auth.Queries.GetCurrentUser;
 using TraceFlow.Api.Application.Auth.Commands.RefreshSession;
 using TraceFlow.Api.Application.Auth.Commands.ChangePassword;
-using TraceFlow.Api.Domain.Dtos;
+using TraceFlow.Api.Domain.Dtos.Auth;
 using TraceFlow.Api.Application.Auth.Commands.Logout;
 
 namespace TraceFlow.Api.Controllers;

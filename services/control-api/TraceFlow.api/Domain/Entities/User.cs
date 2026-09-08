@@ -1,4 +1,5 @@
 using TraceFlow.Api.Domain.Common;
+using TraceFlow.Api.Domain.Constants;
 
 namespace TraceFlow.Api.Domain.Entities
 {
@@ -10,8 +11,8 @@ namespace TraceFlow.Api.Domain.Entities
         public string FirstName { get; private set; } = string.Empty;
         public string LastName { get; private set; } = string.Empty;
         public string PasswordHash { get; private set; } = string.Empty;
-        public string Role { get; private set; } = "user";
-        public string Status { get; private set; } = "active";
+        public string Role { get; private set; } = UserRoles.User;
+        public string Status { get; private set; } = UserStatuses.Active;
 
         public ICollection<RefreshToken> RefreshTokens { get; private set; }
         = new List<RefreshToken>();

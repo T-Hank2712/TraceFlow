@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using TraceFlow.Api.Domain.Entities;
 using TraceFlow.Api.Infrastructure.Persistence;
 using TraceFlow.Api.Application.Common.Exceptions;
+using TraceFlow.Api.Domain.Constants;
 
 namespace TraceFlow.Api.Application.Workspaces.Commands.CreateWorkspace;
 
@@ -27,7 +28,7 @@ public class CreateWorkspaceCommandHandler
                 workspace =>
                     workspace.OwnerUserId == request.UserId &&
                     workspace.Slug == normalizedSlug &&
-                    workspace.Status == "active",
+                    workspace.Status == WorkspaceStatuses.Active,
                 cancellationToken);
 
         if (slugExists)
@@ -47,7 +48,7 @@ public class CreateWorkspaceCommandHandler
         var ownerMember = new WorkspaceMember(
             workspace.Id,
             request.UserId,
-            "owner");
+            WorkspaceMemberRoles.Owner);
 
         _dbContext.WorkspaceMembers.Add(ownerMember);
 

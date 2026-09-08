@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using TraceFlow.Api.Infrastructure.Persistence;
+using TraceFlow.Api.Domain.Constants;
 
 namespace TraceFlow.Api.Application.Workspaces.Queries.GetWorkspaces;
 
@@ -20,7 +21,7 @@ public class GetMyWorkspacesQueryHandler
     {
         return await _dbContext.WorkspaceMembers
             .AsNoTracking()
-            .Where(member => member.UserId == request.UserId && member.Workspace.Status == "active")
+            .Where(member => member.UserId == request.UserId && member.Workspace.Status == WorkspaceStatuses.Active)
             .Include(member => member.Workspace)
             .OrderByDescending(member => member.Workspace.CreatedAt)
             .Select(member => new WorkspaceSummaryResponse(
