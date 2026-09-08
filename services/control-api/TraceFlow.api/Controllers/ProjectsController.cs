@@ -6,6 +6,7 @@ using TraceFlow.Api.Domain.Common.Extensions;
 using TraceFlow.Api.Domain.Dtos.Projects;
 using TraceFlow.Api.Application.Projects.Queries.ListProjects;
 using TraceFlow.Api.Application.Projects.Queries.GetProjectById;
+using TraceFlow.Api.Application.Projects.Commands.UpdateProject;
 
 namespace TraceFlow.Api.Controllers;
 
@@ -83,6 +84,32 @@ public class ProjectsController : ControllerBase
                 workspaceId,
                 projectId,
                 userId.Value),
+            cancellationToken);
+
+        return Ok(result);
+    }
+    [HttpPatch("{projectId}")]
+    public async Task<IActionResult> UpdateProject(
+        Ulid workspaceId,
+        Ulid projectId,
+        UpdateProjectRequest request,
+        CancellationToken cancellationToken)
+    {
+        var userId = User.GetUserId();
+
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var result = await _sender.Send(
+            new UpdateProjectCommand(
+                workspaceId,
+                projectId,
+                userId.Value,
+                request.Name,
+                request.Slug,
+                request.Description),
             cancellationToken);
 
         return Ok(result);

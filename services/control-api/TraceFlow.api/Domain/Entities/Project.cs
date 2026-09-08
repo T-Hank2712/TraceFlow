@@ -35,4 +35,25 @@ public class Project : Entity
         CreatedAt = DateTime.UtcNow;
         UpdatedAt = DateTime.UtcNow;
     }
+    public void UpdateProject(string? Name, string? Slug, string? Description)
+    {
+        if (!string.IsNullOrWhiteSpace(Name))
+        {
+            this.Name = Name.Trim();
+        }
+
+        if (!string.IsNullOrWhiteSpace(Slug))
+        {
+            this.Slug = Slug.Trim().ToLowerInvariant();
+        }
+
+        if (Description is not null)
+        {
+            this.Description = string.IsNullOrWhiteSpace(Description)
+                ? null
+                : Description.Trim();
+        }
+
+        UpdatedAt = DateTime.UtcNow;
+    }
 }
