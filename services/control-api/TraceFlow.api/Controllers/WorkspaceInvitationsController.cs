@@ -6,6 +6,8 @@ using TraceFlow.Api.Application.Workspaces.Commands.InviteWorkspaceMember;
 using TraceFlow.Api.Domain.Dtos.Workspaces;
 using TraceFlow.Api.Application.Workspaces.Queries.InvitationSent;
 using TraceFlow.Api.Application.Workspaces.Queries.InvitationInbox;
+using TraceFlow.Api.Application.Workspaces.Commands.AcceptWorkspaceInvitation;
+using TraceFlow.Api.Application.Workspaces.Commands.DeclineWorkspaceInvitation;
 
 namespace TraceFlow.Api.Controllers;
 
@@ -77,6 +79,46 @@ public class WorkspaceInvitationsController : ControllerBase
         var result = await _sender.Send(
             new InvitationSentQuery(
                 workspaceId,
+                userId.Value),
+            cancellationToken);
+
+        return Ok(result);
+    }
+    [HttpPost("{invitationId}/accept")]
+    public async Task<IActionResult> AcceptWorkspaceInvitation(
+        Ulid invitationId,
+        CancellationToken cancellationToken)
+    {
+        var userId = User.GetUserId();
+
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var result = await _sender.Send(
+            new AcceptInvitationCommand(
+                invitationId,
+                userId.Value),
+            cancellationToken);
+
+        return Ok(result);
+    }
+    [HttpPost("{invitationId}/decline")]
+    public async Task<IActionResult> DeclineInvitation(
+        Ulid invitationId,
+        CancellationToken cancellationToken)
+    {
+        var userId = User.GetUserId();
+
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var result = await _sender.Send(
+            new DeclineInvitationCommand(
+                invitationId,
                 userId.Value),
             cancellationToken);
 

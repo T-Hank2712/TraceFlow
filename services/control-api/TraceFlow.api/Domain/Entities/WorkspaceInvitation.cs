@@ -36,4 +36,32 @@ public class WorkspaceInvitation : Entity
         CreatedAt = DateTime.UtcNow;
         UpdatedAt = DateTime.UtcNow;
     }
+    public void Accept()
+    {
+        if (Status != "pending")
+        {
+            throw new InvalidOperationException("Invitation is not pending.");
+        }
+        if (ExpiresAt <= DateTime.UtcNow)
+        {
+            throw new InvalidOperationException("Invitation has expired.");
+        }
+        Status = "accepted";
+        UpdatedAt = DateTime.UtcNow;
+    }
+    public void Decline()
+    {
+        if (Status != "pending")
+        {
+            throw new InvalidOperationException("Invitation is not pending.");
+        }
+
+        if (ExpiresAt <= DateTime.UtcNow)
+        {
+            throw new InvalidOperationException("Invitation has expired.");
+        }
+
+        Status = "declined";
+        UpdatedAt = DateTime.UtcNow;
+    }
 }
