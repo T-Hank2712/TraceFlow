@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using TraceFlow.Api.Application.Common.Exceptions;
 using TraceFlow.Api.Infrastructure.Persistence;
 using TraceFlow.Api.Domain.Constants;
+using TraceFlow.Api.Domain.Entities;
 
 namespace TraceFlow.Api.Application.Workspaces.Commands.ChangeMemberRole;
 
@@ -86,6 +87,45 @@ public class ChangeMemberRoleCommandHandler
         }
 
         targetMember.ChangeRole(newRole);
+
+        if (newRole == WorkspaceMemberRoles.Admin)
+        {
+            var activeProjects = await _dbContext.Projects
+                .Where(project =>
+                    project.WorkspaceId == request.WorkspaceId &&
+                    project.Status == ResourceStatuses.Active)
+                .ToListAsync(cancellationToken);
+
+            var activeProjectIds = activeProjects
+                .Select(project => project.Id)
+                .ToList();
+
+            var existingProjectMembers = await _dbContext.ProjectMembers
+                .Where(member =>
+                    member.UserId == targetMember.UserId &&
+                    activeProjectIds.Contains(member.ProjectId))
+                .ToListAsync(cancellationToken);
+
+            foreach (var existingProjectMember in existingProjectMembers)
+            {
+                existingProjectMember.ChangeRole(ProjectMemberRoles.Manager);
+                existingProjectMember.Activate();
+            }
+
+            var existingProjectIds = existingProjectMembers
+                .Select(member => member.ProjectId)
+                .ToHashSet();
+
+            var missingProjectMembers = activeProjects
+                .Where(project => !existingProjectIds.Contains(project.Id))
+                .Select(project => new ProjectMember(
+                    project.Id,
+                    targetMember.UserId,
+                    ProjectMemberRoles.Manager))
+                .ToList();
+
+            _dbContext.ProjectMembers.AddRange(missingProjectMembers);
+        }
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 

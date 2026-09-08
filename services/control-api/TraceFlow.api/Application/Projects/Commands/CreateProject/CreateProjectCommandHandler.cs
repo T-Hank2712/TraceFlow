@@ -67,13 +67,27 @@ public class CreateProjectCommandHandler
             request.Slug,
             request.Description);
 
-        var projectMember = new ProjectMember(
-            project.Id,
-            request.UserId,
-            ProjectMemberRoles.Manager);
-
         _dbContext.Projects.Add(project);
-        _dbContext.ProjectMembers.Add(projectMember);
+
+        var managerUserIds = await _dbContext.WorkspaceMembers
+            .AsNoTracking()
+            .Where(member =>
+                member.WorkspaceId == request.WorkspaceId &&
+                member.Status == MembershipStatuses.Active &&
+                (member.Role == WorkspaceMemberRoles.Owner ||
+                member.Role == WorkspaceMemberRoles.Admin))
+            .Select(member => member.UserId)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        var projectMembers = managerUserIds
+            .Select(userId => new ProjectMember(
+                project.Id,
+                userId,
+                ProjectMemberRoles.Manager))
+            .ToList();
+
+        _dbContext.ProjectMembers.AddRange(projectMembers);
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 

@@ -31,4 +31,15 @@ public class ProjectMember : Entity
         CreatedAt = DateTime.UtcNow;
         UpdatedAt = DateTime.UtcNow;
     }
+    public void ChangeRole(string role)
+    {
+        Role = role.Trim().ToLowerInvariant();
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void Activate()
+    {
+        Status = MembershipStatuses.Active;
+        UpdatedAt = DateTime.UtcNow;
+    }
 }
