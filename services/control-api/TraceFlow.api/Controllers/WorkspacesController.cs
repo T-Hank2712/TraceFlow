@@ -9,7 +9,6 @@ using TraceFlow.Api.Application.Workspaces.Queries.GetWorkspaces;
 using TraceFlow.Api.Application.Workspaces.Queries.GetWorkspaceById;
 using TraceFlow.Api.Application.Workspaces.Commands.UpdateWorkspace;
 using TraceFlow.Api.Application.Workspaces.Commands.ArchiveWorkspace;
-using TraceFlow.Api.Application.Workspaces.Commands.InviteWorkspaceMember;
 
 namespace TraceFlow.Api.Controllers;
 
@@ -118,29 +117,6 @@ public class WorkspacesController : ControllerBase
             new ArchiveWorkspaceCommand(
                 workspaceId,
                 userId.Value),
-            cancellationToken);
-
-        return Ok(result);
-    }
-    [HttpPost("{workspaceId}/invitations")]
-    public async Task<IActionResult> InviteWorkspaceMember(
-        Ulid workspaceId,
-        InviteWorkspaceMemberRequest request,
-        CancellationToken cancellationToken)
-    {
-        var userId = User.GetUserId();
-
-        if (userId is null)
-        {
-            return Unauthorized();
-        }
-
-        var result = await _sender.Send(
-            new InviteWorkspaceMemberCommand(
-                workspaceId,
-                userId.Value,
-                request.Identifier,
-                request.Role),
             cancellationToken);
 
         return Ok(result);
