@@ -27,7 +27,7 @@ public class CreateProjectCommandHandler
                 member =>
                     member.WorkspaceId == request.WorkspaceId &&
                     member.UserId == request.UserId &&
-                    member.Status == WorkspaceMemberStatuses.Active,
+                    member.Status == MembershipStatuses.Active,
                 cancellationToken);
 
         if (membership is null)
@@ -67,7 +67,13 @@ public class CreateProjectCommandHandler
             request.Slug,
             request.Description);
 
+        var projectMember = new ProjectMember(
+            project.Id,
+            request.UserId,
+            ProjectMemberRoles.Manager);
+
         _dbContext.Projects.Add(project);
+        _dbContext.ProjectMembers.Add(projectMember);
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 

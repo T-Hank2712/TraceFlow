@@ -13,6 +13,8 @@ public class Project : Entity
     public string Slug { get; private set; } = string.Empty;
     public string? Description { get; private set; }
     public string Status { get; private set; } = ResourceStatuses.Active;
+    public ICollection<ProjectMember> Members { get; private set; }
+    = new List<ProjectMember>();
     private Project() {}
         public Project(
         Ulid WorkspaceId,

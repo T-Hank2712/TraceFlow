@@ -9,7 +9,7 @@ public class WorkspaceMember : Entity
     public Ulid WorkspaceId { get; private set; }
     public Workspace Workspace { get; private set; } = null!;
     public string Role { get; private set; } = WorkspaceMemberRoles.Member;
-    public string Status { get; private set; } = WorkspaceMemberStatuses.Active;
+    public string Status { get; private set; } = MembershipStatuses.Active;
     public DateTime JoinedAt { get; private set; }
     private WorkspaceMember() {}
     public WorkspaceMember(Ulid WorkspaceId, Ulid UserId, string Role)
@@ -18,7 +18,7 @@ public class WorkspaceMember : Entity
         this.WorkspaceId = WorkspaceId;
         this.UserId = UserId;
         this.Role = Role.Trim().ToLower();
-        Status = WorkspaceMemberStatuses.Active;
+        Status = MembershipStatuses.Active;
         JoinedAt = DateTime.UtcNow;
         CreatedAt = DateTime.UtcNow;
         UpdatedAt = DateTime.UtcNow;
@@ -30,12 +30,12 @@ public class WorkspaceMember : Entity
     }
     public void Remove()
     {
-        Status = WorkspaceMemberStatuses.Removed;
+        Status = MembershipStatuses.Removed;
         UpdatedAt = DateTime.UtcNow;
     }
     public void Activate()
     {
-        Status = WorkspaceMemberStatuses.Active;
+        Status = MembershipStatuses.Active;
         UpdatedAt = DateTime.UtcNow;
     }
 }

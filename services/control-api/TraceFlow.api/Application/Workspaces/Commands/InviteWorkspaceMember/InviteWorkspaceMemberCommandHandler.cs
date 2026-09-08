@@ -73,7 +73,7 @@ public class InviteWorkspaceMemberCommandHandler
                 member =>
                     member.WorkspaceId == request.WorkspaceId &&
                     member.UserId == invitedUser.Id &&
-                    member.Status == WorkspaceMemberStatuses.Active,
+                    member.Status == MembershipStatuses.Active,
                 cancellationToken);
 
         if (alreadyMember)

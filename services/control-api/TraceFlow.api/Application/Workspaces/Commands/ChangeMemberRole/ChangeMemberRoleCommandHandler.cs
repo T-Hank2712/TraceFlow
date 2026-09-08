@@ -26,7 +26,7 @@ public class ChangeMemberRoleCommandHandler
                 member =>
                     member.WorkspaceId == request.WorkspaceId &&
                     member.UserId == request.ActorUserId &&
-                    member.Status == WorkspaceMemberStatuses.Active,
+                    member.Status == MembershipStatuses.Active,
                 cancellationToken);
 
         if (actorMembership is null)
@@ -49,7 +49,7 @@ public class ChangeMemberRoleCommandHandler
                 member =>
                     member.Id == request.MemberId &&
                     member.WorkspaceId == request.WorkspaceId &&
-                    member.Status == WorkspaceMemberStatuses.Active,
+                    member.Status == MembershipStatuses.Active,
                 cancellationToken);
 
         if (targetMember is null)
@@ -66,7 +66,7 @@ public class ChangeMemberRoleCommandHandler
                     member =>
                         member.WorkspaceId == request.WorkspaceId &&
                         member.Role == WorkspaceMemberRoles.Owner &&
-                        member.Status == WorkspaceMemberStatuses.Active,
+                        member.Status == MembershipStatuses.Active,
                     cancellationToken);
 
             if (ownerCount <= 1)

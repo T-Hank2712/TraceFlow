@@ -18,6 +18,8 @@ namespace TraceFlow.Api.Domain.Entities
         = new List<RefreshToken>();
         public ICollection<WorkspaceMember> WorkspaceMemberships { get; set; }
             = new List<WorkspaceMember>();
+        public ICollection<ProjectMember> ProjectMemberships { get; private set; }
+        = new List<ProjectMember>();
         private User() {}
         public User(string Email, string UserName, string FirstName, string LastName, string PasswordHash)
         {

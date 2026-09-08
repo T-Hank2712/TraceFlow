@@ -26,7 +26,7 @@ public class ListMembersQueryHandler
                 member =>
                     member.WorkspaceId == request.WorkspaceId &&
                     member.UserId == request.UserId &&
-                    member.Status == WorkspaceMemberStatuses.Active,
+                    member.Status == MembershipStatuses.Active,
                 cancellationToken);
 
         if (!hasAccess)
@@ -38,7 +38,7 @@ public class ListMembersQueryHandler
             .AsNoTracking()
             .Where(member =>
                 member.WorkspaceId == request.WorkspaceId &&
-                member.Status == WorkspaceMemberStatuses.Active)
+                member.Status == MembershipStatuses.Active)
             .OrderBy(member => member.Role == WorkspaceMemberRoles.Owner ? 0 :
                                member.Role == WorkspaceMemberRoles.Admin ? 1 : 2)
             .ThenBy(member => member.User.UserName)

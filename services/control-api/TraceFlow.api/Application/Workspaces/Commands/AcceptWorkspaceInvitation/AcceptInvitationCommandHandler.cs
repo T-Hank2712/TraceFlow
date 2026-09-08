@@ -44,7 +44,7 @@ public class AcceptInvitationCommandHandler
                 member =>
                     member.WorkspaceId == invitation.WorkspaceId &&
                     member.UserId == request.UserId &&
-                    member.Status == WorkspaceMemberStatuses.Active,
+                    member.Status == MembershipStatuses.Active,
                 cancellationToken);
 
         if (alreadyMember)
