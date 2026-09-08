@@ -24,7 +24,7 @@ public class WorkspaceMember : Entity
     }
     public void ChangeRole(string role)
     {
-        Role = role.Trim().ToLower();
+        Role = role.Trim().ToLowerInvariant();
         UpdatedAt = DateTime.UtcNow;
     }
     public void Remove()

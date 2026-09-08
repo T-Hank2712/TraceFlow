@@ -10,6 +10,7 @@ using TraceFlow.Api.Application.Workspaces.Queries.GetWorkspaceById;
 using TraceFlow.Api.Application.Workspaces.Commands.UpdateWorkspace;
 using TraceFlow.Api.Application.Workspaces.Commands.ArchiveWorkspace;
 using TraceFlow.Api.Application.Workspaces.Queries.ListMembers;
+using TraceFlow.Api.Application.Workspaces.Commands.ChangeMemberRole;
 
 namespace TraceFlow.Api.Controllers;
 
@@ -138,6 +139,30 @@ public class WorkspacesController : ControllerBase
             new ListMembersQuery(
                 workspaceId,
                 userId.Value),
+            cancellationToken);
+
+        return Ok(result);
+    }
+    [HttpPatch("{workspaceId}/members/{memberId}/role")]
+    public async Task<IActionResult> ChangeMemberRole(
+        Ulid workspaceId,
+        Ulid memberId,
+        ChangeMemberRoleRequest request,
+        CancellationToken cancellationToken)
+    {
+        var userId = User.GetUserId();
+
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var result = await _sender.Send(
+            new ChangeMemberRoleCommand(
+                workspaceId,
+                memberId,
+                userId.Value,
+                request.Role),
             cancellationToken);
 
         return Ok(result);
