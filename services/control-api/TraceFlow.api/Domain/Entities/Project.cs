@@ -2,24 +2,32 @@ using TraceFlow.Api.Domain.Common;
 using TraceFlow.Api.Domain.Constants;
 
 namespace TraceFlow.Api.Domain.Entities;
-
-public class Workspace : Entity
+public class Project : Entity
 {
+    public Ulid WorkspaceId { get; private set; }
+    public Workspace Workspace { get; private set; } = null!;
+
+    public Ulid CreatedByUserId { get; private set; }
+    public User CreatedByUser { get; private set; } = null!;
     public string Name { get; private set; } = string.Empty;
-    public Ulid OwnerUserId { get; private set; }
-    public User Owner { get; private set; } = null!;
     public string Slug { get; private set; } = string.Empty;
-    public string? Description { get; private set;} = string.Empty;
+    public string? Description { get; private set; }
     public string Status { get; private set; } = ResourceStatuses.Active;
-    public ICollection<WorkspaceMember> Members = new List<WorkspaceMember>();
-    public ICollection<Project> Projects { get; private set; } = new List<Project>();
-    private Workspace() {}
-    public Workspace(Ulid OwnerUserId, string Name, string Slug, string? Description)
+    public ICollection<ProjectMember> Members { get; private set; }
+    = new List<ProjectMember>();
+    private Project() {}
+        public Project(
+        Ulid WorkspaceId,
+        Ulid CreatedByUserId,
+        string Name,
+        string Slug,
+        string? Description)
     {
-        this.Id = Ulid.NewUlid();
-        this.OwnerUserId = OwnerUserId;
+        Id = Ulid.NewUlid();
+        this.WorkspaceId = WorkspaceId;
+        this.CreatedByUserId = CreatedByUserId;
         this.Name = Name.Trim();
-        this.Slug = Slug.Trim().ToLower();
+        this.Slug = Slug.Trim().ToLowerInvariant();
         this.Description = string.IsNullOrWhiteSpace(Description)
             ? null
             : Description.Trim();
@@ -27,33 +35,36 @@ public class Workspace : Entity
         CreatedAt = DateTime.UtcNow;
         UpdatedAt = DateTime.UtcNow;
     }
-    public void UpdateWorkspace(string? Name, string? Slug, string? Description)
+    public void UpdateProject(string? Name, string? Slug, string? Description)
     {
         if (!string.IsNullOrWhiteSpace(Name))
         {
             this.Name = Name.Trim();
         }
+
         if (!string.IsNullOrWhiteSpace(Slug))
         {
             this.Slug = Slug.Trim().ToLowerInvariant();
         }
+
         if (Description is not null)
         {
             this.Description = string.IsNullOrWhiteSpace(Description)
                 ? null
                 : Description.Trim();
         }
+
         UpdatedAt = DateTime.UtcNow;
     }
     public void Archive()
     {
-        Status = ResourceStatuses.Active;
+        Status = ResourceStatuses.Archived;
         UpdatedAt = DateTime.UtcNow;
     }
 
     public void Activate()
     {
-        Status = ResourceStatuses.Archived;
+        Status = ResourceStatuses.Active;
         UpdatedAt = DateTime.UtcNow;
     }
 }

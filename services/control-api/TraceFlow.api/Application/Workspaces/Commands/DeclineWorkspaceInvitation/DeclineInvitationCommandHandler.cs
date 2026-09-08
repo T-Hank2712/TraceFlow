@@ -33,7 +33,7 @@ public class DeclineInvitationCommandHandler
             throw new NotFoundException("Invitation not found.");
         }
 
-        if (invitation.Workspace.Status == WorkspaceStatuses.Archived)
+        if (invitation.Workspace.Status == ResourceStatuses.Archived)
         {
             throw new ConflictException("Archived workspace invitation cannot be declined.");
         }

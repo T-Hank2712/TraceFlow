@@ -34,7 +34,7 @@ public class InvitationSentQueryHandler
             throw new NotFoundException("Workspace not found.");
         }
 
-        if (membership.Workspace.Status == WorkspaceStatuses.Archived)
+        if (membership.Workspace.Status == ResourceStatuses.Archived)
         {
             throw new ConflictException("Archived workspace cannot be accessed.");
         }

@@ -34,7 +34,7 @@ public class AcceptInvitationCommandHandler
             throw new NotFoundException("Invitation not found.");
         }
 
-        if (invitation.Workspace.Status == WorkspaceStatuses.Archived)
+        if (invitation.Workspace.Status == ResourceStatuses.Archived)
         {
             throw new ConflictException("Archived workspace cannot be joined.");
         }
@@ -44,7 +44,7 @@ public class AcceptInvitationCommandHandler
                 member =>
                     member.WorkspaceId == invitation.WorkspaceId &&
                     member.UserId == request.UserId &&
-                    member.Status == WorkspaceMemberStatuses.Active,
+                    member.Status == MembershipStatuses.Active,
                 cancellationToken);
 
         if (alreadyMember)

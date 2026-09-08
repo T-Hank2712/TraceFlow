@@ -39,7 +39,7 @@ public class UpdateWorkspaceCommandHandler
                 "You do not have permission to update this workspace.");
         }
 
-        if (membership.Workspace.Status == WorkspaceStatuses.Archived)
+        if (membership.Workspace.Status == ResourceStatuses.Archived)
         {
             throw new ConflictException("Archived workspace cannot be updated.");
         }
@@ -53,7 +53,7 @@ public class UpdateWorkspaceCommandHandler
                     workspace =>
                         workspace.OwnerUserId == membership.Workspace.OwnerUserId &&
                         workspace.Slug == normalizedSlug &&
-                        workspace.Status == WorkspaceStatuses.Active &&
+                        workspace.Status == ResourceStatuses.Active &&
                         workspace.Id != request.WorkspaceId,
                     cancellationToken);
 
