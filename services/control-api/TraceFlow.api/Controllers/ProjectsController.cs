@@ -5,6 +5,7 @@ using TraceFlow.Api.Application.Projects.Commands.CreateProject;
 using TraceFlow.Api.Domain.Common.Extensions;
 using TraceFlow.Api.Domain.Dtos.Projects;
 using TraceFlow.Api.Application.Projects.Queries.ListProjects;
+using TraceFlow.Api.Application.Projects.Queries.GetProjectById;
 
 namespace TraceFlow.Api.Controllers;
 
@@ -59,6 +60,28 @@ public class ProjectsController : ControllerBase
         var result = await _sender.Send(
             new ListProjectsQuery(
                 workspaceId,
+                userId.Value),
+            cancellationToken);
+
+        return Ok(result);
+    }
+    [HttpGet("{projectId}")]
+    public async Task<IActionResult> GetProjectById(
+        Ulid workspaceId,
+        Ulid projectId,
+        CancellationToken cancellationToken)
+    {
+        var userId = User.GetUserId();
+
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var result = await _sender.Send(
+            new GetProjectByIdQuery(
+                workspaceId,
+                projectId,
                 userId.Value),
             cancellationToken);
 
