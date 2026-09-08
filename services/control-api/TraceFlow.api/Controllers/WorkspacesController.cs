@@ -46,7 +46,7 @@ public class WorkspacesController : ControllerBase
 
         return CreatedAtAction(
             nameof(GetWorkspaceById),
-            new { id = result.Id },
+            new { workspaceId = result.Id },
             result);
     }
     [HttpGet]
