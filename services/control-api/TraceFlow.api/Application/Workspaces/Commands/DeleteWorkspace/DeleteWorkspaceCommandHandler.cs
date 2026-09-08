@@ -41,7 +41,7 @@ public class DeleteWorkspaceCommandHandler
 
         var workspace = membership.Workspace;
 
-        if (workspace.Status == WorkspaceStatuses.Archived)
+        if (workspace.Status == ResourceStatuses.Archived)
         {
             throw new ConflictException("Workspace is already archived.");
         }

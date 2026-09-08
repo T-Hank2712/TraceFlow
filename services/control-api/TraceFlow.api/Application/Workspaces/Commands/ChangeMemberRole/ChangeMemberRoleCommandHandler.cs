@@ -34,7 +34,7 @@ public class ChangeMemberRoleCommandHandler
             throw new NotFoundException("Workspace not found.");
         }
 
-        if (actorMembership.Workspace.Status == WorkspaceStatuses.Archived)
+        if (actorMembership.Workspace.Status == ResourceStatuses.Archived)
         {
             throw new ConflictException("Archived workspace cannot be modified.");
         }

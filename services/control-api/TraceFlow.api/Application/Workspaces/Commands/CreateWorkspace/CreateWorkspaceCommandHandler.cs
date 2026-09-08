@@ -28,7 +28,7 @@ public class CreateWorkspaceCommandHandler
                 workspace =>
                     workspace.OwnerUserId == request.UserId &&
                     workspace.Slug == normalizedSlug &&
-                    workspace.Status == WorkspaceStatuses.Active,
+                    workspace.Status == ResourceStatuses.Active,
                 cancellationToken);
 
         if (slugExists)

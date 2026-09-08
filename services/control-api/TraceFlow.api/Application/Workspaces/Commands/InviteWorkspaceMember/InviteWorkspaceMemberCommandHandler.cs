@@ -34,7 +34,7 @@ public class InviteWorkspaceMemberCommandHandler
             throw new NotFoundException("Workspace not found.");
         }
 
-        if (inviterMembership.Workspace.Status == WorkspaceStatuses.Archived)
+        if (inviterMembership.Workspace.Status == ResourceStatuses.Archived)
         {
             throw new ConflictException("Archived workspace cannot be modified.");
         }

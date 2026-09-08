@@ -10,7 +10,7 @@ public class Workspace : Entity
     public User Owner { get; private set; } = null!;
     public string Slug { get; private set; } = string.Empty;
     public string? Description { get; private set;} = string.Empty;
-    public string Status { get; private set; } = WorkspaceStatuses.Active;
+    public string Status { get; private set; } = ResourceStatuses.Active;
     public ICollection<WorkspaceMember> Members = new List<WorkspaceMember>();
     private Workspace() {}
     public Workspace(Ulid OwnerUserId, string Name, string Slug, string? Description)
@@ -22,7 +22,7 @@ public class Workspace : Entity
         this.Description = string.IsNullOrWhiteSpace(Description)
             ? null
             : Description.Trim();
-        Status = WorkspaceStatuses.Active;
+        Status = ResourceStatuses.Active;
         CreatedAt = DateTime.UtcNow;
         UpdatedAt = DateTime.UtcNow;
     }
@@ -46,13 +46,13 @@ public class Workspace : Entity
     }
     public void Archive()
     {
-        Status = WorkspaceStatuses.Active;
+        Status = ResourceStatuses.Active;
         UpdatedAt = DateTime.UtcNow;
     }
 
     public void Activate()
     {
-        Status = WorkspaceStatuses.Archived;
+        Status = ResourceStatuses.Archived;
         UpdatedAt = DateTime.UtcNow;
     }
 }
