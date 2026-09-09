@@ -15,6 +15,8 @@ public class Project : Entity
     public string Status { get; private set; } = ResourceStatuses.Active;
     public ICollection<ProjectMember> Members { get; private set; }
     = new List<ProjectMember>();
+    public ICollection<TraceApplication> TraceApplications { get; private set; }
+    = new List<TraceApplication>();
     private Project() {}
         public Project(
         Ulid WorkspaceId,
