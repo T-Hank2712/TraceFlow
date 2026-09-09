@@ -8,6 +8,7 @@ using TraceFlow.Api.Application.Projects.Queries.ProjectInvitationInbox;
 using TraceFlow.Api.Application.Projects.Queries.ProjectInvitationSent;
 using TraceFlow.Api.Application.Projects.Commands.AcceptProjectInvitation;
 using TraceFlow.Api.Application.Projects.Commands.DeclineProjectInvitation;
+using TraceFlow.Api.Application.Projects.Commands.CancelProjectInvitation;
 
 namespace TraceFlow.Api.Controllers;
 
@@ -119,6 +120,30 @@ public class ProjectInvitationsController : ControllerBase
 
         var result = await _sender.Send(
             new DeclineProjectInvitationCommand(
+                invitationId,
+                userId.Value),
+            cancellationToken);
+
+        return Ok(result);
+    }
+    [HttpDelete("api/workspaces/{workspaceId}/projects/{projectId}/invitations/{invitationId}")]
+    public async Task<IActionResult> CancelProjectInvitation(
+        Ulid workspaceId,
+        Ulid projectId,
+        Ulid invitationId,
+        CancellationToken cancellationToken)
+    {
+        var userId = User.GetUserId();
+
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var result = await _sender.Send(
+            new CancelProjectInvitationCommand(
+                workspaceId,
+                projectId,
                 invitationId,
                 userId.Value),
             cancellationToken);

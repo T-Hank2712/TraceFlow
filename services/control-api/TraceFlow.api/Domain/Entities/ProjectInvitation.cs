@@ -74,4 +74,14 @@ public class ProjectInvitation : Entity
         Status = InvitationStatuses.Declined;
         UpdatedAt = DateTime.UtcNow;
     }
+    public void Cancel()
+    {
+        if (Status != InvitationStatuses.Pending)
+        {
+            throw new InvalidOperationException("Only pending invitation can be cancelled.");
+        }
+
+        Status = InvitationStatuses.Cancelled;
+        UpdatedAt = DateTime.UtcNow;
+    }
 }
