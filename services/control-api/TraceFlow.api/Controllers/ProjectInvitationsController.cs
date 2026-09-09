@@ -6,6 +6,7 @@ using TraceFlow.Api.Domain.Common.Extensions;
 using TraceFlow.Api.Domain.Dtos.Projects;
 using TraceFlow.Api.Application.Projects.Queries.ProjectInvitationInbox;
 using TraceFlow.Api.Application.Projects.Queries.ProjectInvitationSent;
+using TraceFlow.Api.Application.Projects.Commands.AcceptProjectInvitation;
 
 namespace TraceFlow.Api.Controllers;
 
@@ -78,6 +79,26 @@ public class ProjectInvitationsController : ControllerBase
             new ProjectInvitationSentQuery(
                 workspaceId,
                 projectId,
+                userId.Value),
+            cancellationToken);
+
+        return Ok(result);
+    }
+    [HttpPost("api/project-invitations/{invitationId}/accept")]
+    public async Task<IActionResult> AcceptProjectInvitation(
+        Ulid invitationId,
+        CancellationToken cancellationToken)
+    {
+        var userId = User.GetUserId();
+
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var result = await _sender.Send(
+            new AcceptProjectInvitationCommand(
+                invitationId,
                 userId.Value),
             cancellationToken);
 
