@@ -37,4 +37,25 @@ public class TraceApplication : Entity
         CreatedAt = DateTime.UtcNow;
         UpdatedAt = DateTime.UtcNow;
     }
+    public void Update(string? name, string? slug, string? description)
+    {
+        if (!string.IsNullOrWhiteSpace(name))
+        {
+            Name = name.Trim();
+        }
+
+        if (!string.IsNullOrWhiteSpace(slug))
+        {
+            Slug = slug.Trim().ToLowerInvariant();
+        }
+
+        if (description is not null)
+        {
+            Description = string.IsNullOrWhiteSpace(description)
+                ? null
+                : description.Trim();
+        }
+
+        UpdatedAt = DateTime.UtcNow;
+    }
 }

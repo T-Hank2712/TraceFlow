@@ -6,6 +6,7 @@ using TraceFlow.Api.Domain.Common.Extensions;
 using TraceFlow.Api.Domain.Dtos.TraceApplications;
 using TraceFlow.Api.Application.TraceApplications.Queries.ListTraceApplications;
 using TraceFlow.Api.Application.TraceApplications.Queries.GetApplicationDetail;
+using TraceFlow.Api.Application.TraceApplications.Commands.UpdateApplication;
 
 namespace TraceFlow.Api.Controllers;
 
@@ -89,6 +90,34 @@ public class TraceApplicationsController : ControllerBase
                 projectId,
                 applicationId,
                 userId.Value),
+            cancellationToken);
+
+        return Ok(result);
+    }
+    [HttpPatch("{applicationId}")]
+    public async Task<IActionResult> UpdateApplication(
+        Ulid workspaceId,
+        Ulid projectId,
+        Ulid applicationId,
+        UpdateApplicationRequest request,
+        CancellationToken cancellationToken)
+    {
+        var userId = User.GetUserId();
+
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var result = await _sender.Send(
+            new UpdateApplicationCommand(
+                workspaceId,
+                projectId,
+                applicationId,
+                userId.Value,
+                request.Name,
+                request.Slug,
+                request.Description),
             cancellationToken);
 
         return Ok(result);
