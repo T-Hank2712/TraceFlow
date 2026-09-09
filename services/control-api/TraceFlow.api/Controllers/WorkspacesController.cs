@@ -11,6 +11,7 @@ using TraceFlow.Api.Application.Workspaces.Commands.UpdateWorkspace;
 using TraceFlow.Api.Application.Workspaces.Queries.ListMembers;
 using TraceFlow.Api.Application.Workspaces.Commands.ChangeMemberRole;
 using TraceFlow.Api.Application.Workspaces.Commands.DeleteWorkspace;
+using TraceFlow.Api.Application.Workspaces.Commands.RemoveMember;
 
 namespace TraceFlow.Api.Controllers;
 
@@ -162,6 +163,28 @@ public class WorkspacesController : ControllerBase
         var result = await _sender.Send(
             new DeleteWorkspaceCommand(
                 workspaceId,
+                userId.Value),
+            cancellationToken);
+
+        return Ok(result);
+    }
+    [HttpDelete("{workspaceId}/members/{memberId}")]
+    public async Task<IActionResult> RemoveMember(
+        Ulid workspaceId,
+        Ulid memberId,
+        CancellationToken cancellationToken)
+    {
+        var userId = User.GetUserId();
+
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var result = await _sender.Send(
+            new RemoveMemberCommand(
+                workspaceId,
+                memberId,
                 userId.Value),
             cancellationToken);
 
