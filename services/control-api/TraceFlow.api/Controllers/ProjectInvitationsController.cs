@@ -1,33 +1,32 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using TraceFlow.Api.Application.Projects.Commands.InviteProjectMember;
 using TraceFlow.Api.Domain.Common.Extensions;
-using TraceFlow.Api.Application.Workspaces.Commands.InviteWorkspaceMember;
-using TraceFlow.Api.Domain.Dtos.Workspaces;
-using TraceFlow.Api.Application.Workspaces.Queries.InvitationSent;
-using TraceFlow.Api.Application.Workspaces.Queries.InvitationInbox;
-using TraceFlow.Api.Application.Workspaces.Commands.AcceptWorkspaceInvitation;
-using TraceFlow.Api.Application.Workspaces.Commands.DeclineWorkspaceInvitation;
-using TraceFlow.Api.Application.Workspaces.Commands.CancelInvitation;
+using TraceFlow.Api.Domain.Dtos.Projects;
+using TraceFlow.Api.Application.Projects.Queries.ProjectInvitationInbox;
+using TraceFlow.Api.Application.Projects.Queries.ProjectInvitationSent;
+using TraceFlow.Api.Application.Projects.Commands.AcceptProjectInvitation;
+using TraceFlow.Api.Application.Projects.Commands.DeclineProjectInvitation;
+using TraceFlow.Api.Application.Projects.Commands.CancelProjectInvitation;
 
 namespace TraceFlow.Api.Controllers;
 
 [ApiController]
 [Authorize]
-[Route("api/workspace-invitations")]
-public class WorkspaceInvitationsController : ControllerBase
+public class ProjectInvitationsController : ControllerBase
 {
     private readonly ISender _sender;
 
-    public WorkspaceInvitationsController(ISender sender)
+    public ProjectInvitationsController(ISender sender)
     {
         _sender = sender;
     }
-
-    [HttpPost("{workspaceId}/invitations")]
-    public async Task<IActionResult> InviteWorkspaceMember(
+    [HttpPost("api/workspaces/{workspaceId}/projects/{projectId}/invitations")]
+    public async Task<IActionResult> InviteProjectMember(
         Ulid workspaceId,
-        InviteWorkspaceMemberRequest request,
+        Ulid projectId,
+        InviteProjectMemberRequest request,
         CancellationToken cancellationToken)
     {
         var userId = User.GetUserId();
@@ -38,8 +37,9 @@ public class WorkspaceInvitationsController : ControllerBase
         }
 
         var result = await _sender.Send(
-            new InviteWorkspaceMemberCommand(
+            new InviteProjectMemberCommand(
                 workspaceId,
+                projectId,
                 userId.Value,
                 request.Identifier,
                 request.Role),
@@ -47,9 +47,8 @@ public class WorkspaceInvitationsController : ControllerBase
 
         return Ok(result);
     }
-
-    [HttpGet]
-    public async Task<IActionResult> GetMyWorkspaceInvitations(
+    [HttpGet("api/project-invitations")]
+    public async Task<IActionResult> GetProjectInvitationInbox(
         CancellationToken cancellationToken)
     {
         var userId = User.GetUserId();
@@ -60,14 +59,15 @@ public class WorkspaceInvitationsController : ControllerBase
         }
 
         var result = await _sender.Send(
-            new InvitationInboxQuery(userId.Value),
+            new ProjectInvitationInboxQuery(userId.Value),
             cancellationToken);
 
         return Ok(result);
     }
-    [HttpGet("{workspaceId}/invitations")]
-    public async Task<IActionResult> GetWorkspaceSentInvitations(
+    [HttpGet("api/workspaces/{workspaceId}/projects/{projectId}/invitations")]
+    public async Task<IActionResult> GetProjectInvitationSent(
         Ulid workspaceId,
+        Ulid projectId,
         CancellationToken cancellationToken)
     {
         var userId = User.GetUserId();
@@ -78,15 +78,16 @@ public class WorkspaceInvitationsController : ControllerBase
         }
 
         var result = await _sender.Send(
-            new InvitationSentQuery(
+            new ProjectInvitationSentQuery(
                 workspaceId,
+                projectId,
                 userId.Value),
             cancellationToken);
 
         return Ok(result);
     }
-    [HttpPost("{invitationId}/accept")]
-    public async Task<IActionResult> AcceptWorkspaceInvitation(
+    [HttpPost("api/project-invitations/{invitationId}/accept")]
+    public async Task<IActionResult> AcceptProjectInvitation(
         Ulid invitationId,
         CancellationToken cancellationToken)
     {
@@ -98,15 +99,15 @@ public class WorkspaceInvitationsController : ControllerBase
         }
 
         var result = await _sender.Send(
-            new AcceptInvitationCommand(
+            new AcceptProjectInvitationCommand(
                 invitationId,
                 userId.Value),
             cancellationToken);
 
         return Ok(result);
     }
-    [HttpPost("{invitationId}/decline")]
-    public async Task<IActionResult> DeclineInvitation(
+    [HttpPost("api/project-invitations/{invitationId}/decline")]
+    public async Task<IActionResult> DeclineProjectInvitation(
         Ulid invitationId,
         CancellationToken cancellationToken)
     {
@@ -118,16 +119,17 @@ public class WorkspaceInvitationsController : ControllerBase
         }
 
         var result = await _sender.Send(
-            new DeclineInvitationCommand(
+            new DeclineProjectInvitationCommand(
                 invitationId,
                 userId.Value),
             cancellationToken);
 
         return Ok(result);
     }
-    [HttpDelete("api/workspaces/{workspaceId}/invitations/{invitationId}")]
-    public async Task<IActionResult> CancelWorkspaceInvitation(
+    [HttpDelete("api/workspaces/{workspaceId}/projects/{projectId}/invitations/{invitationId}")]
+    public async Task<IActionResult> CancelProjectInvitation(
         Ulid workspaceId,
+        Ulid projectId,
         Ulid invitationId,
         CancellationToken cancellationToken)
     {
@@ -139,8 +141,9 @@ public class WorkspaceInvitationsController : ControllerBase
         }
 
         var result = await _sender.Send(
-            new CancelInvitationCommand(
+            new CancelProjectInvitationCommand(
                 workspaceId,
+                projectId,
                 invitationId,
                 userId.Value),
             cancellationToken);

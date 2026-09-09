@@ -3,10 +3,13 @@ using TraceFlow.Api.Domain.Constants;
 
 namespace TraceFlow.Api.Domain.Entities;
 
-public class WorkspaceInvitation : Entity
+public class ProjectInvitation : Entity
 {
     public Ulid WorkspaceId { get; private set; }
     public Workspace Workspace { get; private set; } = null!;
+
+    public Ulid ProjectId { get; private set; }
+    public Project Project { get; private set; } = null!;
 
     public Ulid InvitedUserId { get; private set; }
     public User InvitedUser { get; private set; } = null!;
@@ -14,14 +17,15 @@ public class WorkspaceInvitation : Entity
     public Ulid InvitedByUserId { get; private set; }
     public User InvitedByUser { get; private set; } = null!;
 
-    public string Role { get; private set; } = WorkspaceMemberRoles.Member;
+    public string Role { get; private set; } = ProjectMemberRoles.Viewer;
     public string Status { get; private set; } = InvitationStatuses.Pending;
     public DateTime ExpiresAt { get; private set; }
 
-    private WorkspaceInvitation() {}
+    private ProjectInvitation() {}
 
-    public WorkspaceInvitation(
+    public ProjectInvitation(
         Ulid workspaceId,
+        Ulid projectId,
         Ulid invitedUserId,
         Ulid invitedByUserId,
         string role,
@@ -29,6 +33,7 @@ public class WorkspaceInvitation : Entity
     {
         Id = Ulid.NewUlid();
         WorkspaceId = workspaceId;
+        ProjectId = projectId;
         InvitedUserId = invitedUserId;
         InvitedByUserId = invitedByUserId;
         Role = role.Trim().ToLowerInvariant();
@@ -37,19 +42,23 @@ public class WorkspaceInvitation : Entity
         CreatedAt = DateTime.UtcNow;
         UpdatedAt = DateTime.UtcNow;
     }
+
     public void Accept()
     {
         if (Status != InvitationStatuses.Pending)
         {
             throw new InvalidOperationException("Invitation is not pending.");
         }
+
         if (ExpiresAt <= DateTime.UtcNow)
         {
             throw new InvalidOperationException("Invitation has expired.");
         }
+
         Status = InvitationStatuses.Accepted;
         UpdatedAt = DateTime.UtcNow;
     }
+
     public void Decline()
     {
         if (Status != InvitationStatuses.Pending)
