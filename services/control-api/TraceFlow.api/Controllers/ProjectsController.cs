@@ -9,6 +9,7 @@ using TraceFlow.Api.Application.Projects.Queries.GetProjectById;
 using TraceFlow.Api.Application.Projects.Commands.UpdateProject;
 using TraceFlow.Api.Application.Projects.Commands.DeleteProject;
 using TraceFlow.Api.Application.Projects.Queries.ListProjectMembers;
+using TraceFlow.Api.Application.Projects.Commands.ChangeProjectMemberRole;
 
 namespace TraceFlow.Api.Controllers;
 
@@ -156,6 +157,32 @@ public class ProjectsController : ControllerBase
                 workspaceId,
                 projectId,
                 userId.Value),
+            cancellationToken);
+
+        return Ok(result);
+    }
+    [HttpPatch("{projectId}/members/{memberId}/role")]
+    public async Task<IActionResult> ChangeProjectMemberRole(
+        Ulid workspaceId,
+        Ulid projectId,
+        Ulid memberId,
+        ChangeProjectMemberRoleRequest request,
+        CancellationToken cancellationToken)
+    {
+        var userId = User.GetUserId();
+
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var result = await _sender.Send(
+            new ChangeProjectMemberRoleCommand(
+                workspaceId,
+                projectId,
+                memberId,
+                userId.Value,
+                request.Role),
             cancellationToken);
 
         return Ok(result);
