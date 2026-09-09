@@ -5,6 +5,7 @@ using TraceFlow.Api.Application.TraceApplications.Commands.CreateTraceApplicatio
 using TraceFlow.Api.Domain.Common.Extensions;
 using TraceFlow.Api.Domain.Dtos.TraceApplications;
 using TraceFlow.Api.Application.TraceApplications.Queries.ListTraceApplications;
+using TraceFlow.Api.Application.TraceApplications.Queries.GetApplicationDetail;
 
 namespace TraceFlow.Api.Controllers;
 
@@ -63,6 +64,30 @@ public class TraceApplicationsController : ControllerBase
             new ListTraceApplicationsQuery(
                 workspaceId,
                 projectId,
+                userId.Value),
+            cancellationToken);
+
+        return Ok(result);
+    }
+    [HttpGet("{applicationId}")]
+    public async Task<IActionResult> GetApplicationDetail(
+        Ulid workspaceId,
+        Ulid projectId,
+        Ulid applicationId,
+        CancellationToken cancellationToken)
+    {
+        var userId = User.GetUserId();
+
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var result = await _sender.Send(
+            new GetApplicationDetailQuery(
+                workspaceId,
+                projectId,
+                applicationId,
                 userId.Value),
             cancellationToken);
 
