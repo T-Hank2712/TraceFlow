@@ -8,6 +8,7 @@ using TraceFlow.Api.Application.Projects.Queries.ListProjects;
 using TraceFlow.Api.Application.Projects.Queries.GetProjectById;
 using TraceFlow.Api.Application.Projects.Commands.UpdateProject;
 using TraceFlow.Api.Application.Projects.Commands.DeleteProject;
+using TraceFlow.Api.Application.Projects.Queries.ListProjectMembers;
 
 namespace TraceFlow.Api.Controllers;
 
@@ -130,6 +131,28 @@ public class ProjectsController : ControllerBase
 
         var result = await _sender.Send(
             new DeleteProjectCommand(
+                workspaceId,
+                projectId,
+                userId.Value),
+            cancellationToken);
+
+        return Ok(result);
+    }
+    [HttpGet("{projectId}/members")]
+    public async Task<IActionResult> ListProjectMembers(
+        Ulid workspaceId,
+        Ulid projectId,
+        CancellationToken cancellationToken)
+    {
+        var userId = User.GetUserId();
+
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var result = await _sender.Send(
+            new ListProjectMembersQuery(
                 workspaceId,
                 projectId,
                 userId.Value),
