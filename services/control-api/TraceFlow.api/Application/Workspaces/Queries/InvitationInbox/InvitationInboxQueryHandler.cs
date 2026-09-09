@@ -23,7 +23,7 @@ public class InvitationInboxQueryHandler
             .AsNoTracking()
             .Where(invitation =>
                 invitation.InvitedUserId == request.UserId &&
-                invitation.Status == WorkspaceInvitationStatuses.Pending &&
+                invitation.Status == InvitationStatuses.Pending &&
                 invitation.ExpiresAt > DateTime.UtcNow)
             .OrderByDescending(invitation => invitation.CreatedAt)
             .Select(invitation => new InvitationInboxResponse(

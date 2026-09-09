@@ -86,7 +86,7 @@ public class InviteWorkspaceMemberCommandHandler
                 invitation =>
                     invitation.WorkspaceId == request.WorkspaceId &&
                     invitation.InvitedUserId == invitedUser.Id &&
-                    invitation.Status == WorkspaceInvitationStatuses.Pending &&
+                    invitation.Status == InvitationStatuses.Pending &&
                     invitation.ExpiresAt > DateTime.UtcNow,
                 cancellationToken);
 

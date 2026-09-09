@@ -1,6 +1,6 @@
 namespace TraceFlow.Api.Domain.Constants;
 
-public static class WorkspaceInvitationStatuses
+public static class InvitationStatuses
 {
     public const string Pending = "pending";
     public const string Accepted = "accepted";
