@@ -10,6 +10,7 @@ using TraceFlow.Api.Application.Projects.Commands.UpdateProject;
 using TraceFlow.Api.Application.Projects.Commands.DeleteProject;
 using TraceFlow.Api.Application.Projects.Queries.ListProjectMembers;
 using TraceFlow.Api.Application.Projects.Commands.ChangeProjectMemberRole;
+using TraceFlow.Api.Application.Projects.Commands.RemoveProjectMember;
 
 namespace TraceFlow.Api.Controllers;
 
@@ -183,6 +184,30 @@ public class ProjectsController : ControllerBase
                 memberId,
                 userId.Value,
                 request.Role),
+            cancellationToken);
+
+        return Ok(result);
+    }
+    [HttpDelete("{projectId}/members/{memberId}")]
+    public async Task<IActionResult> RemoveProjectMember(
+        Ulid workspaceId,
+        Ulid projectId,
+        Ulid memberId,
+        CancellationToken cancellationToken)
+    {
+        var userId = User.GetUserId();
+
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var result = await _sender.Send(
+            new RemoveProjectMemberCommand(
+                workspaceId,
+                projectId,
+                memberId,
+                userId.Value),
             cancellationToken);
 
         return Ok(result);
