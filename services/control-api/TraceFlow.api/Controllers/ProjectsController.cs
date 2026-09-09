@@ -11,6 +11,7 @@ using TraceFlow.Api.Application.Projects.Commands.DeleteProject;
 using TraceFlow.Api.Application.Projects.Queries.ListProjectMembers;
 using TraceFlow.Api.Application.Projects.Commands.ChangeProjectMemberRole;
 using TraceFlow.Api.Application.Projects.Commands.RemoveProjectMember;
+using TraceFlow.Api.Application.Projects.Commands.LeaveProject;
 
 namespace TraceFlow.Api.Controllers;
 
@@ -207,6 +208,28 @@ public class ProjectsController : ControllerBase
                 workspaceId,
                 projectId,
                 memberId,
+                userId.Value),
+            cancellationToken);
+
+        return Ok(result);
+    }
+    [HttpPost("{projectId}/leave")]
+    public async Task<IActionResult> LeaveProject(
+        Ulid workspaceId,
+        Ulid projectId,
+        CancellationToken cancellationToken)
+    {
+        var userId = User.GetUserId();
+
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var result = await _sender.Send(
+            new LeaveProjectCommand(
+                workspaceId,
+                projectId,
                 userId.Value),
             cancellationToken);
 
