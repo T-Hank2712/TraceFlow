@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using TraceFlow.Api.Application.TraceApplications.Commands.CreateTraceApplication;
 using TraceFlow.Api.Domain.Common.Extensions;
 using TraceFlow.Api.Domain.Dtos.TraceApplications;
+using TraceFlow.Api.Application.TraceApplications.Queries.ListTraceApplications;
 
 namespace TraceFlow.Api.Controllers;
 
@@ -44,5 +45,27 @@ public class TraceApplicationsController : ControllerBase
             cancellationToken);
 
         return StatusCode(StatusCodes.Status201Created, result);
+    }
+    [HttpGet]
+    public async Task<IActionResult> ListTraceApplications(
+        Ulid workspaceId,
+        Ulid projectId,
+        CancellationToken cancellationToken)
+    {
+        var userId = User.GetUserId();
+
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var result = await _sender.Send(
+            new ListTraceApplicationsQuery(
+                workspaceId,
+                projectId,
+                userId.Value),
+            cancellationToken);
+
+        return Ok(result);
     }
 }
