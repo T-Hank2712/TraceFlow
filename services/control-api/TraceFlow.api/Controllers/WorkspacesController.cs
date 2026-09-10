@@ -13,6 +13,7 @@ using TraceFlow.Api.Application.Workspaces.Commands.ChangeMemberRole;
 using TraceFlow.Api.Application.Workspaces.Commands.DeleteWorkspace;
 using TraceFlow.Api.Application.Workspaces.Commands.RemoveMember;
 using TraceFlow.Api.Application.Workspaces.Commands.LeaveWorkspace;
+using TraceFlow.Api.Application.Workspaces.Commands.TransferOwnership;
 
 namespace TraceFlow.Api.Controllers;
 
@@ -207,6 +208,28 @@ public class WorkspacesController : ControllerBase
             new LeaveWorkspaceCommand(
                 workspaceId,
                 userId.Value),
+            cancellationToken);
+
+        return Ok(result);
+    }
+    [HttpPost("{workspaceId}/transfer-ownership")]
+    public async Task<IActionResult> TransferOwnership(
+        Ulid workspaceId,
+        TransferOwnershipRequest request,
+        CancellationToken cancellationToken)
+    {
+        var userId = User.GetUserId();
+
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var result = await _sender.Send(
+            new TransferOwnershipCommand(
+                workspaceId,
+                userId.Value,
+                request.TargetUserId),
             cancellationToken);
 
         return Ok(result);
