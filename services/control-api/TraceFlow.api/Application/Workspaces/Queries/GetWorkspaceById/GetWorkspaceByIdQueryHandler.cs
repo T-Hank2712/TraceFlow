@@ -1,40 +1,27 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Application.Common.Exceptions;
-using TraceFlow.Api.Infrastructure.Persistence;
+using TraceFlow.Api.Application.Common.AccessControl;
 
 namespace TraceFlow.Api.Application.Workspaces.Queries.GetWorkspaceById;
 
 public class GetWorkspaceByIdQueryHandler
     : IRequestHandler<GetWorkspaceByIdQuery, WorkspaceDetailResponse>
 {
-    private readonly AppDbContext _dbContext;
+    private readonly WorkspaceAccessService _workspaceAccess;
 
-    public GetWorkspaceByIdQueryHandler(AppDbContext dbContext)
+    public GetWorkspaceByIdQueryHandler(WorkspaceAccessService workspaceAccess)
     {
-        _dbContext = dbContext;
+        _workspaceAccess = workspaceAccess;
     }
 
     public async Task<WorkspaceDetailResponse> Handle(
         GetWorkspaceByIdQuery request,
         CancellationToken cancellationToken)
     {
-        var membership = await _dbContext.WorkspaceMembers
-            .AsNoTracking()
-            .Where(member =>
-                member.WorkspaceId == request.WorkspaceId &&
-                member.UserId == request.UserId)
-            .Select(member => new
-            {
-                member.Role,
-                Workspace = member.Workspace
-            })
-            .FirstOrDefaultAsync(cancellationToken);
-
-        if (membership is null)
-        {
-            throw new NotFoundException("Workspace not found.");
-        }
+        var membership = await _workspaceAccess.GetActiveMembershipAsync(
+            request.WorkspaceId,
+            request.UserId,
+            "Workspace not found.",
+            cancellationToken);
 
         return new WorkspaceDetailResponse(
             membership.Workspace.Id,

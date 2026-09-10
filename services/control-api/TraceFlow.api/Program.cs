@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using TraceFlow.Api.Application.Common.AccessControl;
 
 var builder = WebApplication.CreateBuilder(args);
 var envPath = Path.Combine(
@@ -84,6 +85,7 @@ builder.Services.AddControllers();
 builder.Services.AddScoped<PasswordHasher>();
 builder.Services.AddScoped<JwtTokenGenerator>();
 builder.Services.AddScoped<RefreshTokenGenerator>();
+builder.Services.AddScoped<WorkspaceAccessService>();
 
 builder.Services.AddTransient(
     typeof(IPipelineBehavior<,>),

@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using TraceFlow.Api.Application.Common.AccessControl;
 using TraceFlow.Api.Application.Common.Exceptions;
 using TraceFlow.Api.Domain.Entities;
 using TraceFlow.Api.Infrastructure.Persistence;
@@ -11,38 +12,33 @@ public class InviteWorkspaceMemberCommandHandler
     : IRequestHandler<InviteWorkspaceMemberCommand, InviteWorkspaceMemberResponse>
 {
     private readonly AppDbContext _dbContext;
+    private readonly WorkspaceAccessService _workspaceAccess;
 
-    public InviteWorkspaceMemberCommandHandler(AppDbContext dbContext)
+    public InviteWorkspaceMemberCommandHandler(
+        AppDbContext dbContext,
+        WorkspaceAccessService workspaceAccess)
     {
         _dbContext = dbContext;
+        _workspaceAccess = workspaceAccess;
     }
 
     public async Task<InviteWorkspaceMemberResponse> Handle(
         InviteWorkspaceMemberCommand request,
         CancellationToken cancellationToken)
     {
-        var inviterMembership = await _dbContext.WorkspaceMembers
-            .Include(member => member.Workspace)
-            .FirstOrDefaultAsync(
-                member =>
-                    member.WorkspaceId == request.WorkspaceId &&
-                    member.UserId == request.InvitedByUserId,
-                cancellationToken);
+        var inviterMembership = await _workspaceAccess.GetActiveMembershipAsync(
+            request.WorkspaceId,
+            request.InvitedByUserId,
+            "Workspace not found.",
+            cancellationToken);
 
-        if (inviterMembership is null)
-        {
-            throw new NotFoundException("Workspace not found.");
-        }
+        _workspaceAccess.EnsureWorkspaceIsActive(
+            inviterMembership.Workspace,
+            "Archived workspace cannot be modified.");
 
-        if (inviterMembership.Workspace.Status == ResourceStatuses.Archived)
-        {
-            throw new ConflictException("Archived workspace cannot be modified.");
-        }
-
-        if (inviterMembership.Role is not WorkspaceMemberRoles.Owner and not WorkspaceMemberRoles.Admin)
-        {
-            throw new ForbiddenException("You do not have permission to invite workspace members.");
-        }
+        _workspaceAccess.EnsureWorkspaceManager(
+            inviterMembership,
+            "You do not have permission to invite workspace members.");
 
         var normalizedIdentifier = request.Identifier.Trim().ToLowerInvariant();
 

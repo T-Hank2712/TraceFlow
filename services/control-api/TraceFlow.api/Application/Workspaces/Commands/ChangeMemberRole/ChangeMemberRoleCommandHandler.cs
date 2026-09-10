@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using TraceFlow.Api.Application.Common.AccessControl;
 using TraceFlow.Api.Application.Common.Exceptions;
 using TraceFlow.Api.Infrastructure.Persistence;
 using TraceFlow.Api.Domain.Constants;
@@ -11,39 +12,33 @@ public class ChangeMemberRoleCommandHandler
     : IRequestHandler<ChangeMemberRoleCommand, ChangeMemberRoleResponse>
 {
     private readonly AppDbContext _dbContext;
+    private readonly WorkspaceAccessService _workspaceAccess;
 
-    public ChangeMemberRoleCommandHandler(AppDbContext dbContext)
+    public ChangeMemberRoleCommandHandler(
+        AppDbContext dbContext,
+        WorkspaceAccessService workspaceAccess)
     {
         _dbContext = dbContext;
+        _workspaceAccess = workspaceAccess;
     }
 
     public async Task<ChangeMemberRoleResponse> Handle(
         ChangeMemberRoleCommand request,
         CancellationToken cancellationToken)
     {
-        var actorMembership = await _dbContext.WorkspaceMembers
-            .Include(member => member.Workspace)
-            .FirstOrDefaultAsync(
-                member =>
-                    member.WorkspaceId == request.WorkspaceId &&
-                    member.UserId == request.ActorUserId &&
-                    member.Status == MembershipStatuses.Active,
-                cancellationToken);
+        var actorMembership = await _workspaceAccess.GetActiveMembershipAsync(
+            request.WorkspaceId,
+            request.ActorUserId,
+            "Workspace not found.",
+            cancellationToken);
 
-        if (actorMembership is null)
-        {
-            throw new NotFoundException("Workspace not found.");
-        }
+        _workspaceAccess.EnsureWorkspaceIsActive(
+            actorMembership.Workspace,
+            "Archived workspace cannot be modified.");
 
-        if (actorMembership.Workspace.Status == ResourceStatuses.Archived)
-        {
-            throw new ConflictException("Archived workspace cannot be modified.");
-        }
-
-        if (actorMembership.Role is not WorkspaceMemberRoles.Owner and not WorkspaceMemberRoles.Admin)
-        {
-            throw new ForbiddenException("You do not have permission to change member roles.");
-        }
+        _workspaceAccess.EnsureWorkspaceManager(
+            actorMembership,
+            "You do not have permission to change member roles.");
 
         var targetMember = await _dbContext.WorkspaceMembers
             .FirstOrDefaultAsync(
