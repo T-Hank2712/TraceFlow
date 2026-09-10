@@ -63,15 +63,17 @@ public class CreateApiKeyCommandHandler
         var environment = request.Environment.Trim().ToLowerInvariant();
         var expirationPolicy = request.ExpirationPolicy;
 
-        var generatedKey = _apiKeyGenerator.Generate();
+        var apiKeyId = Ulid.NewUlid();
+        var generatedKey = _apiKeyGenerator.Generate(apiKeyId);
         var secretHash = _apiKeyHasher.Hash(generatedKey.Secret);
         var expiresAt = _expirationPolicyResolver.Resolve(expirationPolicy);
 
         var apiKey = new ApiKey(
+            apiKeyId,
             request.ApplicationId,
             request.Name,
             environment,
-            generatedKey.Prefix,
+            generatedKey.KeyPrefix,
             secretHash,
             expiresAt);
 

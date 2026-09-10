@@ -5,9 +5,21 @@ namespace TraceFlow.Api.Application.Common.Security;
 
 public class ApiKeyHasher
 {
+    private readonly IConfiguration _configuration;
+
+    public ApiKeyHasher(IConfiguration configuration)
+    {
+        _configuration = configuration;
+    }
+
     public string Hash(string secret)
     {
-        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(secret));
-        return Convert.ToHexString(bytes).ToLowerInvariant();
+        var pepper = _configuration["API_KEY_PEPPER"]
+            ?? throw new InvalidOperationException("API key pepper is not configured.");
+
+        using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(pepper));
+        var hashBytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(secret));
+
+        return Convert.ToHexString(hashBytes).ToLowerInvariant();
     }
 }

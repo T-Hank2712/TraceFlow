@@ -23,6 +23,7 @@ public class ApiKey : Entity
     }
 
     public ApiKey(
+        Ulid apiKeyId,
         Ulid traceApplicationId,
         string name,
         string environment,
@@ -30,7 +31,7 @@ public class ApiKey : Entity
         string secretHash,
         DateTime? expiresAt)
     {
-        Id = Ulid.NewUlid();
+        Id = apiKeyId;
         TraceApplicationId = traceApplicationId;
         Name = name.Trim();
         Environment = environment.Trim().ToLowerInvariant();

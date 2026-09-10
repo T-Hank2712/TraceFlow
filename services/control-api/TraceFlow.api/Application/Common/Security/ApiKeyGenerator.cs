@@ -1,22 +1,23 @@
 using System.Security.Cryptography;
+using Microsoft.AspNetCore.WebUtilities;
 
 namespace TraceFlow.Api.Application.Common.Security;
 
 public class ApiKeyGenerator
 {
-    public GeneratedApiKey Generate()
+    private const string Prefix = "tfk_live";
+    public GeneratedApiKey Generate(Ulid apiKeyId)
     {
-        var bytes = RandomNumberGenerator.GetBytes(32);
-        var secretPart = Convert.ToBase64String(bytes)
-            .Replace("+", "")
-            .Replace("/", "")
-            .Replace("=", "");
+        var secretBytes = RandomNumberGenerator.GetBytes(32);
+        var randomSecret = WebEncoders.Base64UrlEncode(secretBytes);
 
-        var secret = $"tf_live_{secretPart}";
-        var prefix = secret[..16];
+        var secret = $"{Prefix}_{apiKeyId}_{randomSecret}";
+        var keyPrefix = $"{Prefix}_{apiKeyId}_{randomSecret[..8]}";
 
-        return new GeneratedApiKey(secret, prefix);
+        return new GeneratedApiKey(secret, keyPrefix);
     }
 }
 
-public sealed record GeneratedApiKey(string Secret, string Prefix);
+public sealed record GeneratedApiKey(
+    string Secret,
+    string KeyPrefix);

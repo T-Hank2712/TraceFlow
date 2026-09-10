@@ -24,15 +24,15 @@ public class ApiKeyConfiguration : IEntityTypeConfiguration<ApiKey>
             .IsRequired();
 
         builder.Property(apiKey => apiKey.Name)
-            .HasMaxLength(120)
+            .HasMaxLength(50)
             .IsRequired();
 
         builder.Property(apiKey => apiKey.KeyPrefix)
-            .HasMaxLength(32)
+            .HasMaxLength(64)
             .IsRequired();
 
         builder.Property(apiKey => apiKey.SecretHash)
-            .HasMaxLength(256)
+            .HasMaxLength(64)
             .IsRequired();
 
         builder.Property(apiKey => apiKey.Status)
