@@ -7,6 +7,7 @@ using TraceFlow.Api.Domain.Dtos.TraceApplications;
 using TraceFlow.Api.Application.TraceApplications.Queries.ListTraceApplications;
 using TraceFlow.Api.Application.TraceApplications.Queries.GetApplicationDetail;
 using TraceFlow.Api.Application.TraceApplications.Commands.UpdateApplication;
+using TraceFlow.Api.Application.TraceApplications.Commands.DeleteApplication;
 
 namespace TraceFlow.Api.Controllers;
 
@@ -118,6 +119,30 @@ public class TraceApplicationsController : ControllerBase
                 request.Name,
                 request.Slug,
                 request.Description),
+            cancellationToken);
+
+        return Ok(result);
+    }
+    [HttpDelete("{applicationId}")]
+    public async Task<IActionResult> DeleteApplication(
+        Ulid workspaceId,
+        Ulid projectId,
+        Ulid applicationId,
+        CancellationToken cancellationToken)
+    {
+        var userId = User.GetUserId();
+
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var result = await _sender.Send(
+            new DeleteApplicationCommand(
+                workspaceId,
+                projectId,
+                applicationId,
+                userId.Value),
             cancellationToken);
 
         return Ok(result);

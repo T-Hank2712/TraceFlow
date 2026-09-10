@@ -58,4 +58,14 @@ public class TraceApplication : Entity
 
         UpdatedAt = DateTime.UtcNow;
     }
+    public void Archive()
+    {
+        if (Status == ResourceStatuses.Archived)
+        {
+            return;
+        }
+
+        Status = ResourceStatuses.Archived;
+        UpdatedAt = DateTime.UtcNow;
+    }
 }
