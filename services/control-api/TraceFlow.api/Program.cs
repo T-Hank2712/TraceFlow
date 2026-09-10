@@ -89,6 +89,9 @@ builder.Services.AddScoped<RefreshTokenGenerator>();
 builder.Services.AddScoped<WorkspaceAccessService>();
 builder.Services.AddScoped<ProjectAccessService>();
 builder.Services.AddScoped<UserLookupService>();
+builder.Services.AddScoped<ApiKeyGenerator>();
+builder.Services.AddScoped<ApiKeyHasher>();
+builder.Services.AddScoped<ApiKeyExpirationPolicyResolver>();
 
 builder.Services.AddTransient(
     typeof(IPipelineBehavior<,>),
