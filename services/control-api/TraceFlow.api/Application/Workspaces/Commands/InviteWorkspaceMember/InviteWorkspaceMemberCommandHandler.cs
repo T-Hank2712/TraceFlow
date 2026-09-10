@@ -5,6 +5,7 @@ using TraceFlow.Api.Application.Common.Exceptions;
 using TraceFlow.Api.Domain.Entities;
 using TraceFlow.Api.Infrastructure.Persistence;
 using TraceFlow.Api.Domain.Constants;
+using TraceFlow.Api.Application.Common.Users;
 
 namespace TraceFlow.Api.Application.Workspaces.Commands.InviteWorkspaceMember;
 
@@ -13,13 +14,16 @@ public class InviteWorkspaceMemberCommandHandler
 {
     private readonly AppDbContext _dbContext;
     private readonly WorkspaceAccessService _workspaceAccess;
+    private readonly UserLookupService _userLookup;
 
     public InviteWorkspaceMemberCommandHandler(
         AppDbContext dbContext,
-        WorkspaceAccessService workspaceAccess)
+        WorkspaceAccessService workspaceAccess,
+        UserLookupService userLookup)
     {
         _dbContext = dbContext;
         _workspaceAccess = workspaceAccess;
+        _userLookup = userLookup;
     }
 
     public async Task<InviteWorkspaceMemberResponse> Handle(
@@ -40,29 +44,10 @@ public class InviteWorkspaceMemberCommandHandler
             inviterMembership,
             "You do not have permission to invite workspace members.");
 
-        var normalizedIdentifier = request.Identifier.Trim().ToLowerInvariant();
-
-        var invitedUser = await _dbContext.Users
-            .FirstOrDefaultAsync(
-                user =>
-                    user.Email.ToLower() == normalizedIdentifier ||
-                    user.NormalizedUsername == normalizedIdentifier,
-                cancellationToken);
-
-        if (invitedUser is null)
-        {
-            throw new NotFoundException("User to invite not found.");
-        }
-
-        if (invitedUser.Status != UserStatuses.Active)
-        {
-            throw new ConflictException("Cannot invite inactive user.");
-        }
-
-        if (invitedUser.Id == request.InvitedByUserId)
-        {
-            throw new ConflictException("You cannot invite yourself.");
-        }
+        var invitedUser = await _userLookup.GetActiveInviteTargetAsync(
+            request.Identifier,
+            request.InvitedByUserId,
+            cancellationToken);
 
         var alreadyMember = await _dbContext.WorkspaceMembers
             .AnyAsync(
@@ -96,7 +81,7 @@ public class InviteWorkspaceMemberCommandHandler
             invitedUser.Id,
             request.InvitedByUserId,
             request.Role,
-            DateTime.UtcNow.AddDays(7));
+            DateTime.UtcNow.AddDays(InvitationDefaults.ExpiresAfterDays));
 
         _dbContext.WorkspaceInvitations.Add(invitation);
 

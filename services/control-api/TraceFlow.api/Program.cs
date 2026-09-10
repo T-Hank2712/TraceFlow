@@ -11,6 +11,7 @@ using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using TraceFlow.Api.Application.Common.AccessControl;
+using TraceFlow.Api.Application.Common.Users;
 
 var builder = WebApplication.CreateBuilder(args);
 var envPath = Path.Combine(
@@ -87,6 +88,7 @@ builder.Services.AddScoped<JwtTokenGenerator>();
 builder.Services.AddScoped<RefreshTokenGenerator>();
 builder.Services.AddScoped<WorkspaceAccessService>();
 builder.Services.AddScoped<ProjectAccessService>();
+builder.Services.AddScoped<UserLookupService>();
 
 builder.Services.AddTransient(
     typeof(IPipelineBehavior<,>),

@@ -5,6 +5,7 @@ using TraceFlow.Api.Application.Common.Exceptions;
 using TraceFlow.Api.Domain.Constants;
 using TraceFlow.Api.Domain.Entities;
 using TraceFlow.Api.Infrastructure.Persistence;
+using TraceFlow.Api.Application.Common.Users;
 
 namespace TraceFlow.Api.Application.Projects.Commands.InviteProjectMember;
 
@@ -13,13 +14,16 @@ public class InviteProjectMemberCommandHandler
 {
     private readonly AppDbContext _dbContext;
     private readonly ProjectAccessService _projectAccess;
+    private readonly UserLookupService _userLookup;
 
     public InviteProjectMemberCommandHandler(
         AppDbContext dbContext,
-        ProjectAccessService projectAccess)
+        ProjectAccessService projectAccess,
+        UserLookupService userLookup)
     {
         _dbContext = dbContext;
         _projectAccess = projectAccess;
+        _userLookup = userLookup;
     }
 
     public async Task<InviteProjectMemberResponse> Handle(
@@ -39,27 +43,10 @@ public class InviteProjectMemberCommandHandler
 
         var normalizedIdentifier = request.Identifier.Trim().ToLowerInvariant();
 
-        var invitedUser = await _dbContext.Users
-            .FirstOrDefaultAsync(
-                user =>
-                    user.Email.ToLower() == normalizedIdentifier ||
-                    user.NormalizedUsername == normalizedIdentifier,
-                cancellationToken);
-
-        if (invitedUser is null)
-        {
-            throw new NotFoundException("User to invite not found.");
-        }
-
-        if (invitedUser.Status != UserStatuses.Active)
-        {
-            throw new ConflictException("Cannot invite inactive user.");
-        }
-
-        if (invitedUser.Id == request.InvitedByUserId)
-        {
-            throw new ConflictException("You cannot invite yourself.");
-        }
+        var invitedUser = await _userLookup.GetActiveInviteTargetAsync(
+            request.Identifier,
+            request.InvitedByUserId,
+            cancellationToken);
 
         var alreadyProjectMember = await _dbContext.ProjectMembers
             .AnyAsync(
@@ -94,7 +81,7 @@ public class InviteProjectMemberCommandHandler
             invitedUser.Id,
             request.InvitedByUserId,
             request.Role,
-            DateTime.UtcNow.AddDays(7));
+            DateTime.UtcNow.AddDays(InvitationDefaults.ExpiresAfterDays));
 
         _dbContext.ProjectInvitations.Add(invitation);
 
