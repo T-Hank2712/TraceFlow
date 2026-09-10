@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using TraceFlow.Api.Application.Common.AccessControl;
 using TraceFlow.Api.Application.Common.Exceptions;
 using TraceFlow.Api.Domain.Constants;
 using TraceFlow.Api.Infrastructure.Persistence;
@@ -10,55 +11,39 @@ public class GetProjectByIdQueryHandler
     : IRequestHandler<GetProjectByIdQuery, ProjectDetailResponse>
 {
     private readonly AppDbContext _dbContext;
+    private readonly ProjectAccessService _projectAccess;
 
-    public GetProjectByIdQueryHandler(AppDbContext dbContext)
+    public GetProjectByIdQueryHandler(
+        AppDbContext dbContext,
+        ProjectAccessService projectAccess)
     {
         _dbContext = dbContext;
+        _projectAccess = projectAccess;
     }
 
     public async Task<ProjectDetailResponse> Handle(
         GetProjectByIdQuery request,
         CancellationToken cancellationToken)
     {
-        var membership = await _dbContext.WorkspaceMembers
-            .AsNoTracking()
-            .Include(member => member.Workspace)
-            .FirstOrDefaultAsync(
-                member =>
-                    member.WorkspaceId == request.WorkspaceId &&
-                    member.UserId == request.UserId &&
-                    member.Status == MembershipStatuses.Active,
-                cancellationToken);
+        var access = await _projectAccess.GetProjectAccessAsync(
+            request.WorkspaceId,
+            request.ProjectId,
+            request.UserId,
+            "Project not found.",
+            cancellationToken,
+            "Archived workspace cannot be accessed.");
 
-        if (membership is null)
+        if (!access.IsWorkspaceManager && access.ProjectMembership is null)
         {
             throw new NotFoundException("Project not found.");
         }
 
-        if (membership.Workspace.Status == ResourceStatuses.Archived)
-        {
-            throw new ConflictException("Archived workspace cannot be accessed.");
-        }
-
-        var canAccessAllProjects =
-            membership.Role is WorkspaceMemberRoles.Owner or WorkspaceMemberRoles.Admin;
-
-        var projectQuery = _dbContext.Projects
+        var project = await _dbContext.Projects
             .AsNoTracking()
             .Where(project =>
                 project.Id == request.ProjectId &&
                 project.WorkspaceId == request.WorkspaceId &&
-                project.Status == ResourceStatuses.Active);
-
-        if (!canAccessAllProjects)
-        {
-            projectQuery = projectQuery.Where(project =>
-                project.Members.Any(member =>
-                    member.UserId == request.UserId &&
-                    member.Status == MembershipStatuses.Active));
-        }
-
-        var project = await projectQuery
+                project.Status == ResourceStatuses.Active)
             .Select(project => new ProjectDetailResponse(
                 project.Id,
                 project.WorkspaceId,

@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using TraceFlow.Api.Application.Common.AccessControl;
 using TraceFlow.Api.Application.Common.Exceptions;
 using TraceFlow.Api.Domain.Constants;
 using TraceFlow.Api.Infrastructure.Persistence;
@@ -10,64 +11,32 @@ public class UpdateProjectCommandHandler
     : IRequestHandler<UpdateProjectCommand, UpdateProjectResponse>
 {
     private readonly AppDbContext _dbContext;
+    private readonly ProjectAccessService _projectAccess;
 
-    public UpdateProjectCommandHandler(AppDbContext dbContext)
+    public UpdateProjectCommandHandler(
+        AppDbContext dbContext,
+        ProjectAccessService projectAccess)
     {
         _dbContext = dbContext;
+        _projectAccess = projectAccess;
     }
 
     public async Task<UpdateProjectResponse> Handle(
         UpdateProjectCommand request,
         CancellationToken cancellationToken)
     {
-        var workspaceMembership = await _dbContext.WorkspaceMembers
-            .Include(member => member.Workspace)
-            .FirstOrDefaultAsync(
-                member =>
-                    member.WorkspaceId == request.WorkspaceId &&
-                    member.UserId == request.UserId &&
-                    member.Status == MembershipStatuses.Active,
-                cancellationToken);
+        var access = await _projectAccess.GetProjectAccessAsync(
+            request.WorkspaceId,
+            request.ProjectId,
+            request.UserId,
+            "Project not found.",
+            cancellationToken);
 
-        if (workspaceMembership is null)
-        {
-            throw new NotFoundException("Project not found.");
-        }
+        _projectAccess.EnsureProjectManager(
+            access,
+            "You do not have permission to update this project.");
 
-        if (workspaceMembership.Workspace.Status == ResourceStatuses.Archived)
-        {
-            throw new ConflictException("Archived workspace cannot be modified.");
-        }
-
-        var project = await _dbContext.Projects
-            .FirstOrDefaultAsync(
-                project =>
-                    project.Id == request.ProjectId &&
-                    project.WorkspaceId == request.WorkspaceId &&
-                    project.Status == ResourceStatuses.Active,
-                cancellationToken);
-
-        if (project is null)
-        {
-            throw new NotFoundException("Project not found.");
-        }
-
-        var isWorkspaceManager =
-            workspaceMembership.Role is WorkspaceMemberRoles.Owner or WorkspaceMemberRoles.Admin;
-
-        var isProjectManager = await _dbContext.ProjectMembers
-            .AnyAsync(
-                member =>
-                    member.ProjectId == request.ProjectId &&
-                    member.UserId == request.UserId &&
-                    member.Role == ProjectMemberRoles.Manager &&
-                    member.Status == MembershipStatuses.Active,
-                cancellationToken);
-
-        if (!isWorkspaceManager && !isProjectManager)
-        {
-            throw new ForbiddenException("You do not have permission to update this project.");
-        }
+        var project = access.Project;
 
         if (!string.IsNullOrWhiteSpace(request.Slug))
         {

@@ -1,6 +1,6 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Application.Common.Exceptions;
+using TraceFlow.Api.Application.Common.AccessControl;
 using TraceFlow.Api.Infrastructure.Persistence;
 using TraceFlow.Api.Domain.Constants;
 
@@ -10,29 +10,25 @@ public class ListMembersQueryHandler
     : IRequestHandler<ListMembersQuery, IReadOnlyList<WorkspaceMemberResponse>>
 {
     private readonly AppDbContext _dbContext;
+    private readonly WorkspaceAccessService _workspaceAccess;
 
-    public ListMembersQueryHandler(AppDbContext dbContext)
+    public ListMembersQueryHandler(
+        AppDbContext dbContext,
+        WorkspaceAccessService workspaceAccess)
     {
         _dbContext = dbContext;
+        _workspaceAccess = workspaceAccess;
     }
 
     public async Task<IReadOnlyList<WorkspaceMemberResponse>> Handle(
         ListMembersQuery request,
         CancellationToken cancellationToken)
     {
-        var hasAccess = await _dbContext.WorkspaceMembers
-            .AsNoTracking()
-            .AnyAsync(
-                member =>
-                    member.WorkspaceId == request.WorkspaceId &&
-                    member.UserId == request.UserId &&
-                    member.Status == MembershipStatuses.Active,
-                cancellationToken);
-
-        if (!hasAccess)
-        {
-            throw new NotFoundException("Workspace not found.");
-        }
+        await _workspaceAccess.GetActiveMembershipAsync(
+            request.WorkspaceId,
+            request.UserId,
+            "Workspace not found.",
+            cancellationToken);
 
         return await _dbContext.WorkspaceMembers
             .AsNoTracking()

@@ -204,6 +204,55 @@ namespace TraceFlow.Api.Migrations
                     b.ToTable("RefreshTokens", (string)null);
                 });
 
+            modelBuilder.Entity("TraceFlow.Api.Domain.Entities.TraceApplication", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedByUserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("ProjectId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("ProjectId", "Slug")
+                        .IsUnique()
+                        .HasFilter("\"Status\" = 'active'");
+
+                    b.ToTable("TraceApplications", (string)null);
+                });
+
             modelBuilder.Entity("TraceFlow.Api.Domain.Entities.User", b =>
                 {
                     b.Property<string>("Id")
@@ -483,6 +532,25 @@ namespace TraceFlow.Api.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("TraceFlow.Api.Domain.Entities.TraceApplication", b =>
+                {
+                    b.HasOne("TraceFlow.Api.Domain.Entities.User", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TraceFlow.Api.Domain.Entities.Project", "Project")
+                        .WithMany("TraceApplications")
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreatedByUser");
+
+                    b.Navigation("Project");
+                });
+
             modelBuilder.Entity("TraceFlow.Api.Domain.Entities.Workspace", b =>
                 {
                     b.HasOne("TraceFlow.Api.Domain.Entities.User", "Owner")
@@ -543,6 +611,8 @@ namespace TraceFlow.Api.Migrations
             modelBuilder.Entity("TraceFlow.Api.Domain.Entities.Project", b =>
                 {
                     b.Navigation("Members");
+
+                    b.Navigation("TraceApplications");
                 });
 
             modelBuilder.Entity("TraceFlow.Api.Domain.Entities.User", b =>

@@ -1,9 +1,11 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using TraceFlow.Api.Application.Common.AccessControl;
 using TraceFlow.Api.Application.Common.Exceptions;
 using TraceFlow.Api.Domain.Entities;
 using TraceFlow.Api.Infrastructure.Persistence;
 using TraceFlow.Api.Domain.Constants;
+using TraceFlow.Api.Application.Common.Users;
 
 namespace TraceFlow.Api.Application.Workspaces.Commands.InviteWorkspaceMember;
 
@@ -11,62 +13,41 @@ public class InviteWorkspaceMemberCommandHandler
     : IRequestHandler<InviteWorkspaceMemberCommand, InviteWorkspaceMemberResponse>
 {
     private readonly AppDbContext _dbContext;
+    private readonly WorkspaceAccessService _workspaceAccess;
+    private readonly UserLookupService _userLookup;
 
-    public InviteWorkspaceMemberCommandHandler(AppDbContext dbContext)
+    public InviteWorkspaceMemberCommandHandler(
+        AppDbContext dbContext,
+        WorkspaceAccessService workspaceAccess,
+        UserLookupService userLookup)
     {
         _dbContext = dbContext;
+        _workspaceAccess = workspaceAccess;
+        _userLookup = userLookup;
     }
 
     public async Task<InviteWorkspaceMemberResponse> Handle(
         InviteWorkspaceMemberCommand request,
         CancellationToken cancellationToken)
     {
-        var inviterMembership = await _dbContext.WorkspaceMembers
-            .Include(member => member.Workspace)
-            .FirstOrDefaultAsync(
-                member =>
-                    member.WorkspaceId == request.WorkspaceId &&
-                    member.UserId == request.InvitedByUserId,
-                cancellationToken);
+        var inviterMembership = await _workspaceAccess.GetActiveMembershipAsync(
+            request.WorkspaceId,
+            request.InvitedByUserId,
+            "Workspace not found.",
+            cancellationToken);
 
-        if (inviterMembership is null)
-        {
-            throw new NotFoundException("Workspace not found.");
-        }
+        _workspaceAccess.EnsureWorkspaceIsActive(
+            inviterMembership.Workspace,
+            "Archived workspace cannot be modified.");
 
-        if (inviterMembership.Workspace.Status == ResourceStatuses.Archived)
-        {
-            throw new ConflictException("Archived workspace cannot be modified.");
-        }
+        _workspaceAccess.EnsureWorkspaceManager(
+            inviterMembership,
+            "You do not have permission to invite workspace members.");
 
-        if (inviterMembership.Role is not WorkspaceMemberRoles.Owner and not WorkspaceMemberRoles.Admin)
-        {
-            throw new ForbiddenException("You do not have permission to invite workspace members.");
-        }
-
-        var normalizedIdentifier = request.Identifier.Trim().ToLowerInvariant();
-
-        var invitedUser = await _dbContext.Users
-            .FirstOrDefaultAsync(
-                user =>
-                    user.Email.ToLower() == normalizedIdentifier ||
-                    user.NormalizedUsername == normalizedIdentifier,
-                cancellationToken);
-
-        if (invitedUser is null)
-        {
-            throw new NotFoundException("User to invite not found.");
-        }
-
-        if (invitedUser.Status != UserStatuses.Active)
-        {
-            throw new ConflictException("Cannot invite inactive user.");
-        }
-
-        if (invitedUser.Id == request.InvitedByUserId)
-        {
-            throw new ConflictException("You cannot invite yourself.");
-        }
+        var invitedUser = await _userLookup.GetActiveInviteTargetAsync(
+            request.Identifier,
+            request.InvitedByUserId,
+            cancellationToken);
 
         var alreadyMember = await _dbContext.WorkspaceMembers
             .AnyAsync(
@@ -100,7 +81,7 @@ public class InviteWorkspaceMemberCommandHandler
             invitedUser.Id,
             request.InvitedByUserId,
             request.Role,
-            DateTime.UtcNow.AddDays(7));
+            DateTime.UtcNow.AddDays(InvitationDefaults.ExpiresAfterDays));
 
         _dbContext.WorkspaceInvitations.Add(invitation);
 

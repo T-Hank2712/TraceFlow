@@ -1,7 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using TraceFlow.Api.Application.Common.AccessControl;
 using TraceFlow.Api.Application.Common.Exceptions;
-using TraceFlow.Api.Domain.Constants;
 using TraceFlow.Api.Infrastructure.Persistence;
 
 namespace TraceFlow.Api.Application.Projects.Queries.ProjectInvitationSent;
@@ -10,67 +10,31 @@ public class ProjectInvitationSentQueryHandler
     : IRequestHandler<ProjectInvitationSentQuery, IReadOnlyList<ProjectInvitationSentResponse>>
 {
     private readonly AppDbContext _dbContext;
+    private readonly ProjectAccessService _projectAccess;
 
-    public ProjectInvitationSentQueryHandler(AppDbContext dbContext)
+    public ProjectInvitationSentQueryHandler(
+        AppDbContext dbContext,
+        ProjectAccessService projectAccess)
     {
         _dbContext = dbContext;
+        _projectAccess = projectAccess;
     }
 
     public async Task<IReadOnlyList<ProjectInvitationSentResponse>> Handle(
         ProjectInvitationSentQuery request,
         CancellationToken cancellationToken)
     {
-        var workspaceMembership = await _dbContext.WorkspaceMembers
-            .AsNoTracking()
-            .Include(member => member.Workspace)
-            .FirstOrDefaultAsync(
-                member =>
-                    member.WorkspaceId == request.WorkspaceId &&
-                    member.UserId == request.UserId &&
-                    member.Status == MembershipStatuses.Active,
-                cancellationToken);
+        var access = await _projectAccess.GetProjectAccessAsync(
+            request.WorkspaceId,
+            request.ProjectId,
+            request.UserId,
+            "Project not found.",
+            cancellationToken,
+            "Archived workspace cannot be accessed.");
 
-        if (workspaceMembership is null)
-        {
-            throw new NotFoundException("Project not found.");
-        }
-
-        if (workspaceMembership.Workspace.Status == ResourceStatuses.Archived)
-        {
-            throw new ConflictException("Archived workspace cannot be accessed.");
-        }
-
-        var projectExists = await _dbContext.Projects
-            .AsNoTracking()
-            .AnyAsync(
-                project =>
-                    project.Id == request.ProjectId &&
-                    project.WorkspaceId == request.WorkspaceId &&
-                    project.Status == ResourceStatuses.Active,
-                cancellationToken);
-
-        if (!projectExists)
-        {
-            throw new NotFoundException("Project not found.");
-        }
-
-        var isWorkspaceManager =
-            workspaceMembership.Role is WorkspaceMemberRoles.Owner or WorkspaceMemberRoles.Admin;
-
-        var isProjectManager = await _dbContext.ProjectMembers
-            .AsNoTracking()
-            .AnyAsync(
-                member =>
-                    member.ProjectId == request.ProjectId &&
-                    member.UserId == request.UserId &&
-                    member.Role == ProjectMemberRoles.Manager &&
-                    member.Status == MembershipStatuses.Active,
-                cancellationToken);
-
-        if (!isWorkspaceManager && !isProjectManager)
-        {
-            throw new ForbiddenException("You do not have permission to view project invitations.");
-        }
+        _projectAccess.EnsureProjectManager(
+            access,
+            "You do not have permission to view project invitations.");
 
         return await _dbContext.ProjectInvitations
             .AsNoTracking()

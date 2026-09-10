@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using TraceFlow.Api.Application.Common.AccessControl;
 using TraceFlow.Api.Application.Common.Exceptions;
 using TraceFlow.Api.Domain.Constants;
 using TraceFlow.Api.Infrastructure.Persistence;
@@ -10,34 +11,29 @@ public class LeaveWorkspaceCommandHandler
     : IRequestHandler<LeaveWorkspaceCommand, LeaveWorkspaceResponse>
 {
     private readonly AppDbContext _dbContext;
+    private readonly WorkspaceAccessService _workspaceAccess;
 
-    public LeaveWorkspaceCommandHandler(AppDbContext dbContext)
+    public LeaveWorkspaceCommandHandler(
+        AppDbContext dbContext,
+        WorkspaceAccessService workspaceAccess)
     {
         _dbContext = dbContext;
+        _workspaceAccess = workspaceAccess;
     }
 
     public async Task<LeaveWorkspaceResponse> Handle(
         LeaveWorkspaceCommand request,
         CancellationToken cancellationToken)
     {
-        var membership = await _dbContext.WorkspaceMembers
-            .Include(member => member.Workspace)
-            .FirstOrDefaultAsync(
-                member =>
-                    member.WorkspaceId == request.WorkspaceId &&
-                    member.UserId == request.UserId &&
-                    member.Status == MembershipStatuses.Active,
-                cancellationToken);
+        var membership = await _workspaceAccess.GetActiveMembershipAsync(
+            request.WorkspaceId,
+            request.UserId,
+            "Workspace not found.",
+            cancellationToken);
 
-        if (membership is null)
-        {
-            throw new NotFoundException("Workspace not found.");
-        }
-
-        if (membership.Workspace.Status == ResourceStatuses.Archived)
-        {
-            throw new ConflictException("Archived workspace cannot be left.");
-        }
+        _workspaceAccess.EnsureWorkspaceIsActive(
+            membership.Workspace,
+            "Archived workspace cannot be left.");
 
         if (membership.Role == WorkspaceMemberRoles.Owner)
         {
