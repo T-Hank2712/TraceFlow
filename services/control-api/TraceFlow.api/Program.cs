@@ -86,6 +86,7 @@ builder.Services.AddScoped<PasswordHasher>();
 builder.Services.AddScoped<JwtTokenGenerator>();
 builder.Services.AddScoped<RefreshTokenGenerator>();
 builder.Services.AddScoped<WorkspaceAccessService>();
+builder.Services.AddScoped<ProjectAccessService>();
 
 builder.Services.AddTransient(
     typeof(IPipelineBehavior<,>),

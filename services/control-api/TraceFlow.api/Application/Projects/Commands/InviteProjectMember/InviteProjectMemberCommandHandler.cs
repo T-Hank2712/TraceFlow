@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using TraceFlow.Api.Application.Common.AccessControl;
 using TraceFlow.Api.Application.Common.Exceptions;
 using TraceFlow.Api.Domain.Constants;
 using TraceFlow.Api.Domain.Entities;
@@ -11,64 +12,30 @@ public class InviteProjectMemberCommandHandler
     : IRequestHandler<InviteProjectMemberCommand, InviteProjectMemberResponse>
 {
     private readonly AppDbContext _dbContext;
+    private readonly ProjectAccessService _projectAccess;
 
-    public InviteProjectMemberCommandHandler(AppDbContext dbContext)
+    public InviteProjectMemberCommandHandler(
+        AppDbContext dbContext,
+        ProjectAccessService projectAccess)
     {
         _dbContext = dbContext;
+        _projectAccess = projectAccess;
     }
 
     public async Task<InviteProjectMemberResponse> Handle(
         InviteProjectMemberCommand request,
         CancellationToken cancellationToken)
     {
-        var actorWorkspaceMembership = await _dbContext.WorkspaceMembers
-            .Include(member => member.Workspace)
-            .FirstOrDefaultAsync(
-                member =>
-                    member.WorkspaceId == request.WorkspaceId &&
-                    member.UserId == request.InvitedByUserId &&
-                    member.Status == MembershipStatuses.Active,
-                cancellationToken);
+        var access = await _projectAccess.GetProjectAccessAsync(
+            request.WorkspaceId,
+            request.ProjectId,
+            request.InvitedByUserId,
+            "Project not found.",
+            cancellationToken);
 
-        if (actorWorkspaceMembership is null)
-        {
-            throw new NotFoundException("Project not found.");
-        }
-
-        if (actorWorkspaceMembership.Workspace.Status == ResourceStatuses.Archived)
-        {
-            throw new ConflictException("Archived workspace cannot be modified.");
-        }
-
-        var project = await _dbContext.Projects
-            .FirstOrDefaultAsync(
-                project =>
-                    project.Id == request.ProjectId &&
-                    project.WorkspaceId == request.WorkspaceId &&
-                    project.Status == ResourceStatuses.Active,
-                cancellationToken);
-
-        if (project is null)
-        {
-            throw new NotFoundException("Project not found.");
-        }
-
-        var isWorkspaceManager =
-            actorWorkspaceMembership.Role is WorkspaceMemberRoles.Owner or WorkspaceMemberRoles.Admin;
-
-        var isProjectManager = await _dbContext.ProjectMembers
-            .AnyAsync(
-                member =>
-                    member.ProjectId == request.ProjectId &&
-                    member.UserId == request.InvitedByUserId &&
-                    member.Role == ProjectMemberRoles.Manager &&
-                    member.Status == MembershipStatuses.Active,
-                cancellationToken);
-
-        if (!isWorkspaceManager && !isProjectManager)
-        {
-            throw new ForbiddenException("You do not have permission to invite project members.");
-        }
+        _projectAccess.EnsureProjectManager(
+            access,
+            "You do not have permission to invite project members.");
 
         var normalizedIdentifier = request.Identifier.Trim().ToLowerInvariant();
 

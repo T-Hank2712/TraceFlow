@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using TraceFlow.Api.Application.Common.AccessControl;
 using TraceFlow.Api.Application.Common.Exceptions;
 using TraceFlow.Api.Domain.Constants;
 using TraceFlow.Api.Domain.Entities;
@@ -11,68 +12,30 @@ public class CreateTraceApplicationCommandHandler
     : IRequestHandler<CreateTraceApplicationCommand, CreateTraceApplicationResponse>
 {
     private readonly AppDbContext _dbContext;
+    private readonly ProjectAccessService _projectAccess;
 
-    public CreateTraceApplicationCommandHandler(AppDbContext dbContext)
+    public CreateTraceApplicationCommandHandler(
+        AppDbContext dbContext,
+        ProjectAccessService projectAccess)
     {
         _dbContext = dbContext;
+        _projectAccess = projectAccess;
     }
 
     public async Task<CreateTraceApplicationResponse> Handle(
         CreateTraceApplicationCommand request,
         CancellationToken cancellationToken)
     {
-        var workspaceMembership = await _dbContext.WorkspaceMembers
-            .Include(member => member.Workspace)
-            .FirstOrDefaultAsync(
-                member =>
-                    member.WorkspaceId == request.WorkspaceId &&
-                    member.UserId == request.UserId &&
-                    member.Status == MembershipStatuses.Active,
-                cancellationToken);
+        var access = await _projectAccess.GetProjectAccessAsync(
+            request.WorkspaceId,
+            request.ProjectId,
+            request.UserId,
+            "Project not found.",
+            cancellationToken);
 
-        if (workspaceMembership is null)
-        {
-            throw new NotFoundException("Project not found.");
-        }
-
-        if (workspaceMembership.Workspace.Status == ResourceStatuses.Archived)
-        {
-            throw new ConflictException("Archived workspace cannot be modified.");
-        }
-
-        var project = await _dbContext.Projects
-            .FirstOrDefaultAsync(
-                project =>
-                    project.Id == request.ProjectId &&
-                    project.WorkspaceId == request.WorkspaceId &&
-                    project.Status == ResourceStatuses.Active,
-                cancellationToken);
-
-        if (project is null)
-        {
-            throw new NotFoundException("Project not found.");
-        }
-
-        var isWorkspaceManager =
-            workspaceMembership.Role is WorkspaceMemberRoles.Owner or WorkspaceMemberRoles.Admin;
-
-        var projectMembership = await _dbContext.ProjectMembers
-            .AsNoTracking()
-            .FirstOrDefaultAsync(
-                member =>
-                    member.ProjectId == request.ProjectId &&
-                    member.UserId == request.UserId &&
-                    member.Status == MembershipStatuses.Active,
-                cancellationToken);
-
-        var canCreateApplication =
-            isWorkspaceManager ||
-            projectMembership?.Role is ProjectMemberRoles.Manager or ProjectMemberRoles.Developer;
-
-        if (!canCreateApplication)
-        {
-            throw new ForbiddenException("You do not have permission to create trace applications.");
-        }
+        _projectAccess.EnsureProjectDeveloperOrManager(
+            access,
+            "You do not have permission to create trace applications.");
 
         var normalizedSlug = request.Slug.Trim().ToLowerInvariant();
 

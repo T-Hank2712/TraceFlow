@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using TraceFlow.Api.Application.Common.AccessControl;
 using TraceFlow.Api.Application.Common.Exceptions;
 using TraceFlow.Api.Domain.Constants;
 using TraceFlow.Api.Infrastructure.Persistence;
@@ -10,63 +11,29 @@ public class ListProjectMembersQueryHandler
     : IRequestHandler<ListProjectMembersQuery, IReadOnlyList<ProjectMemberResponse>>
 {
     private readonly AppDbContext _dbContext;
+    private readonly ProjectAccessService _projectAccess;
 
-    public ListProjectMembersQueryHandler(AppDbContext dbContext)
+    public ListProjectMembersQueryHandler(
+        AppDbContext dbContext,
+        ProjectAccessService projectAccess)
     {
         _dbContext = dbContext;
+        _projectAccess = projectAccess;
     }
 
     public async Task<IReadOnlyList<ProjectMemberResponse>> Handle(
         ListProjectMembersQuery request,
         CancellationToken cancellationToken)
     {
-        var workspaceMembership = await _dbContext.WorkspaceMembers
-            .AsNoTracking()
-            .Include(member => member.Workspace)
-            .FirstOrDefaultAsync(
-                member =>
-                    member.WorkspaceId == request.WorkspaceId &&
-                    member.UserId == request.UserId &&
-                    member.Status == MembershipStatuses.Active,
-                cancellationToken);
+        var access = await _projectAccess.GetProjectAccessAsync(
+            request.WorkspaceId,
+            request.ProjectId,
+            request.UserId,
+            "Project not found.",
+            cancellationToken,
+            "Archived workspace cannot be accessed.");
 
-        if (workspaceMembership is null)
-        {
-            throw new NotFoundException("Project not found.");
-        }
-
-        if (workspaceMembership.Workspace.Status == ResourceStatuses.Archived)
-        {
-            throw new ConflictException("Archived workspace cannot be accessed.");
-        }
-
-        var projectExists = await _dbContext.Projects
-            .AsNoTracking()
-            .AnyAsync(
-                project =>
-                    project.Id == request.ProjectId &&
-                    project.WorkspaceId == request.WorkspaceId &&
-                    project.Status == ResourceStatuses.Active,
-                cancellationToken);
-
-        if (!projectExists)
-        {
-            throw new NotFoundException("Project not found.");
-        }
-
-        var isWorkspaceManager =
-            workspaceMembership.Role is WorkspaceMemberRoles.Owner or WorkspaceMemberRoles.Admin;
-
-        var hasProjectAccess = await _dbContext.ProjectMembers
-            .AsNoTracking()
-            .AnyAsync(
-                member =>
-                    member.ProjectId == request.ProjectId &&
-                    member.UserId == request.UserId &&
-                    member.Status == MembershipStatuses.Active,
-                cancellationToken);
-
-        if (!isWorkspaceManager && !hasProjectAccess)
+        if (!access.IsWorkspaceManager && access.ProjectMembership is null)
         {
             throw new NotFoundException("Project not found.");
         }
