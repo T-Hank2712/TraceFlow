@@ -46,6 +46,11 @@ func (h *LogHandler) Handle(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		if errors.Is(err, domain.ErrInvalidLogPayload) {
+			response.Error(w, http.StatusBadRequest, "Invalid log payload")
+			return
+		}
+
 		log.Printf("Failed to accept log: %v", err)
 		response.Error(w, http.StatusInternalServerError, "Failed to publish log")
 		return
