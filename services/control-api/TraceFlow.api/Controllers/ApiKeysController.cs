@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using TraceFlow.Api.Application.ApiKeys.Commands.CreateApiKey;
 using TraceFlow.Api.Domain.Common.Extensions;
 using TraceFlow.Api.Domain.Dtos.ApiKeys;
+using TraceFlow.Api.Application.ApiKeys.Queries.ListApiKeys;
 
 namespace TraceFlow.Api.Controllers;
 
@@ -46,5 +47,29 @@ public class ApiKeysController : ControllerBase
             cancellationToken);
 
         return StatusCode(StatusCodes.Status201Created, result);
+    }
+    [HttpGet]
+    public async Task<IActionResult> ListApiKeys(
+        Ulid workspaceId,
+        Ulid projectId,
+        Ulid applicationId,
+        CancellationToken cancellationToken)
+    {
+        var userId = User.GetUserId();
+
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var result = await _sender.Send(
+            new ListApiKeysQuery(
+                workspaceId,
+                projectId,
+                applicationId,
+                userId.Value),
+            cancellationToken);
+
+        return Ok(result);
     }
 }
