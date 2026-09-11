@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/T-Hank2712/traceflow/ingestion-api/internal/auth"
 	"github.com/T-Hank2712/traceflow/ingestion-api/internal/model"
 	"github.com/T-Hank2712/traceflow/ingestion-api/internal/producer"
 )
@@ -25,6 +26,18 @@ func (h *LogHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+
+	apiKey, err := auth.ExtractAPIKey(r)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"errror": "Unauthorized",
+		})
+		return
+	}
+	_ = apiKey
 
 	var req model.LogRequest
 
