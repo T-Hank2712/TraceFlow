@@ -1,6 +1,6 @@
-package auth
+package controlapi
 
-type ValidationResult struct {
+type validateAPIKeyResponse struct {
 	Valid         bool   `json:"valid"`
 	WorkspaceID   string `json:"workspaceId"`
 	ProjectID     string `json:"projectId"`
