@@ -5,6 +5,7 @@ using TraceFlow.Api.Application.ApiKeys.Commands.CreateApiKey;
 using TraceFlow.Api.Domain.Common.Extensions;
 using TraceFlow.Api.Domain.Dtos.ApiKeys;
 using TraceFlow.Api.Application.ApiKeys.Queries.ListApiKeys;
+using TraceFlow.Api.Application.ApiKeys.Commands.RevokeApiKey;
 
 namespace TraceFlow.Api.Controllers;
 
@@ -67,6 +68,32 @@ public class ApiKeysController : ControllerBase
                 workspaceId,
                 projectId,
                 applicationId,
+                userId.Value),
+            cancellationToken);
+
+        return Ok(result);
+    }
+    [HttpDelete("{apiKeyId}")]
+    public async Task<IActionResult> RevokeApiKey(
+        Ulid workspaceId,
+        Ulid projectId,
+        Ulid applicationId,
+        Ulid apiKeyId,
+        CancellationToken cancellationToken)
+    {
+        var userId = User.GetUserId();
+
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var result = await _sender.Send(
+            new RevokeApiKeyCommand(
+                workspaceId,
+                projectId,
+                applicationId,
+                apiKeyId,
                 userId.Value),
             cancellationToken);
 
