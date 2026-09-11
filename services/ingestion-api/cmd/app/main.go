@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/T-Hank2712/traceflow/ingestion-api/config"
+	"github.com/T-Hank2712/traceflow/ingestion-api/internal/auth"
 	"github.com/T-Hank2712/traceflow/ingestion-api/internal/handler"
 	"github.com/T-Hank2712/traceflow/ingestion-api/internal/producer"
 	"github.com/T-Hank2712/traceflow/ingestion-api/middleware"
@@ -12,6 +13,10 @@ import (
 
 func main() {
 	cfg := config.Load()
+	apiKeyValidator := auth.NewControlAPIValidator(
+		cfg.ControlAPIBaseURL,
+		cfg.InternalServiceSecret,
+	)
 	kafkaProducer, err := producer.NewKafkaProducer(
 		cfg.KafkaBootstrapServers,
 		cfg.KafkaTopic,
@@ -22,7 +27,7 @@ func main() {
 		log.Fatalf("Failed to create Kafka producer: %v", err)
 	}
 
-	logHandler := handler.NewLogHandler(kafkaProducer)
+	logHandler := handler.NewLogHandler(kafkaProducer, apiKeyValidator)
 
 	mux := http.NewServeMux()
 

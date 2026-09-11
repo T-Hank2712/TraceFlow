@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/T-Hank2712/traceflow/ingestion-api/internal/auth"
 	"github.com/T-Hank2712/traceflow/ingestion-api/internal/model"
@@ -12,64 +11,79 @@ import (
 )
 
 type LogHandler struct {
-	producer *producer.KafkaProducer
+	producer  *producer.KafkaProducer
+	validator *auth.ControlAPIValidator
 }
 
-func NewLogHandler(producer *producer.KafkaProducer) *LogHandler {
+func NewLogHandler(
+	producer *producer.KafkaProducer,
+	validator *auth.ControlAPIValidator,
+) *LogHandler {
 	return &LogHandler{
-		producer: producer,
+		producer:  producer,
+		validator: validator,
 	}
 }
 
 func (h *LogHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		writeJSONError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
 	apiKey, err := auth.ExtractAPIKey(r)
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusUnauthorized)
-
-		_ = json.NewEncoder(w).Encode(map[string]string{
-			"errror": "Unauthorized",
-		})
+		writeJSONError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
-	_ = apiKey
+
+	validationResult, err := h.validator.Validate(apiKey)
+	if err != nil {
+		writeJSONError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
 
 	var req model.LogRequest
-
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		writeJSONError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	payload, err := json.Marshal(req)
 	if err != nil {
-		http.Error(w, "Failed to serialize log", http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, "Failed to serialize log")
 		return
 	}
 
 	if err := h.producer.Publish(payload); err != nil {
 		log.Printf("Failed to publish log to Kafka: %v", err)
-		http.Error(w, "Failed to publish log", http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, "Failed to publish log")
 		return
 	}
 
 	log.Printf(
-		"Received and published log: service=%s level=%s message=%s",
+		"Received and published log: workspaceId=%s projectId=%s applicationId=%s environment=%s service=%s level=%s",
+		validationResult.WorkspaceID,
+		validationResult.ProjectID,
+		validationResult.ApplicationID,
+		validationResult.Environment,
 		req.Service,
 		req.Level,
-		req.Message,
 	)
-	log.Printf("Publishing log at %s", time.Now().Format(time.RFC3339Nano))
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusAccepted)
 
 	_ = json.NewEncoder(w).Encode(map[string]string{
 		"status": "Log accepted",
+	})
+}
+
+func writeJSONError(w http.ResponseWriter, statusCode int, message string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+
+	_ = json.NewEncoder(w).Encode(map[string]string{
+		"error": message,
 	})
 }
