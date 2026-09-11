@@ -92,6 +92,7 @@ builder.Services.AddScoped<UserLookupService>();
 builder.Services.AddScoped<ApiKeyGenerator>();
 builder.Services.AddScoped<ApiKeyHasher>();
 builder.Services.AddScoped<ApiKeyExpirationPolicyResolver>();
+builder.Services.AddScoped<ApiKeyParser>();
 
 builder.Services.AddTransient(
     typeof(IPipelineBehavior<,>),

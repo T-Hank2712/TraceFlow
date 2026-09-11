@@ -22,4 +22,12 @@ public class ApiKeyHasher
 
         return Convert.ToHexString(hashBytes).ToLowerInvariant();
     }
+    public bool Verify(string secret, string expectedHash)
+    {
+        var actualHash = Hash(secret);
+
+        return CryptographicOperations.FixedTimeEquals(
+            Encoding.UTF8.GetBytes(actualHash),
+            Encoding.UTF8.GetBytes(expectedHash));
+    }
 }
