@@ -15,6 +15,10 @@ type LogRequest struct {
 	Metadata      map[string]any `json:"metadata,omitempty"`
 }
 
+type BatchLogRequest struct {
+	Logs []LogRequest `json:"logs"`
+}
+
 type LogEvent struct {
 	EventID       string         `json:"eventId"`
 	Timestamp     string         `json:"timestamp"`
@@ -29,10 +33,6 @@ type LogEvent struct {
 	TraceID       string         `json:"traceId,omitempty"`
 	CorrelationID string         `json:"correlationId,omitempty"`
 	Metadata      map[string]any `json:"metadata,omitempty"`
-}
-
-type LogPublisher interface {
-	Publish(ctx context.Context, value []byte) error
 }
 
 type IngestionService interface {

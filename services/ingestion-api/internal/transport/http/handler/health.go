@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/T-Hank2712/traceflow/ingestion-api/internal/client/kafka"
+	"github.com/T-Hank2712/traceflow/ingestion-api/internal/ports"
 )
 
 func HealthHandler(w http.ResponseWriter, r *http.Request) {
@@ -15,11 +15,11 @@ func HealthHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func KafkaHealthHandler(producer *kafka.Producer) http.HandlerFunc {
+func KafkaHealthHandler(healthChecker ports.HealthChecker) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
-		if err := producer.HealthCheck(); err != nil {
+		if err := healthChecker.HealthCheck(); err != nil {
 			w.WriteHeader(http.StatusServiceUnavailable)
 
 			_ = json.NewEncoder(w).Encode(map[string]string{

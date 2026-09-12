@@ -6,8 +6,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/T-Hank2712/traceflow/ingestion-api/internal/auth"
 	"github.com/T-Hank2712/traceflow/ingestion-api/internal/domain"
+	transportauth "github.com/T-Hank2712/traceflow/ingestion-api/internal/transport/http/auth"
 	"github.com/T-Hank2712/traceflow/ingestion-api/internal/transport/http/response"
 )
 
@@ -27,7 +27,7 @@ func (h *LogHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	apiKey, err := auth.ExtractAPIKey(r)
+	apiKey, err := transportauth.ExtractAPIKey(r)
 	if err != nil {
 		response.Error(w, http.StatusUnauthorized, "Unauthorized")
 		return

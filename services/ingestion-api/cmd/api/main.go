@@ -4,10 +4,10 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/T-Hank2712/traceflow/ingestion-api/internal/client/controlapi"
-	"github.com/T-Hank2712/traceflow/ingestion-api/internal/client/kafka"
+	"github.com/T-Hank2712/traceflow/ingestion-api/internal/adapters/controlapi"
+	"github.com/T-Hank2712/traceflow/ingestion-api/internal/adapters/kafka"
+	ingestionservice "github.com/T-Hank2712/traceflow/ingestion-api/internal/application/ingestion"
 	"github.com/T-Hank2712/traceflow/ingestion-api/internal/config"
-	ingestionservice "github.com/T-Hank2712/traceflow/ingestion-api/internal/service"
 	transporthttp "github.com/T-Hank2712/traceflow/ingestion-api/internal/transport/http"
 	"github.com/T-Hank2712/traceflow/ingestion-api/internal/transport/http/middleware"
 )
@@ -22,8 +22,6 @@ func main() {
 		cfg.KafkaBootstrapServers,
 		cfg.KafkaTopic,
 	)
-	log.Print(cfg.KafkaTopic)
-	log.Print("Kafka Bootstrap Servers: " + cfg.KafkaBootstrapServers)
 	if err != nil {
 		log.Fatalf("Failed to create Kafka producer: %v", err)
 	}

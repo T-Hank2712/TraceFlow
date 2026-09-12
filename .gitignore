@@ -75,3 +75,5 @@ kafka-data/
 zookeeper-data/
 postgres-data/
 redis-data/
+
+AGENTS.MD
