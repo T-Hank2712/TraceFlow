@@ -31,6 +31,21 @@ var postgresConnectionString =
 var jwtSecret = builder.Configuration["Jwt:Secret"]
     ?? throw new InvalidOperationException("JWT secret is not configured.");
 
+var openSearchUrl = builder.Configuration["OpenSearch:Url"]
+    ?? throw new InvalidOperationException("OpenSearch URL is not configured.");
+
+var openSearchUsername = builder.Configuration["OpenSearch:Username"]
+    ?? throw new InvalidOperationException("OpenSearch username is not configured.");
+
+var openSearchPassword = builder.Configuration["OpenSearch:Password"]
+    ?? throw new InvalidOperationException("OpenSearch password is not configured.");
+
+var openSearchIndex = builder.Configuration["OpenSearch:Index"]
+    ?? throw new InvalidOperationException("OpenSearch index is not configured.");
+
+var openSearchSkipTlsVerify =
+    builder.Configuration.GetValue<bool>("OpenSearch:SkipTlsVerify");
+
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi(options =>
@@ -197,6 +212,17 @@ app.MapGet("/health/database/config", (IConfiguration configuration, IWebHostEnv
         builder.Port,
         builder.Database,
         builder.Username
+    });
+});
+
+app.MapGet("/health/opensearch/config", () =>
+{
+    return Results.Ok(new
+    {
+        url = openSearchUrl,
+        username = openSearchUsername,
+        index = openSearchIndex,
+        skipTlsVerify = openSearchSkipTlsVerify
     });
 });
 
