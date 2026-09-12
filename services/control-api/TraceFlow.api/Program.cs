@@ -12,6 +12,9 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using TraceFlow.Api.Application.Common.AccessControl;
 using TraceFlow.Api.Application.Common.Users;
+using System.Net.Http.Headers;
+using TraceFlow.Api.Application.Common.Logs;
+using TraceFlow.Api.Infrastructure.OpenSearch;
 
 var builder = WebApplication.CreateBuilder(args);
 var envPath = Path.Combine(
@@ -133,6 +136,26 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 );
 
 builder.Services.AddAuthorization();
+
+builder.Services.AddHttpClient<ILogSearchReader, OpenSearchLogSearchReader>(client =>
+{
+    client.BaseAddress = new Uri(openSearchUrl);
+
+    var credentials = Convert.ToBase64String(
+        Encoding.UTF8.GetBytes($"{openSearchUsername}:{openSearchPassword}"));
+
+    client.DefaultRequestHeaders.Authorization =
+        new AuthenticationHeaderValue("Basic", credentials);
+})
+.ConfigurePrimaryHttpMessageHandler(() =>
+{
+    return new HttpClientHandler
+    {
+        ServerCertificateCustomValidationCallback = openSearchSkipTlsVerify
+            ? HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+            : null
+    };
+});
 
 var app = builder.Build();
 
