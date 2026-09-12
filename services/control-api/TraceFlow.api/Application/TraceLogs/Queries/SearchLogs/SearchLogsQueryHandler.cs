@@ -58,8 +58,21 @@ public sealed class SearchLogsQueryHandler
             }
         }
 
+        var normalizedQuery = NormalizeTimeRange(request);
+
         return await _logSearchReader.SearchAsync(
             request,
             cancellationToken);
+    }
+    private static SearchLogsQuery NormalizeTimeRange(SearchLogsQuery query)
+    {
+        var to = query.To?.ToUniversalTime() ?? DateTime.UtcNow;
+        var from = query.From?.ToUniversalTime() ?? to.AddHours(-24);
+
+        return query with
+        {
+            From = from,
+            To = to
+        };
     }
 }
