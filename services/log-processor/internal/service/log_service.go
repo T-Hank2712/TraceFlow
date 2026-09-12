@@ -40,6 +40,34 @@ func (s *LogService) Process(event *model.LogEvent) error {
 }
 
 func validate(event *model.LogEvent) error {
+	if strings.TrimSpace(event.EventID) == "" {
+		return errors.New("event id is required")
+	}
+
+	if strings.TrimSpace(event.Timestamp) == "" {
+		return errors.New("timestamp is required")
+	}
+
+	if strings.TrimSpace(event.ReceivedAt) == "" {
+		return errors.New("received at is required")
+	}
+
+	if strings.TrimSpace(event.WorkspaceID) == "" {
+		return errors.New("workspace id is required")
+	}
+
+	if strings.TrimSpace(event.ProjectID) == "" {
+		return errors.New("project id is required")
+	}
+
+	if strings.TrimSpace(event.ApplicationID) == "" {
+		return errors.New("application id is required")
+	}
+
+	if strings.TrimSpace(event.Environment) == "" {
+		return errors.New("environment is required")
+	}
+
 	if strings.TrimSpace(event.Service) == "" {
 		return errors.New("service name is required")
 	}
@@ -56,7 +84,16 @@ func validate(event *model.LogEvent) error {
 }
 
 func normalize(event *model.LogEvent) {
-	event.Level = strings.ToUpper(strings.TrimSpace(event.Level))
+	event.EventID = strings.TrimSpace(event.EventID)
+	event.Timestamp = strings.TrimSpace(event.Timestamp)
+	event.ReceivedAt = strings.TrimSpace(event.ReceivedAt)
+	event.WorkspaceID = strings.TrimSpace(event.WorkspaceID)
+	event.ProjectID = strings.TrimSpace(event.ProjectID)
+	event.ApplicationID = strings.TrimSpace(event.ApplicationID)
+	event.Environment = strings.ToLower(strings.TrimSpace(event.Environment))
 	event.Service = strings.TrimSpace(event.Service)
+	event.Level = strings.ToUpper(strings.TrimSpace(event.Level))
 	event.Message = strings.TrimSpace(event.Message)
+	event.TraceID = strings.TrimSpace(event.TraceID)
+	event.CorrelationID = strings.TrimSpace(event.CorrelationID)
 }
