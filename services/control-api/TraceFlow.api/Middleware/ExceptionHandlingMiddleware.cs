@@ -45,6 +45,14 @@ namespace TraceFlow.Api.Middleware
             _logger.LogWarning(ex, "Conflict occurred.");
             await HandleExceptionAsync(context, HttpStatusCode.Conflict, ex.Message);
         }
+        catch (ExternalServiceException ex)
+        {
+            _logger.LogError(ex, "External service request failed.");
+            await HandleExceptionAsync(
+                context,
+                HttpStatusCode.ServiceUnavailable,
+                ex.Message);
+        }
         catch (InvalidOperationException ex)
         {
             _logger.LogWarning(ex, "Business rule conflict.");

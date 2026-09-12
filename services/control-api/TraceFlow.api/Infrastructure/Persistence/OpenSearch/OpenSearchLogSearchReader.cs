@@ -3,6 +3,7 @@ using System.Text.Json;
 using TraceFlow.Api.Application.Common.Logs;
 using TraceFlow.Api.Domain.Dtos.Logs;
 using TraceFlow.Api.Application.Logs.Queries.SearchLogs;
+using TraceFlow.Api.Application.Common.Exceptions;
 
 namespace TraceFlow.Api.Infrastructure.OpenSearch;
 
@@ -60,19 +61,44 @@ public sealed class OpenSearchLogSearchReader : ILogSearchReader
             Encoding.UTF8,
             "application/json");
 
-        using var response = await _httpClient.SendAsync(
-            request,
-            cancellationToken);
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-
-        if (!response.IsSuccessStatusCode)
+        try
         {
-            throw new InvalidOperationException(
-                $"OpenSearch search failed. StatusCode={response.StatusCode}, Body={content}");
-        }
+            using var response = await _httpClient.SendAsync(
+                request,
+                cancellationToken);
 
-        return ParseResponse(content, query.Page, query.PageSize);
+            var content = await response.Content.ReadAsStringAsync(cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new ExternalServiceException(
+                    "Log search backend is unavailable.");
+            }
+
+            return ParseResponse(content, query.Page, query.PageSize);
+        }
+        catch (ExternalServiceException)
+        {
+            throw;
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new ExternalServiceException(
+                "Log search backend is unavailable.",
+                ex);
+        }
+        catch (TaskCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new ExternalServiceException(
+                "Log search backend timed out.",
+                ex);
+        }
+        catch (JsonException ex)
+        {
+            throw new ExternalServiceException(
+                "Log search backend returned an invalid response.",
+                ex);
+        }
     }
 
     private static List<object> BuildFilters(SearchLogsQuery query)
