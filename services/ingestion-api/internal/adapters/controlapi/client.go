@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/T-Hank2712/traceflow/ingestion-api/internal/constants"
 	"github.com/T-Hank2712/traceflow/ingestion-api/internal/domain"
 )
 
@@ -18,12 +19,16 @@ type Client struct {
 	httpClient     *http.Client
 }
 
-func NewClient(baseURL string, internalSecret string) *Client {
+func NewClient(
+	baseURL string,
+	internalSecret string,
+	timeout time.Duration,
+) *Client {
 	return &Client{
 		baseURL:        strings.TrimRight(baseURL, "/"),
 		internalSecret: internalSecret,
 		httpClient: &http.Client{
-			Timeout: 5 * time.Second,
+			Timeout: timeout,
 		},
 	}
 }
@@ -47,7 +52,7 @@ func (c *Client) Validate(ctx context.Context, apiKey string) (*domain.APIKeyMet
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-Internal-Secret", c.internalSecret)
+	req.Header.Set(constants.InternalSecretHeader, c.internalSecret)
 
 	res, err := c.httpClient.Do(req)
 	if err != nil {

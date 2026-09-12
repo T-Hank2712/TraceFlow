@@ -11,15 +11,18 @@ import (
 type IngestionService struct {
 	apiKeyValidator ports.APIKeyValidator
 	logPublisher    ports.LogPublisher
+	policy          Policy
 }
 
 func NewIngestionService(
 	apiKeyValidator ports.APIKeyValidator,
 	logPublisher ports.LogPublisher,
+	policy Policy,
 ) *IngestionService {
 	return &IngestionService{
 		apiKeyValidator: apiKeyValidator,
 		logPublisher:    logPublisher,
+		policy:          policy,
 	}
 }
 
@@ -28,26 +31,56 @@ func (s *IngestionService) AcceptLog(
 	apiKey string,
 	request domain.LogRequest,
 ) (*domain.APIKeyMetadata, error) {
-
 	metadata, err := s.apiKeyValidator.Validate(ctx, apiKey)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := validateLogRequest(request); err != nil {
+	if err := validateLogRequest(request, s.policy); err != nil {
 		return nil, err
 	}
 
-	event := newLogEvent(metadata, request)
-
-	payload, err := json.Marshal(event)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := s.logPublisher.Publish(ctx, payload); err != nil {
+	if err := s.publishLog(ctx, metadata, request); err != nil {
 		return nil, err
 	}
 
 	return metadata, nil
+}
+
+func (s *IngestionService) AcceptBatchLogs(
+	ctx context.Context,
+	apiKey string,
+	request domain.BatchLogRequest,
+) (*domain.APIKeyMetadata, int, error) {
+	metadata, err := s.apiKeyValidator.Validate(ctx, apiKey)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	if err := validateBatchLogRequest(request, s.policy); err != nil {
+		return nil, 0, err
+	}
+
+	for _, logRequest := range request.Logs {
+		if err := s.publishLog(ctx, metadata, logRequest); err != nil {
+			return nil, 0, err
+		}
+	}
+
+	return metadata, len(request.Logs), nil
+}
+
+func (s *IngestionService) publishLog(
+	ctx context.Context,
+	metadata *domain.APIKeyMetadata,
+	request domain.LogRequest,
+) error {
+	event := newLogEvent(metadata, request)
+
+	payload, err := json.Marshal(event)
+	if err != nil {
+		return err
+	}
+
+	return s.logPublisher.Publish(ctx, payload)
 }

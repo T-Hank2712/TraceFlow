@@ -19,6 +19,11 @@ type BatchLogRequest struct {
 	Logs []LogRequest `json:"logs"`
 }
 
+type BatchLogResponse struct {
+	Status       string `json:"status"`
+	AcceptedLogs int    `json:"acceptedLogs"`
+}
+
 type LogEvent struct {
 	EventID       string         `json:"eventId"`
 	Timestamp     string         `json:"timestamp"`
@@ -36,7 +41,17 @@ type LogEvent struct {
 }
 
 type IngestionService interface {
-	AcceptLog(ctx context.Context, apiKey string, request LogRequest) (*APIKeyMetadata, error)
+	AcceptLog(
+		ctx context.Context,
+		apiKey string,
+		request LogRequest,
+	) (*APIKeyMetadata, error)
+
+	AcceptBatchLogs(
+		ctx context.Context,
+		apiKey string,
+		request BatchLogRequest,
+	) (*APIKeyMetadata, int, error)
 }
 
 var ErrInvalidLogPayload = errors.New("invalid log payload")

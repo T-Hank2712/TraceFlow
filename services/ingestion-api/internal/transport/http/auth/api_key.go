@@ -4,6 +4,8 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+
+	"github.com/T-Hank2712/traceflow/ingestion-api/internal/constants"
 )
 
 var (
@@ -12,7 +14,7 @@ var (
 )
 
 func ExtractAPIKey(r *http.Request) (string, error) {
-	header := strings.TrimSpace(r.Header.Get("Authorization"))
+	header := strings.TrimSpace(r.Header.Get(constants.AuthorizationHeader))
 	if header == "" {
 		return "", ErrMissingAuthorization
 	}
@@ -22,7 +24,7 @@ func ExtractAPIKey(r *http.Request) (string, error) {
 		return "", ErrInvalidAuthorization
 	}
 
-	if !strings.EqualFold(scheme, "ApiKey") {
+	if !strings.EqualFold(scheme, constants.APIKeyScheme) {
 		return "", ErrInvalidAuthorization
 	}
 
