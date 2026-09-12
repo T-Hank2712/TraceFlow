@@ -12,6 +12,9 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using TraceFlow.Api.Application.Common.AccessControl;
 using TraceFlow.Api.Application.Common.Users;
+using System.Net.Http.Headers;
+using TraceFlow.Api.Application.Common.Logs;
+using TraceFlow.Api.Infrastructure.OpenSearch;
 
 var builder = WebApplication.CreateBuilder(args);
 var envPath = Path.Combine(
@@ -30,6 +33,21 @@ var postgresConnectionString =
 
 var jwtSecret = builder.Configuration["Jwt:Secret"]
     ?? throw new InvalidOperationException("JWT secret is not configured.");
+
+var openSearchUrl = builder.Configuration["OpenSearch:Url"]
+    ?? throw new InvalidOperationException("OpenSearch URL is not configured.");
+
+var openSearchUsername = builder.Configuration["OpenSearch:Username"]
+    ?? throw new InvalidOperationException("OpenSearch username is not configured.");
+
+var openSearchPassword = builder.Configuration["OpenSearch:Password"]
+    ?? throw new InvalidOperationException("OpenSearch password is not configured.");
+
+var openSearchIndex = builder.Configuration["OpenSearch:Index"]
+    ?? throw new InvalidOperationException("OpenSearch index is not configured.");
+
+var openSearchSkipTlsVerify =
+    builder.Configuration.GetValue<bool>("OpenSearch:SkipTlsVerify");
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
@@ -119,6 +137,26 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
+builder.Services.AddHttpClient<ILogSearchReader, OpenSearchLogSearchReader>(client =>
+{
+    client.BaseAddress = new Uri(openSearchUrl);
+
+    var credentials = Convert.ToBase64String(
+        Encoding.UTF8.GetBytes($"{openSearchUsername}:{openSearchPassword}"));
+
+    client.DefaultRequestHeaders.Authorization =
+        new AuthenticationHeaderValue("Basic", credentials);
+})
+.ConfigurePrimaryHttpMessageHandler(() =>
+{
+    return new HttpClientHandler
+    {
+        ServerCertificateCustomValidationCallback = openSearchSkipTlsVerify
+            ? HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+            : null
+    };
+});
+
 var app = builder.Build();
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
@@ -197,6 +235,17 @@ app.MapGet("/health/database/config", (IConfiguration configuration, IWebHostEnv
         builder.Port,
         builder.Database,
         builder.Username
+    });
+});
+
+app.MapGet("/health/opensearch/config", () =>
+{
+    return Results.Ok(new
+    {
+        url = openSearchUrl,
+        username = openSearchUsername,
+        index = openSearchIndex,
+        skipTlsVerify = openSearchSkipTlsVerify
     });
 });
 

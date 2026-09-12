@@ -12,19 +12,21 @@ import (
 func main() {
 	log.Println("Log Processor started")
 
-	OpenSearchRepository, err := repository.NewOpenSearchRepository(
-		config.Load().OpenSearchURL,
-		config.Load().OpenSearchUsername,
-		config.Load().OpenSearchPassword,
-		config.Load().OpenSearchIndex,
+	cfg := config.Load()
+
+	openSearchRepository, err := repository.NewOpenSearchRepository(
+		cfg.OpenSearchURL,
+		cfg.OpenSearchUsername,
+		cfg.OpenSearchPassword,
+		cfg.OpenSearchIndex,
+		cfg.OpenSearchSkipTLSVerify,
 	)
 
 	if err != nil {
 		log.Fatalf("Failed to create OpenSearch repository: %v", err)
 	}
 
-	logService := service.NewLogService(OpenSearchRepository)
-	cfg := config.Load()
+	logService := service.NewLogService(openSearchRepository)
 
 	kafkaConsumer, err := consumer.NewKafkaConsumer(
 		cfg.KafkaBootstrapServers,
@@ -32,8 +34,6 @@ func main() {
 		cfg.KafkaTopic,
 		logService,
 	)
-
-	log.Println(logService)
 
 	if err != nil {
 		log.Fatalf("Failed to create Kafka consumer: %v", err)
