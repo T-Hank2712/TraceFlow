@@ -24,6 +24,20 @@ type BatchLogResponse struct {
 	AcceptedLogs int    `json:"acceptedLogs"`
 }
 
+type ValidationErrorDetail struct {
+	Index   *int   `json:"index,omitempty"`
+	Field   string `json:"field"`
+	Message string `json:"message"`
+}
+
+type BatchValidationError struct {
+	Details []ValidationErrorDetail
+}
+
+func (e BatchValidationError) Error() string {
+	return "invalid batch log payload"
+}
+
 type LogEvent struct {
 	EventID       string         `json:"eventId"`
 	Timestamp     string         `json:"timestamp"`

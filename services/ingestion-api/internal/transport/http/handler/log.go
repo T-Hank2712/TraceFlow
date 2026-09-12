@@ -114,6 +114,17 @@ func (h *LogHandler) HandleBatch(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		var batchValidationError domain.BatchValidationError
+		if errors.As(err, &batchValidationError) {
+			response.ValidationError(
+				w,
+				http.StatusBadRequest,
+				"Invalid batch log payload",
+				batchValidationError.Details,
+			)
+			return
+		}
+
 		if errors.Is(err, domain.ErrInvalidLogPayload) {
 			response.Error(w, http.StatusBadRequest, "Invalid log payload")
 			return
