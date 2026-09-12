@@ -38,6 +38,21 @@ func (e BatchValidationError) Error() string {
 	return "invalid batch log payload"
 }
 
+type BatchPublishError struct {
+	FailedIndex    int
+	PublishedCount int
+	TotalCount     int
+	Cause          error
+}
+
+func (e BatchPublishError) Error() string {
+	return "failed to publish batch logs"
+}
+
+func (e BatchPublishError) Unwrap() error {
+	return e.Cause
+}
+
 type LogEvent struct {
 	EventID       string         `json:"eventId"`
 	Timestamp     string         `json:"timestamp"`

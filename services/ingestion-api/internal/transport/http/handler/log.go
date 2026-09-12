@@ -125,6 +125,20 @@ func (h *LogHandler) HandleBatch(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		var batchPublishError domain.BatchPublishError
+		if errors.As(err, &batchPublishError) {
+			log.Printf(
+				"Failed to publish batch logs: failedIndex=%d publishedCount=%d totalCount=%d error=%v",
+				batchPublishError.FailedIndex,
+				batchPublishError.PublishedCount,
+				batchPublishError.TotalCount,
+				batchPublishError.Cause,
+			)
+
+			response.Error(w, http.StatusInternalServerError, "Failed to publish batch logs")
+			return
+		}
+
 		if errors.Is(err, domain.ErrInvalidLogPayload) {
 			response.Error(w, http.StatusBadRequest, "Invalid log payload")
 			return

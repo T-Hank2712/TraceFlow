@@ -61,10 +61,19 @@ func (s *IngestionService) AcceptBatchLogs(
 		return nil, 0, err
 	}
 
-	for _, logRequest := range request.Logs {
+	publishedCount := 0
+
+	for index, logRequest := range request.Logs {
 		if err := s.publishLog(ctx, metadata, logRequest); err != nil {
-			return nil, 0, err
+			return nil, publishedCount, domain.BatchPublishError{
+				FailedIndex:    index,
+				PublishedCount: publishedCount,
+				TotalCount:     len(request.Logs),
+				Cause:          err,
+			}
 		}
+
+		publishedCount++
 	}
 
 	return metadata, len(request.Logs), nil
