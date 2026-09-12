@@ -3,6 +3,7 @@ package config
 import (
 	"log"
 	"os"
+	"strconv"
 
 	"github.com/joho/godotenv"
 )
@@ -12,10 +13,11 @@ type Config struct {
 	KafkaConsumerGroup    string
 	KafkaTopic            string
 
-	OpenSearchURL      string
-	OpenSearchUsername string
-	OpenSearchPassword string
-	OpenSearchIndex    string
+	OpenSearchURL           string
+	OpenSearchUsername      string
+	OpenSearchPassword      string
+	OpenSearchIndex         string
+	OpenSearchSkipTLSVerify bool
 }
 
 func Load() Config {
@@ -23,13 +25,16 @@ func Load() Config {
 		log.Println("No .env file found, using system environment variables")
 	}
 
+	skipTLSVerify, _ := strconv.ParseBool(os.Getenv("OPENSEARCH_SKIP_TLS_VERIFY"))
+
 	return Config{
-		KafkaBootstrapServers: os.Getenv("KAFKA_BOOTSTRAP_SERVERS"),
-		KafkaConsumerGroup:    os.Getenv("KAFKA_CONSUMER_GROUP"),
-		KafkaTopic:            os.Getenv("KAFKA_TOPIC"),
-		OpenSearchURL:         os.Getenv("OPENSEARCH_URL"),
-		OpenSearchUsername:    os.Getenv("OPENSEARCH_USERNAME"),
-		OpenSearchPassword:    os.Getenv("OPENSEARCH_PASSWORD"),
-		OpenSearchIndex:       os.Getenv("OPENSEARCH_INDEX"),
+		KafkaBootstrapServers:   os.Getenv("KAFKA_BOOTSTRAP_SERVERS"),
+		KafkaConsumerGroup:      os.Getenv("KAFKA_CONSUMER_GROUP"),
+		KafkaTopic:              os.Getenv("KAFKA_TOPIC"),
+		OpenSearchURL:           os.Getenv("OPENSEARCH_URL"),
+		OpenSearchUsername:      os.Getenv("OPENSEARCH_USERNAME"),
+		OpenSearchPassword:      os.Getenv("OPENSEARCH_PASSWORD"),
+		OpenSearchIndex:         os.Getenv("OPENSEARCH_INDEX"),
+		OpenSearchSkipTLSVerify: skipTLSVerify,
 	}
 }

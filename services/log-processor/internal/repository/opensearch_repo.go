@@ -3,6 +3,7 @@ package repository
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -22,11 +23,17 @@ func NewOpenSearchRepository(
 	username string,
 	password string,
 	index string,
+	skipTLSVerify bool,
 ) (*OpenSearchRepository, error) {
 	client, err := opensearch.NewClient(opensearch.Config{
 		Addresses: []string{url},
 		Username:  username,
 		Password:  password,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: skipTLSVerify,
+			},
+		},
 	})
 
 	if err != nil {
