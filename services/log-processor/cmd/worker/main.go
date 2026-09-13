@@ -5,6 +5,7 @@ import (
 
 	"github.com/T-Hank2712/traceflow/log-processor/internal/config"
 	"github.com/T-Hank2712/traceflow/log-processor/internal/consumer"
+	"github.com/T-Hank2712/traceflow/log-processor/internal/producer"
 	"github.com/T-Hank2712/traceflow/log-processor/internal/repository"
 	"github.com/T-Hank2712/traceflow/log-processor/internal/service"
 )
@@ -28,11 +29,22 @@ func main() {
 
 	logService := service.NewLogService(openSearchRepository)
 
+	dlqProducer, err := producer.NewDLQProducer(
+		cfg.KafkaBootstrapServers,
+		cfg.KafkaDLQTopic,
+	)
+	if err != nil {
+		log.Fatalf("Failed to create DLQ producer: %v", err)
+	}
+
 	kafkaConsumer, err := consumer.NewKafkaConsumer(
 		cfg.KafkaBootstrapServers,
 		cfg.KafkaConsumerGroup,
 		cfg.KafkaTopic,
 		logService,
+		dlqProducer,
+		cfg.ProcessorMaxRetries,
+		cfg.ProcessorRetryBackoffMs,
 	)
 
 	if err != nil {

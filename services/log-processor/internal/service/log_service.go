@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/T-Hank2712/traceflow/log-processor/internal/model"
@@ -22,7 +22,6 @@ func NewLogService(
 }
 
 func (s *LogService) Process(event *model.LogEvent) error {
-
 	if err := validate(event); err != nil {
 		return err
 	}
@@ -33,7 +32,7 @@ func (s *LogService) Process(event *model.LogEvent) error {
 		context.Background(),
 		event,
 	); err != nil {
-		return err
+		return fmt.Errorf("%w: %w", ErrIndexLogFailed, err)
 	}
 
 	return nil
@@ -41,46 +40,50 @@ func (s *LogService) Process(event *model.LogEvent) error {
 
 func validate(event *model.LogEvent) error {
 	if strings.TrimSpace(event.EventID) == "" {
-		return errors.New("event id is required")
+		return invalidLogEvent("event id is required")
 	}
 
 	if strings.TrimSpace(event.Timestamp) == "" {
-		return errors.New("timestamp is required")
+		return invalidLogEvent("timestamp is required")
 	}
 
 	if strings.TrimSpace(event.ReceivedAt) == "" {
-		return errors.New("received at is required")
+		return invalidLogEvent("received at is required")
 	}
 
 	if strings.TrimSpace(event.WorkspaceID) == "" {
-		return errors.New("workspace id is required")
+		return invalidLogEvent("workspace id is required")
 	}
 
 	if strings.TrimSpace(event.ProjectID) == "" {
-		return errors.New("project id is required")
+		return invalidLogEvent("project id is required")
 	}
 
 	if strings.TrimSpace(event.ApplicationID) == "" {
-		return errors.New("application id is required")
+		return invalidLogEvent("application id is required")
 	}
 
 	if strings.TrimSpace(event.Environment) == "" {
-		return errors.New("environment is required")
+		return invalidLogEvent("environment is required")
 	}
 
 	if strings.TrimSpace(event.Service) == "" {
-		return errors.New("service name is required")
+		return invalidLogEvent("service name is required")
 	}
 
 	if strings.TrimSpace(event.Level) == "" {
-		return errors.New("level is required")
+		return invalidLogEvent("level is required")
 	}
 
 	if strings.TrimSpace(event.Message) == "" {
-		return errors.New("message is required")
+		return invalidLogEvent("message is required")
 	}
 
 	return nil
+}
+
+func invalidLogEvent(reason string) error {
+	return fmt.Errorf("%w: %s", ErrInvalidLogEvent, reason)
 }
 
 func normalize(event *model.LogEvent) {
