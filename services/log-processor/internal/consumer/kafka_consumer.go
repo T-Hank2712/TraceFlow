@@ -20,6 +20,9 @@ type KafkaConsumer struct {
 	dlqProducer             *producer.DLQProducer
 	processorMaxRetries     int
 	processorRetryBackoffMs int
+	batch                   []model.BatchItem
+	batchSize               int
+	flushInterval           time.Duration
 }
 
 func NewKafkaConsumer(
@@ -30,6 +33,8 @@ func NewKafkaConsumer(
 	dlqProducer *producer.DLQProducer,
 	processorMaxRetries int,
 	processorRetryBackoffMs int,
+	batchSize int,
+	flushIntervalMs int,
 ) (*KafkaConsumer, error) {
 	c, err := kafka.NewConsumer(&kafka.ConfigMap{
 		"bootstrap.servers": brokers,
@@ -48,6 +53,9 @@ func NewKafkaConsumer(
 		dlqProducer:             dlqProducer,
 		processorMaxRetries:     processorMaxRetries,
 		processorRetryBackoffMs: processorRetryBackoffMs,
+		batch:                   make([]model.BatchItem, 0, batchSize),
+		batchSize:               batchSize,
+		flushInterval:           time.Duration(flushIntervalMs) * time.Millisecond,
 	}, nil
 }
 

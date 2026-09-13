@@ -45,6 +45,8 @@ func main() {
 		dlqProducer,
 		cfg.ProcessorMaxRetries,
 		cfg.ProcessorRetryBackoffMs,
+		cfg.ProcessorBatchSize,
+		cfg.ProcessorFlushIntervalMs,
 	)
 
 	if err != nil {
