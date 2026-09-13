@@ -95,8 +95,8 @@ func (k *KafkaConsumer) Subscribe() error {
 			continue
 		}
 
-		if err := k.processWithRetry(&event); err != nil {
-			log.Printf("Failed to process log event: %v", err)
+		if err := k.logService.Prepare(&event); err != nil {
+			log.Printf("Failed to prepare log event: %v", err)
 
 			if errors.Is(err, service.ErrInvalidLogEvent) {
 				if dlqErr := k.publishDeadLetter(
@@ -119,37 +119,20 @@ func (k *KafkaConsumer) Subscribe() error {
 				continue
 			}
 
-			if errors.Is(err, service.ErrIndexLogFailed) {
-				if dlqErr := k.publishDeadLetter(
-					context.Background(),
-					message,
-					model.FailureStageIndexing,
-					err.Error(),
-					&event,
-				); dlqErr != nil {
-					log.Printf("Failed to publish indexing failure to DLQ: %v", dlqErr)
-				} else {
-					log.Printf("Indexing failure sent to DLQ: eventId=%s topic=%s partition=%d offset=%d",
-						event.EventID,
-						topicName(message),
-						message.TopicPartition.Partition,
-						message.TopicPartition.Offset,
-					)
-				}
-
-				continue
-			}
-
-			log.Printf("Unexpected log processing error: %v", err)
+			log.Printf("Unexpected log preparation error: %v", err)
 			continue
 		}
 
-		log.Printf(
-			"Processed log: service=%s level=%s message=%s",
-			event.Service,
-			event.Level,
-			event.Message,
-		)
+		k.addToBatch(model.BatchItem{
+			Event:   event,
+			Message: message,
+		})
+
+		if k.shouldFlushBatch() {
+			k.flushBatch()
+		}
+
+		continue
 	}
 }
 
@@ -225,4 +208,69 @@ func (k *KafkaConsumer) processWithRetry(event *model.LogEvent) error {
 	}
 
 	return lastErr
+}
+
+func (k *KafkaConsumer) addToBatch(item model.BatchItem) {
+	k.batch = append(k.batch, item)
+
+	log.Printf(
+		"Added log event to batch: eventId=%s batchSize=%d maxBatchSize=%d",
+		item.Event.EventID,
+		len(k.batch),
+		k.batchSize,
+	)
+}
+
+func (k *KafkaConsumer) shouldFlushBatch() bool {
+	return k.batchSize > 0 && len(k.batch) >= k.batchSize
+}
+
+func (k *KafkaConsumer) flushBatch() {
+	if len(k.batch) == 0 {
+		return
+	}
+
+	batch := k.batch
+	k.batch = make([]model.BatchItem, 0, k.batchSize)
+
+	log.Printf("Flushing log batch: size=%d", len(batch))
+
+	for _, item := range batch {
+		if err := k.processWithRetry(&item.Event); err != nil {
+			log.Printf("Failed to process batched log event: %v", err)
+
+			if errors.Is(err, service.ErrInvalidLogEvent) {
+				if dlqErr := k.publishDeadLetter(
+					context.Background(),
+					item.Message,
+					model.FailureStageValidation,
+					err.Error(),
+					&item.Event,
+				); dlqErr != nil {
+					log.Printf("Failed to publish invalid batched log event to DLQ: %v", dlqErr)
+				}
+
+				continue
+			}
+
+			if errors.Is(err, service.ErrIndexLogFailed) {
+				if dlqErr := k.publishDeadLetter(
+					context.Background(),
+					item.Message,
+					model.FailureStageIndexing,
+					err.Error(),
+					&item.Event,
+				); dlqErr != nil {
+					log.Printf("Failed to publish batched indexing failure to DLQ: %v", dlqErr)
+				}
+
+				continue
+			}
+
+			log.Printf("Unexpected batched log processing error: %v", err)
+			continue
+		}
+	}
+
+	log.Printf("Flushed log batch: size=%d", len(batch))
 }
