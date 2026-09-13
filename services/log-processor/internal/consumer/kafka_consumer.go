@@ -22,6 +22,7 @@ type KafkaConsumer struct {
 	processorRetryBackoffMs int
 	batch                   []model.BatchItem
 	batchSize               int
+	batchStartedAt          time.Time
 	flushInterval           time.Duration
 	pollTimeout             time.Duration
 }
@@ -72,11 +73,9 @@ func (k *KafkaConsumer) Subscribe() error {
 
 	log.Printf("Kafka consumer subscribed to topic: %s", k.topic)
 
-	lastFlushAt := time.Now()
 	for {
-		if k.shouldFlushByInterval(lastFlushAt) {
+		if k.shouldFlushByInterval() {
 			k.flushBatch()
-			lastFlushAt = time.Now()
 		}
 		message, err := k.consumer.ReadMessage(k.pollTimeout)
 
@@ -225,6 +224,10 @@ func (k *KafkaConsumer) processWithRetry(event *model.LogEvent) error {
 }
 
 func (k *KafkaConsumer) addToBatch(item model.BatchItem) {
+	if len(k.batch) == 0 {
+		k.batchStartedAt = time.Now()
+	}
+
 	k.batch = append(k.batch, item)
 
 	log.Printf(
@@ -246,6 +249,7 @@ func (k *KafkaConsumer) flushBatch() {
 
 	batch := k.batch
 	k.batch = make([]model.BatchItem, 0, k.batchSize)
+	k.batchStartedAt = time.Time{}
 
 	log.Printf("Flushing log batch: size=%d", len(batch))
 
@@ -289,8 +293,9 @@ func (k *KafkaConsumer) flushBatch() {
 	log.Printf("Flushed log batch: size=%d", len(batch))
 }
 
-func (k *KafkaConsumer) shouldFlushByInterval(lastFlushAt time.Time) bool {
+func (k *KafkaConsumer) shouldFlushByInterval() bool {
 	return k.flushInterval > 0 &&
 		len(k.batch) > 0 &&
-		time.Since(lastFlushAt) >= k.flushInterval
+		!k.batchStartedAt.IsZero() &&
+		time.Since(k.batchStartedAt) >= k.flushInterval
 }
