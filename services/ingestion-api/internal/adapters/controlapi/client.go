@@ -9,21 +9,29 @@ import (
 	"strings"
 	"time"
 
+	"github.com/T-Hank2712/traceflow/ingestion-api/internal/constants"
 	"github.com/T-Hank2712/traceflow/ingestion-api/internal/domain"
 )
 
 type Client struct {
 	baseURL        string
+	validateKeyURL string
 	internalSecret string
 	httpClient     *http.Client
 }
 
-func NewClient(baseURL string, internalSecret string) *Client {
+func NewClient(
+	baseURL string,
+	validateKeyURL string,
+	internalSecret string,
+	timeout time.Duration,
+) *Client {
 	return &Client{
 		baseURL:        strings.TrimRight(baseURL, "/"),
+		validateKeyURL: strings.TrimRight(validateKeyURL, "/"),
 		internalSecret: internalSecret,
 		httpClient: &http.Client{
-			Timeout: 5 * time.Second,
+			Timeout: timeout,
 		},
 	}
 }
@@ -39,7 +47,7 @@ func (c *Client) Validate(ctx context.Context, apiKey string) (*domain.APIKeyMet
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		fmt.Sprintf("%s/internal/api-keys/validate", c.baseURL),
+		fmt.Sprintf("%s/%s", c.baseURL, strings.TrimLeft(c.validateKeyURL, "/")),
 		bytes.NewReader(body),
 	)
 	if err != nil {
@@ -47,7 +55,7 @@ func (c *Client) Validate(ctx context.Context, apiKey string) (*domain.APIKeyMet
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-Internal-Secret", c.internalSecret)
+	req.Header.Set(constants.InternalSecretHeader, c.internalSecret)
 
 	res, err := c.httpClient.Do(req)
 	if err != nil {

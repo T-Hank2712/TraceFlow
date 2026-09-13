@@ -15,6 +15,44 @@ type LogRequest struct {
 	Metadata      map[string]any `json:"metadata,omitempty"`
 }
 
+type BatchLogRequest struct {
+	Logs []LogRequest `json:"logs"`
+}
+
+type BatchLogResponse struct {
+	Status       string `json:"status"`
+	AcceptedLogs int    `json:"acceptedLogs"`
+}
+
+type ValidationErrorDetail struct {
+	Index   *int   `json:"index,omitempty"`
+	Field   string `json:"field"`
+	Message string `json:"message"`
+}
+
+type BatchValidationError struct {
+	Details []ValidationErrorDetail
+}
+
+func (e BatchValidationError) Error() string {
+	return "invalid batch log payload"
+}
+
+type BatchPublishError struct {
+	FailedIndex    int
+	PublishedCount int
+	TotalCount     int
+	Cause          error
+}
+
+func (e BatchPublishError) Error() string {
+	return "failed to publish batch logs"
+}
+
+func (e BatchPublishError) Unwrap() error {
+	return e.Cause
+}
+
 type LogEvent struct {
 	EventID       string         `json:"eventId"`
 	Timestamp     string         `json:"timestamp"`
@@ -31,12 +69,18 @@ type LogEvent struct {
 	Metadata      map[string]any `json:"metadata,omitempty"`
 }
 
-type LogPublisher interface {
-	Publish(ctx context.Context, value []byte) error
-}
-
 type IngestionService interface {
-	AcceptLog(ctx context.Context, apiKey string, request LogRequest) (*APIKeyMetadata, error)
+	AcceptLog(
+		ctx context.Context,
+		apiKey string,
+		request LogRequest,
+	) (*APIKeyMetadata, error)
+
+	AcceptBatchLogs(
+		ctx context.Context,
+		apiKey string,
+		request BatchLogRequest,
+	) (*APIKeyMetadata, int, error)
 }
 
 var ErrInvalidLogPayload = errors.New("invalid log payload")

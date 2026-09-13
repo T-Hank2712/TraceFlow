@@ -3,41 +3,55 @@ package main
 import (
 	"log"
 	"net/http"
+	"time"
 
-	"github.com/T-Hank2712/traceflow/ingestion-api/internal/client/controlapi"
-	"github.com/T-Hank2712/traceflow/ingestion-api/internal/client/kafka"
+	"github.com/T-Hank2712/traceflow/ingestion-api/internal/adapters/controlapi"
+	"github.com/T-Hank2712/traceflow/ingestion-api/internal/adapters/kafka"
+	"github.com/T-Hank2712/traceflow/ingestion-api/internal/application/ingestion"
 	"github.com/T-Hank2712/traceflow/ingestion-api/internal/config"
-	ingestionservice "github.com/T-Hank2712/traceflow/ingestion-api/internal/service"
 	transporthttp "github.com/T-Hank2712/traceflow/ingestion-api/internal/transport/http"
 	"github.com/T-Hank2712/traceflow/ingestion-api/internal/transport/http/middleware"
 )
 
 func main() {
 	cfg := config.Load()
+
+	policy := ingestion.NewPolicy(
+		cfg.MaxBatchSize,
+		cfg.MaxRequestBodyBytes,
+	)
+
 	controlAPIClient := controlapi.NewClient(
 		cfg.ControlAPIBaseURL,
+		cfg.ValidateAPIKeyURL,
 		cfg.InternalServiceSecret,
+		time.Duration(cfg.ControlAPITimeoutSeconds)*time.Second,
 	)
+
 	kafkaProducer, err := kafka.NewProducer(
 		cfg.KafkaBootstrapServers,
 		cfg.KafkaTopic,
+		time.Duration(cfg.KafkaDeliveryTimeoutSeconds)*time.Second,
 	)
-	log.Print(cfg.KafkaTopic)
-	log.Print("Kafka Bootstrap Servers: " + cfg.KafkaBootstrapServers)
 	if err != nil {
 		log.Fatalf("Failed to create Kafka producer: %v", err)
 	}
 
-	ingestionService := ingestionservice.NewIngestionService(
+	ingestionService := ingestion.NewIngestionService(
 		controlAPIClient,
 		kafkaProducer,
+		policy,
 	)
 
-	router := transporthttp.NewRouter(kafkaProducer, ingestionService)
+	router := transporthttp.NewRouter(
+		kafkaProducer,
+		ingestionService,
+		policy,
+	)
 
-	log.Println("Ingestion API listening on :8080")
+	log.Printf("Ingestion API listening on %s", cfg.Port)
 
-	if err := http.ListenAndServe(":8080", middleware.Logging(router)); err != nil {
+	if err := http.ListenAndServe(cfg.Port, middleware.Logging(router)); err != nil {
 		log.Fatal(err)
 	}
 }
