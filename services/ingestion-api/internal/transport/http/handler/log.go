@@ -60,7 +60,7 @@ func (h *LogHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		}
 
 		log.Printf("Failed to accept log: %v", err)
-		response.Error(w, http.StatusInternalServerError, "Failed to publish log")
+		response.Error(w, http.StatusServiceUnavailable, "Failed to publish log")
 		return
 	}
 
@@ -135,7 +135,7 @@ func (h *LogHandler) HandleBatch(w http.ResponseWriter, r *http.Request) {
 				batchPublishError.Cause,
 			)
 
-			response.Error(w, http.StatusInternalServerError, "Failed to publish batch logs")
+			response.Error(w, http.StatusServiceUnavailable, "Failed to publish batch logs")
 			return
 		}
 
@@ -145,7 +145,7 @@ func (h *LogHandler) HandleBatch(w http.ResponseWriter, r *http.Request) {
 		}
 
 		log.Printf("Failed to accept batch logs: %v", err)
-		response.Error(w, http.StatusInternalServerError, "Failed to publish logs")
+		response.Error(w, http.StatusServiceUnavailable, "Failed to publish logs")
 		return
 	}
 

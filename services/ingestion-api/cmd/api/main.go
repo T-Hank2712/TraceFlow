@@ -23,6 +23,7 @@ func main() {
 
 	controlAPIClient := controlapi.NewClient(
 		cfg.ControlAPIBaseURL,
+		cfg.ValidateAPIKeyURL,
 		cfg.InternalServiceSecret,
 		time.Duration(cfg.ControlAPITimeoutSeconds)*time.Second,
 	)
@@ -30,6 +31,7 @@ func main() {
 	kafkaProducer, err := kafka.NewProducer(
 		cfg.KafkaBootstrapServers,
 		cfg.KafkaTopic,
+		time.Duration(cfg.KafkaDeliveryTimeoutSeconds)*time.Second,
 	)
 	if err != nil {
 		log.Fatalf("Failed to create Kafka producer: %v", err)

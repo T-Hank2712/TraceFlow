@@ -12,11 +12,13 @@ type Config struct {
 	Port string
 
 	ControlAPIBaseURL        string
+	ValidateAPIKeyURL        string
 	InternalServiceSecret    string
 	ControlAPITimeoutSeconds int
 
-	KafkaBootstrapServers string
-	KafkaTopic            string
+	KafkaBootstrapServers       string
+	KafkaTopic                  string
+	KafkaDeliveryTimeoutSeconds int
 
 	MaxBatchSize        int
 	MaxRequestBodyBytes int64
@@ -31,11 +33,13 @@ func Load() Config {
 		Port: getString("PORT", ":8080"),
 
 		ControlAPIBaseURL:        getString("CONTROL_API_BASE_URL", "http://localhost:5075"),
+		ValidateAPIKeyURL:        getString("VALIDATE_API_URL", "/internal/api-keys/validate"),
 		InternalServiceSecret:    os.Getenv("INTERNAL_SERVICE_SECRET"),
 		ControlAPITimeoutSeconds: getInt("CONTROL_API_TIMEOUT_SECONDS", 5),
 
-		KafkaBootstrapServers: getString("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"),
-		KafkaTopic:            getString("KAFKA_TOPIC", "traceflow.logs"),
+		KafkaBootstrapServers:       getString("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"),
+		KafkaTopic:                  getString("KAFKA_TOPIC", "traceflow.logs"),
+		KafkaDeliveryTimeoutSeconds: getInt("KAFKA_DELIVERY_TIMEOUT_SECONDS", 5),
 
 		MaxBatchSize:        getInt("MAX_BATCH_SIZE", 100),
 		MaxRequestBodyBytes: getInt64("MAX_REQUEST_BODY_BYTES", 1048576),

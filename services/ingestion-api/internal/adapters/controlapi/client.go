@@ -15,17 +15,20 @@ import (
 
 type Client struct {
 	baseURL        string
+	validateKeyURL string
 	internalSecret string
 	httpClient     *http.Client
 }
 
 func NewClient(
 	baseURL string,
+	validateKeyURL string,
 	internalSecret string,
 	timeout time.Duration,
 ) *Client {
 	return &Client{
 		baseURL:        strings.TrimRight(baseURL, "/"),
+		validateKeyURL: strings.TrimRight(validateKeyURL, "/"),
 		internalSecret: internalSecret,
 		httpClient: &http.Client{
 			Timeout: timeout,
@@ -44,7 +47,7 @@ func (c *Client) Validate(ctx context.Context, apiKey string) (*domain.APIKeyMet
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		fmt.Sprintf("%s/internal/api-keys/validate", c.baseURL),
+		fmt.Sprintf("%s/%s", c.baseURL, strings.TrimLeft(c.validateKeyURL, "/")),
 		bytes.NewReader(body),
 	)
 	if err != nil {
