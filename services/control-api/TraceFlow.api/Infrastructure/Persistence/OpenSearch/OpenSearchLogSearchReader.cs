@@ -11,13 +11,16 @@ public sealed class OpenSearchLogSearchReader : ILogSearchReader
 {
     private readonly HttpClient _httpClient;
     private readonly IConfiguration _configuration;
+    private readonly ILogger<OpenSearchLogSearchReader> _logger;
 
     public OpenSearchLogSearchReader(
         HttpClient httpClient,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        ILogger<OpenSearchLogSearchReader> logger)
     {
         _httpClient = httpClient;
         _configuration = configuration;
+        _logger = logger;
     }
 
     public async Task<SearchLogsResponse> SearchAsync(
@@ -71,6 +74,12 @@ public sealed class OpenSearchLogSearchReader : ILogSearchReader
 
             if (!response.IsSuccessStatusCode)
             {
+                _logger.LogError(
+                    "OpenSearch search failed. Index={Index} StatusCode={StatusCode} Body={Body}",
+                    index,
+                    response.StatusCode,
+                    content);
+
                 throw new ExternalServiceException(
                     "Log search backend is unavailable.");
             }
@@ -83,18 +92,33 @@ public sealed class OpenSearchLogSearchReader : ILogSearchReader
         }
         catch (HttpRequestException ex)
         {
+            _logger.LogError(
+                ex,
+                "Failed to connect to OpenSearch. Index={Index}",
+                index);
+
             throw new ExternalServiceException(
                 "Log search backend is unavailable.",
                 ex);
         }
         catch (TaskCanceledException ex) when (!cancellationToken.IsCancellationRequested)
         {
+            _logger.LogError(
+                ex,
+                "OpenSearch search timed out. Index={Index}",
+                index);
+
             throw new ExternalServiceException(
                 "Log search backend timed out.",
                 ex);
         }
         catch (JsonException ex)
         {
+            _logger.LogError(
+                ex,
+                "Failed to parse OpenSearch search response. Index={Index}",
+                index);
+
             throw new ExternalServiceException(
                 "Log search backend returned an invalid response.",
                 ex);
