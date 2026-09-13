@@ -23,6 +23,7 @@ type KafkaConsumer struct {
 	batch                   []model.BatchItem
 	batchSize               int
 	flushInterval           time.Duration
+	pollTimeout             time.Duration
 }
 
 func NewKafkaConsumer(
@@ -35,6 +36,7 @@ func NewKafkaConsumer(
 	processorRetryBackoffMs int,
 	batchSize int,
 	flushIntervalMs int,
+	pollTimeout int,
 ) (*KafkaConsumer, error) {
 	c, err := kafka.NewConsumer(&kafka.ConfigMap{
 		"bootstrap.servers": brokers,
@@ -56,6 +58,7 @@ func NewKafkaConsumer(
 		batch:                   make([]model.BatchItem, 0, batchSize),
 		batchSize:               batchSize,
 		flushInterval:           time.Duration(flushIntervalMs) * time.Millisecond,
+		pollTimeout:             time.Duration(pollTimeout) * time.Millisecond,
 	}, nil
 }
 
@@ -69,14 +72,25 @@ func (k *KafkaConsumer) Subscribe() error {
 
 	log.Printf("Kafka consumer subscribed to topic: %s", k.topic)
 
+	lastFlushAt := time.Now()
 	for {
-		log.Println("Waiting for Kafka message...")
-		message, err := k.consumer.ReadMessage(-1)
-		log.Printf("Received Kafka message at %s", time.Now().Format(time.RFC3339Nano))
+		if k.shouldFlushByInterval(lastFlushAt) {
+			k.flushBatch()
+			lastFlushAt = time.Now()
+		}
+		message, err := k.consumer.ReadMessage(k.pollTimeout)
+
 		if err != nil {
+			if kafkaErr, ok := err.(kafka.Error); ok && kafkaErr.Code() == kafka.ErrTimedOut {
+				continue
+			}
+
 			log.Printf("Failed to read Kafka message: %v", err)
 			continue
 		}
+
+		log.Printf("Received Kafka message at %s", time.Now().Format(time.RFC3339Nano))
+
 		var event model.LogEvent
 
 		if err := json.Unmarshal(message.Value, &event); err != nil {
@@ -273,4 +287,10 @@ func (k *KafkaConsumer) flushBatch() {
 	}
 
 	log.Printf("Flushed log batch: size=%d", len(batch))
+}
+
+func (k *KafkaConsumer) shouldFlushByInterval(lastFlushAt time.Time) bool {
+	return k.flushInterval > 0 &&
+		len(k.batch) > 0 &&
+		time.Since(lastFlushAt) >= k.flushInterval
 }

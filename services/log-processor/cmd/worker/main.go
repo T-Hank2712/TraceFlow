@@ -47,6 +47,7 @@ func main() {
 		cfg.ProcessorRetryBackoffMs,
 		cfg.ProcessorBatchSize,
 		cfg.ProcessorFlushIntervalMs,
+		cfg.KafkaPollTimeoutMs,
 	)
 
 	if err != nil {

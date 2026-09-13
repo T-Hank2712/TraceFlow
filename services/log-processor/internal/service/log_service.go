@@ -26,8 +26,6 @@ func (s *LogService) Process(event *model.LogEvent) error {
 		return err
 	}
 
-	normalize(event)
-
 	if err := s.repository.IndexLog(
 		context.Background(),
 		event,

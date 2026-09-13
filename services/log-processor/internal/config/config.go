@@ -13,6 +13,7 @@ type Config struct {
 	KafkaConsumerGroup    string
 	KafkaTopic            string
 	KafkaDLQTopic         string
+	KafkaPollTimeoutMs    int
 
 	ProcessorMaxRetries      int
 	ProcessorRetryBackoffMs  int
@@ -38,6 +39,7 @@ func Load() Config {
 		KafkaConsumerGroup:       os.Getenv("KAFKA_CONSUMER_GROUP"),
 		KafkaTopic:               os.Getenv("KAFKA_TOPIC"),
 		KafkaDLQTopic:            getString("KAFKA_DLQ_TOPIC", "traceflow.logs.dlq"),
+		KafkaPollTimeoutMs:       getInt("KAFKA_POLL_TIMEOUT_MS", 100),
 		ProcessorMaxRetries:      getInt("PROCESSOR_MAX_RETRIES", 3),
 		ProcessorRetryBackoffMs:  getInt("PROCESSOR_RETRY_BACKOFF_MS", 500),
 		ProcessorBatchSize:       getInt("PROCESSOR_BATCH_SIZE", 100),
