@@ -15,7 +15,7 @@ public class ChangePasswordCommandHandler : IRequestHandler<ChangePasswordComman
     {
         _dbContext = dbContext;
         _passwordHasher = passwordHasher;
-    } 
+    }
     public async Task<ChangePasswordResponse> Handle(ChangePasswordCommand request, CancellationToken cancellationToken)
     {
         var user = await _dbContext.Users

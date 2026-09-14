@@ -15,7 +15,7 @@ public class ProjectMember : Entity
     public string Status { get; private set; } = MembershipStatuses.Active;
     public DateTime JoinedAt { get; private set; }
 
-    private ProjectMember() {}
+    private ProjectMember() { }
 
     public ProjectMember(
         Ulid projectId,

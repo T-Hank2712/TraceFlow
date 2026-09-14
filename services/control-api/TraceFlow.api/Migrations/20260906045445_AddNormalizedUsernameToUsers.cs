@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -21,7 +21,7 @@ namespace TraceFlow.Api.Migrations
                 maxLength: 50,
                 nullable: false,
                 defaultValue: "");
-                
+
             migrationBuilder.Sql("""
                 UPDATE "Users"
                 SET "NormalizedUsername" = lower(trim("UserName"));

@@ -9,11 +9,11 @@ public class Workspace : Entity
     public Ulid OwnerUserId { get; private set; }
     public User Owner { get; private set; } = null!;
     public string Slug { get; private set; } = string.Empty;
-    public string? Description { get; private set;} = string.Empty;
+    public string? Description { get; private set; } = string.Empty;
     public string Status { get; private set; } = ResourceStatuses.Active;
     public ICollection<WorkspaceMember> Members = new List<WorkspaceMember>();
     public ICollection<Project> Projects { get; private set; } = new List<Project>();
-    private Workspace() {}
+    private Workspace() { }
     public Workspace(Ulid OwnerUserId, string Name, string Slug, string? Description)
     {
         this.Id = Ulid.NewUlid();

@@ -17,7 +17,7 @@ public class TraceApplication : Entity
     public string Status { get; private set; } = ResourceStatuses.Active;
     public ICollection<ApiKey> ApiKeys { get; private set; } = new List<ApiKey>();
 
-    private TraceApplication() {}
+    private TraceApplication() { }
 
     public TraceApplication(
         Ulid projectId,

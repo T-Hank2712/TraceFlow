@@ -20,7 +20,7 @@ namespace TraceFlow.Api.Domain.Entities
             = new List<WorkspaceMember>();
         public ICollection<ProjectMember> ProjectMemberships { get; private set; }
         = new List<ProjectMember>();
-        private User() {}
+        private User() { }
         public User(string Email, string UserName, string FirstName, string LastName, string PasswordHash)
         {
             this.Id = Ulid.NewUlid();

@@ -2,6 +2,7 @@ using TraceFlow.Api.Domain.Common;
 using TraceFlow.Api.Domain.Constants;
 
 namespace TraceFlow.Api.Domain.Entities;
+
 public class Project : Entity
 {
     public Ulid WorkspaceId { get; private set; }
@@ -17,13 +18,13 @@ public class Project : Entity
     = new List<ProjectMember>();
     public ICollection<TraceApplication> TraceApplications { get; private set; }
     = new List<TraceApplication>();
-    private Project() {}
-        public Project(
-        Ulid WorkspaceId,
-        Ulid CreatedByUserId,
-        string Name,
-        string Slug,
-        string? Description)
+    private Project() { }
+    public Project(
+    Ulid WorkspaceId,
+    Ulid CreatedByUserId,
+    string Name,
+    string Slug,
+    string? Description)
     {
         Id = Ulid.NewUlid();
         this.WorkspaceId = WorkspaceId;
