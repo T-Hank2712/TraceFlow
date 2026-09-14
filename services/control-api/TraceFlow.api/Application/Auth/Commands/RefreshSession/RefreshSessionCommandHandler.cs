@@ -60,7 +60,7 @@ public class RefreshSessionCommandHandler : IRequestHandler<RefreshSessionComman
             newRefreshToken.Hash,
             DateTime.UtcNow.AddDays(refreshTokenExpirationDays));
 
-                _dbContext.RefreshTokens.Add(newRefreshTokenEntity);
+        _dbContext.RefreshTokens.Add(newRefreshTokenEntity);
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 

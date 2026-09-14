@@ -36,10 +36,10 @@ public class WorkspaceConfiguration : IEntityTypeConfiguration<Workspace>
             .HasMaxLength(100);
 
         builder.HasIndex(workspace => new
-            {
-                workspace.OwnerUserId,
-                workspace.Slug
-            })
+        {
+            workspace.OwnerUserId,
+            workspace.Slug
+        })
             .IsUnique()
             .HasFilter("\"Status\" = 'active'");
 

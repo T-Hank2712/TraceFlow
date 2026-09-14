@@ -65,10 +65,10 @@ public class ProjectInvitationConfiguration
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(invitation => new
-            {
-                invitation.ProjectId,
-                invitation.InvitedUserId
-            })
+        {
+            invitation.ProjectId,
+            invitation.InvitedUserId
+        })
             .IsUnique()
             .HasFilter("\"Status\" = 'pending'");
     }

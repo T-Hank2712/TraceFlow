@@ -1,4 +1,5 @@
 namespace TraceFlow.Api.Application.Projects.Queries.ListProjects;
+
 public record ProjectSummaryResponse(
     Ulid Id,
     Ulid WorkspaceId,

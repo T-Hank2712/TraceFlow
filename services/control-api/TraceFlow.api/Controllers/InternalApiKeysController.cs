@@ -31,7 +31,7 @@ public class InternalApiKeysController : ControllerBase
         {
             return Unauthorized();
         }
-        
+
         var result = await _sender.Send(
             new ValidateApiKeyCommand(request.ApiKey),
             cancellationToken);

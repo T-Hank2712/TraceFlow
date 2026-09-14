@@ -51,10 +51,10 @@ public class ProjectConfiguration : IEntityTypeConfiguration<Project>
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(project => new
-            {
-                project.WorkspaceId,
-                project.Slug
-            })
+        {
+            project.WorkspaceId,
+            project.Slug
+        })
             .IsUnique()
             .HasFilter($"\"Status\" = '{ResourceStatuses.Active}'");
     }

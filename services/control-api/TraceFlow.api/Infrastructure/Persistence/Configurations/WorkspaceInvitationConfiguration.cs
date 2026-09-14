@@ -56,10 +56,10 @@ public class WorkspaceInvitationConfiguration
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(invitation => new
-            {
-                invitation.WorkspaceId,
-                invitation.InvitedUserId
-            })
+        {
+            invitation.WorkspaceId,
+            invitation.InvitedUserId
+        })
             .IsUnique()
             .HasFilter("\"Status\" = 'pending'");
     }

@@ -1,5 +1,6 @@
 using MediatR;
 namespace TraceFlow.Api.Application.Workspaces.Commands.UpdateWorkspace;
+
 public record UpdateWorkspaceCommand(
     Ulid WorkspaceId,
     Ulid UserId,
