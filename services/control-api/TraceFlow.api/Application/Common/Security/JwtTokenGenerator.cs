@@ -8,7 +8,7 @@ namespace TraceFlow.Api.Application.Common.Security;
 
 public class JwtTokenGenerator
 {
-    private readonly IConfiguration  _configuration;
+    private readonly IConfiguration _configuration;
     public JwtTokenGenerator(IConfiguration configuration)
     {
         _configuration = configuration;

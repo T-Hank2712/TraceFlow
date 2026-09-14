@@ -2,6 +2,7 @@ using FluentValidation;
 using System.Text.RegularExpressions;
 
 namespace TraceFlow.Api.Application.Workspaces.Commands.UpdateWorkspace;
+
 public class UpdateWorkspaceCommandValidator : AbstractValidator<UpdateWorkspaceCommand>
 {
     public UpdateWorkspaceCommandValidator()

@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using TraceFlow.Api.Domain.Entities;
 
 namespace TraceFlow.Api.Infrastructure.Persistence.Configurations;
+
 public class RefreshTokenConfiguration : IEntityTypeConfiguration<RefreshToken>
 {
     public void Configure(EntityTypeBuilder<RefreshToken> builder)

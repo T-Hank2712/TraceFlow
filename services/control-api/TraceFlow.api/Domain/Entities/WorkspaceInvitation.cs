@@ -18,7 +18,7 @@ public class WorkspaceInvitation : Entity
     public string Status { get; private set; } = InvitationStatuses.Pending;
     public DateTime ExpiresAt { get; private set; }
 
-    private WorkspaceInvitation() {}
+    private WorkspaceInvitation() { }
 
     public WorkspaceInvitation(
         Ulid workspaceId,

@@ -2,6 +2,7 @@ using TraceFlow.Api.Domain.Common;
 using TraceFlow.Api.Domain.Constants;
 
 namespace TraceFlow.Api.Domain.Entities;
+
 public class WorkspaceMember : Entity
 {
     public Ulid UserId { get; private set; }
@@ -11,7 +12,7 @@ public class WorkspaceMember : Entity
     public string Role { get; private set; } = WorkspaceMemberRoles.Member;
     public string Status { get; private set; } = MembershipStatuses.Active;
     public DateTime JoinedAt { get; private set; }
-    private WorkspaceMember() {}
+    private WorkspaceMember() { }
     public WorkspaceMember(Ulid WorkspaceId, Ulid UserId, string Role)
     {
         Id = Ulid.NewUlid();

@@ -53,10 +53,10 @@ public class ProjectMemberConfiguration
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasIndex(member => new
-            {
-                member.ProjectId,
-                member.UserId
-            })
+        {
+            member.ProjectId,
+            member.UserId
+        })
             .IsUnique();
     }
 }

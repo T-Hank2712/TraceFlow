@@ -1,4 +1,5 @@
 namespace TraceFlow.Api.Application.Workspaces.Queries.GetWorkspaces;
+
 public record WorkspaceSummaryResponse(
     Ulid WorkspacesId,
     string Name,

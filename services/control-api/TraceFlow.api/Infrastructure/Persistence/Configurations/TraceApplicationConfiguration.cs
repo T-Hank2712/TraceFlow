@@ -58,10 +58,10 @@ public class TraceApplicationConfiguration
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(application => new
-            {
-                application.ProjectId,
-                application.Slug
-            })
+        {
+            application.ProjectId,
+            application.Slug
+        })
             .IsUnique()
             .HasFilter($"\"Status\" = '{ResourceStatuses.Active}'");
     }
