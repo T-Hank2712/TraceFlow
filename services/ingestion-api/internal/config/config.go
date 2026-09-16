@@ -32,12 +32,12 @@ func Load() Config {
 	return Config{
 		Port: getString("PORT", ":8080"),
 
-		ControlAPIBaseURL:        getString("CONTROL_API_BASE_URL", "http://localhost:5075"),
+		ControlAPIBaseURL:        getString("CONTROL_API_BASE_URL", "http://control-api:5075"),
 		ValidateAPIKeyURL:        getString("VALIDATE_API_URL", "/internal/api-keys/validate"),
 		InternalServiceSecret:    os.Getenv("INTERNAL_SERVICE_SECRET"),
 		ControlAPITimeoutSeconds: getInt("CONTROL_API_TIMEOUT_SECONDS", 5),
 
-		KafkaBootstrapServers:       getString("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"),
+		KafkaBootstrapServers:       getString("KAFKA_BOOTSTRAP_SERVERS", "kafka:9092"),
 		KafkaTopic:                  getString("KAFKA_TOPIC", "traceflow.logs"),
 		KafkaDeliveryTimeoutSeconds: getInt("KAFKA_DELIVERY_TIMEOUT_SECONDS", 5),
 
