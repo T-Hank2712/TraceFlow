@@ -36,6 +36,24 @@ func (s *LogService) Process(event *model.LogEvent) error {
 	return nil
 }
 
+func (s *LogService) ProcessBatch(events []model.LogEvent) (*repository.BulkIndexResult, error) {
+	for index := range events {
+		if err := s.Prepare(&events[index]); err != nil {
+			return nil, err
+		}
+	}
+
+	result, err := s.repository.IndexLogs(
+		context.Background(),
+		events,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrIndexLogFailed, err)
+	}
+
+	return result, nil
+}
+
 func validate(event *model.LogEvent) error {
 	if strings.TrimSpace(event.EventID) == "" {
 		return invalidLogEvent("event id is required")
