@@ -13,9 +13,12 @@ type Config struct {
 	KafkaConsumerGroup    string
 	KafkaTopic            string
 	KafkaDLQTopic         string
+	KafkaPollTimeoutMs    int
 
-	ProcessorMaxRetries     int
-	ProcessorRetryBackoffMs int
+	ProcessorMaxRetries      int
+	ProcessorRetryBackoffMs  int
+	ProcessorBatchSize       int
+	ProcessorFlushIntervalMs int
 
 	OpenSearchURL           string
 	OpenSearchUsername      string
@@ -32,17 +35,20 @@ func Load() Config {
 	skipTLSVerify, _ := strconv.ParseBool(os.Getenv("OPENSEARCH_SKIP_TLS_VERIFY"))
 
 	return Config{
-		KafkaBootstrapServers:   os.Getenv("KAFKA_BOOTSTRAP_SERVERS"),
-		KafkaConsumerGroup:      os.Getenv("KAFKA_CONSUMER_GROUP"),
-		KafkaTopic:              os.Getenv("KAFKA_TOPIC"),
-		KafkaDLQTopic:           getString("KAFKA_DLQ_TOPIC", "traceflow.logs.dlq"),
-		ProcessorMaxRetries:     getInt("PROCESSOR_MAX_RETRIES", 3),
-		ProcessorRetryBackoffMs: getInt("PROCESSOR_RETRY_BACKOFF_MS", 500),
-		OpenSearchURL:           os.Getenv("OPENSEARCH_URL"),
-		OpenSearchUsername:      os.Getenv("OPENSEARCH_USERNAME"),
-		OpenSearchPassword:      os.Getenv("OPENSEARCH_PASSWORD"),
-		OpenSearchIndex:         os.Getenv("OPENSEARCH_INDEX"),
-		OpenSearchSkipTLSVerify: skipTLSVerify,
+		KafkaBootstrapServers:    os.Getenv("KAFKA_BOOTSTRAP_SERVERS"),
+		KafkaConsumerGroup:       os.Getenv("KAFKA_CONSUMER_GROUP"),
+		KafkaTopic:               os.Getenv("KAFKA_TOPIC"),
+		KafkaDLQTopic:            getString("KAFKA_DLQ_TOPIC", "traceflow.logs.dlq"),
+		KafkaPollTimeoutMs:       getInt("KAFKA_POLL_TIMEOUT_MS", 100),
+		ProcessorMaxRetries:      getInt("PROCESSOR_MAX_RETRIES", 3),
+		ProcessorRetryBackoffMs:  getInt("PROCESSOR_RETRY_BACKOFF_MS", 500),
+		ProcessorBatchSize:       getInt("PROCESSOR_BATCH_SIZE", 100),
+		ProcessorFlushIntervalMs: getInt("PROCESSOR_FLUSH_INTERVAL_MS", 1000),
+		OpenSearchURL:            os.Getenv("OPENSEARCH_URL"),
+		OpenSearchUsername:       os.Getenv("OPENSEARCH_USERNAME"),
+		OpenSearchPassword:       os.Getenv("OPENSEARCH_PASSWORD"),
+		OpenSearchIndex:          os.Getenv("OPENSEARCH_INDEX"),
+		OpenSearchSkipTLSVerify:  skipTLSVerify,
 	}
 }
 func getString(key string, defaultValue string) string {

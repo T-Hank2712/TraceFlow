@@ -22,11 +22,9 @@ func NewLogService(
 }
 
 func (s *LogService) Process(event *model.LogEvent) error {
-	if err := validate(event); err != nil {
+	if err := s.Prepare(event); err != nil {
 		return err
 	}
-
-	normalize(event)
 
 	if err := s.repository.IndexLog(
 		context.Background(),
@@ -99,4 +97,14 @@ func normalize(event *model.LogEvent) {
 	event.Message = strings.TrimSpace(event.Message)
 	event.TraceID = strings.TrimSpace(event.TraceID)
 	event.CorrelationID = strings.TrimSpace(event.CorrelationID)
+}
+
+func (s *LogService) Prepare(event *model.LogEvent) error {
+	if err := validate(event); err != nil {
+		return err
+	}
+
+	normalize(event)
+
+	return nil
 }
