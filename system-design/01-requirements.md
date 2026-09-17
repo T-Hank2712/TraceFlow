@@ -38,22 +38,21 @@ Admin quản lý workspace, project, trace application, API key, member và quy�
 Client Application là service bên ngoài gửi log vào TraceFlow bằng API key. Đây không phải là user đăng nhập, mà là workload sử dụng ingestion endpoint để đưa log vào hệ thống.
 
 ## 5. Luồng Sử Dụng Chính
-- User đăng ký, đăng nhập và quản lý session.
-- User tạo workspace.
-- User tạo project trong workspace.
-- User tạo trace application trong project.
-- User tạo API key cho trace application.
-- Client application gửi single log bằng API key.
-- Client application gửi batch logs bằng API key.
-- Ingestion API đọc API key, validate với Control API và nhận tenant context hợp lệ.
-- Ingestion API enrich log bằng workspace, project, application và environment context từ API key.
-- Ingestion API publish enriched log event vào Kafka.
-- Log Processor consume log event từ Kafka.
-- Log Processor validate internal log event.
-- Log Processor gom batch và index log vào OpenSearch.
-- Log Processor đưa malformed, invalid hoặc failed event vào Dead Letter Queue.
-- User search log thông qua Control API trong phạm vi project được cấp quyền.
-- Control API query OpenSearch thay cho user và trả về kết quả đã scope theo workspace/project.
+
+| Nhóm luồng | Mô tả | Kết quả |
+| :--- | :--- | :--- |
+| Account Flow | User đăng ký, đăng nhập, refresh session, logout và quản lý thông tin tài khoản cơ bản. | User có JWT access token hợp lệ để gọi các API quản trị và tìm kiếm log. |
+| Workspace Flow | User tạo workspace, xem workspace được tham gia, quản lý thông tin workspace, member và invitation theo quyền được cấp. | Hệ thống có ranh giới workspace để tổ chức tenant, member và quyền truy cập cấp cao. |
+| Project Flow | User tạo project trong workspace, quản lý project member, invitation và quyền truy cập project. | Hệ thống có project scope để phân quyền, quản lý application và giới hạn phạm vi search log. |
+| Trace Application Flow | User tạo trace application trong project và cấu hình environment, trạng thái, retention hoặc các thiết lập liên quan. | Hệ thống có application context để gắn log với workload cụ thể trong project. |
+| API Key Flow | Project Manager tạo, xem danh sách, revoke và cấu hình expiration cho API key của trace application. | Client application có credential riêng để gửi log, còn secret được kiểm soát theo lifecycle an toàn. |
+| Ingestion Flow | Client application gửi single log hoặc batch logs bằng API key tới Ingestion API. | Log request được xác thực, validate, giới hạn kích thước và chuẩn bị đưa vào pipeline. |
+| Tenant Enrichment Flow | Ingestion API validate API key với Control API, nhận tenant context hợp lệ và enrich log bằng workspace, project, application, environment. | Tenant context được xác định server-side, tránh việc client spoof workspace/project/application. |
+| Kafka Publish Flow | Ingestion API publish enriched log event vào Kafka sau khi validate và enrich thành công. | Log ingestion được tách khỏi indexing, giúp giảm độ trễ response và tăng khả năng chịu tải. |
+| Processing Flow | Log Processor consume Kafka event, validate internal log event, normalize, gom batch và index vào OpenSearch. | Log hợp lệ được lưu vào search backend và có thể được truy vấn sau đó. |
+| Failure Handling Flow | Log Processor đưa malformed, invalid hoặc failed event vào Dead Letter Queue kèm failure reason và original payload. | Event lỗi không làm nghẽn pipeline và vẫn còn dữ liệu để debug hoặc replay thủ công trong tương lai. |
+| Search Flow | User search log thông qua Control API với JWT authentication và project access check. | User chỉ nhận log trong workspace/project được cấp quyền; OpenSearch không bị expose trực tiếp. |
+| Operations Flow | Hệ thống cung cấp health check, local stack configuration và dependency readiness cho các service chính. | Developer có thể chạy, kiểm tra và debug toàn bộ stack trong môi trường local development. |
 
 ## 6. Yêu Cầu Chức Năng
 ### Identity Và Session
