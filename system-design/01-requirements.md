@@ -338,47 +338,37 @@ NFR-034: Các decision quan trọng phải được ghi lại trong system desig
 
 ## 8. Ràng Buộc Hệ Thống
 
-- Control Plane sử dụng ASP.NET Core.
-- Data Plane sử dụng Go.
-- PostgreSQL lưu business data và control metadata.
-- Kafka làm message broker và buffer cho log event.
-- OpenSearch lưu log phục vụ search và analytics.
-- Docker Compose là môi trường local development chính.
-- User-facing management/search API đi qua Control API.
-- Client application chỉ gửi log qua Ingestion API.
-- Không service nào ngoài Control API được expose business metadata trực tiếp cho user.
-- Không có archive storage trong phạm vi ban đầu.
-- Không có Kubernetes deployment trong phạm vi ban đầu.
+| Nhóm ràng buộc | Quyết định | Ý nghĩa |
+| :--- | :--- | :--- |
+| Control Plane | Control Plane sử dụng ASP.NET Core. | ASP.NET Core chịu trách nhiệm cho user-facing API, authentication, resource management, access control và log search. |
+| Data Plane | Data Plane sử dụng Go. | Go được dùng cho các service xử lý luồng log như ingestion, Kafka producer/consumer và log processing. |
+| Business Storage | PostgreSQL lưu business data và control metadata. | PostgreSQL là nguồn dữ liệu chính cho user, workspace, project, application, API key, membership và invitation. |
+| Event Streaming | Kafka làm message broker và buffer cho log event. | Kafka tách ingestion khỏi processing/indexing, giúp hệ thống chịu tải tốt hơn và xử lý bất đồng bộ. |
+| Search Storage | OpenSearch lưu log phục vụ search và analytics. | OpenSearch là backend chính cho log search, filtering, time range query và các truy vấn phân tích cơ bản. |
+| Local Development | Docker Compose là môi trường local development chính. | Toàn bộ stack local phải có thể chạy được bằng Docker Compose để hỗ trợ phát triển, test và demo. |
+| User-facing API | User-facing management/search API đi qua Control API. | User chỉ thao tác với hệ thống qua Control API, không truy cập trực tiếp database, Kafka hoặc OpenSearch. |
+| Ingestion Entry Point | Client application chỉ gửi log qua Ingestion API. | Ingestion API là cổng duy nhất cho log submission từ application bên ngoài. |
+| Metadata Exposure | Không service nào ngoài Control API được expose business metadata trực tiếp cho user. | Business metadata chỉ được truy cập qua lớp authorization và access control của Control API. |
+| Supporting Infrastructure | Redis có thể được sử dụng cho API key validation cache, ingestion rate limiting và counter ngắn hạn. | Redis không phải source of truth; hệ thống core vẫn phải dựa trên PostgreSQL, Kafka và OpenSearch. |
+| Archive Storage | Không có archive storage trong phạm vi ban đầu. | Log hết hạn không được archive sang object storage trong scope đầu tiên. |
+| Deployment Scope | Không có Kubernetes deployment trong phạm vi ban đầu. | Project tập trung vào backend architecture và local/dev deployment thay vì production-grade orchestration. |
 
 ## 9. Tiêu Chí Thành Công
 
-- User có thể đăng ký, đăng nhập và quản lý session.
-- User có thể tạo workspace, project, trace application và API key.
-- API key được lưu an toàn, có thể revoke, expire và validate.
-- Client application có thể gửi single log hợp lệ bằng API key.
-- Client application có thể gửi batch logs hợp lệ bằng API key.
-- Ingestion API không tin tenant context từ client và tự enrich bằng context từ API key.
-- Valid log event được publish vào Kafka.
-- Log Processor consume Kafka event và index log vào OpenSearch.
-- Batch log processing và OpenSearch bulk indexing hoạt động đúng.
-- Invalid JSON được đưa vào DLQ.
-- Invalid internal log event được đưa vào DLQ.
-- Full bulk indexing failure được retry và sau đó đưa toàn batch vào DLQ nếu vẫn fail.
-- Partial bulk indexing failure chỉ đưa item lỗi vào DLQ.
-- User có thể search log thông qua Control API.
-- User chỉ search được log trong project mà họ có quyền truy cập.
-- Hệ thống có tài liệu requirements, HLD, contracts, LLD, reliability, security, testing và roadmap rõ ràng.
-- Hệ thống có benchmark thể hiện throughput và P95 latency khi hoàn thiện.
-
-## 10. Câu Hỏi Cần Chốt
-
-- Kafka partition key nên là workspace ID, project ID, application ID, API key hay event ID?
-- Event ID nên luôn do Ingestion API sinh hay cho phép client gửi lên?
-- Timestamp do client gửi có cần validate format chặt chẽ không?
-- Metadata có cần giới hạn độ sâu, số field hoặc kích thước từng field không?
-- Partial bulk indexing failure nên retry item-level hay đưa trực tiếp item lỗi vào DLQ?
-- Khi DLQ publish thất bại thì processor nên retry, log lỗi hay dừng consumer?
-- Có cần manual replay DLQ trong phạm vi project này không?
-- Benchmark target hợp lý cho portfolio là bao nhiêu logs/s?
-- P95 latency nên đo theo ingestion response time hay end-to-end time đến khi search được log?
-- Retention policy nên áp dụng theo project hay application?
+| Nhóm tiêu chí | Điều kiện đạt | Ý nghĩa |
+| :--- | :--- | :--- |
+| Identity & Session | User có thể đăng ký, đăng nhập, refresh session, logout và quản lý session cơ bản. | Người dùng có thể truy cập hệ thống bằng cơ chế xác thực rõ ràng. |
+| Resource Management | User có thể tạo workspace, project, trace application và API key theo quyền được cấp. | Hệ thống có đầy đủ resource hierarchy để tổ chức tenant và log ownership. |
+| API Key Security | API key được lưu an toàn, chỉ hiển thị secret một lần, có thể revoke, expire và validate. | Ingestion path có cơ chế xác thực riêng, không phụ thuộc JWT của user. |
+| Single Log Ingestion | Client application có thể gửi single log hợp lệ bằng API key. | Hệ thống hỗ trợ use case gửi log cơ bản nhất. |
+| Batch Log Ingestion | Client application có thể gửi batch logs hợp lệ bằng API key. | Hệ thống hỗ trợ ingestion hiệu quả hơn khi application gửi nhiều log cùng lúc. |
+| Tenant Isolation | Ingestion API không tin tenant context từ client và tự enrich bằng context từ API key. | Client không thể spoof workspace, project, application hoặc environment. |
+| Event Streaming | Valid log event được publish vào Kafka. | Ingestion được tách khỏi indexing, giúp pipeline xử lý bất đồng bộ. |
+| Log Processing | Log Processor consume Kafka event, validate, batch và index log vào OpenSearch. | Log hợp lệ đi hết pipeline và được lưu vào search backend. |
+| Bulk Indexing | Batch log processing và OpenSearch bulk indexing hoạt động đúng. | Processor có khả năng xử lý nhiều log hiệu quả hơn per-message indexing. |
+| DLQ Handling | Invalid JSON, invalid internal event và indexing failure được đưa vào DLQ theo đúng failure stage. | Event lỗi không làm nghẽn pipeline và vẫn có dữ liệu để debug. |
+| Bulk Failure Handling | Full bulk indexing failure được retry rồi đưa toàn batch vào DLQ nếu vẫn fail; partial failure chỉ đưa item lỗi vào DLQ. | Hệ thống xử lý được lỗi indexing mà không làm mất hoặc DLQ sai item đã thành công. |
+| Log Search | User có thể search log thông qua Control API. | Người dùng có thể khai thác dữ liệu log sau khi được index. |
+| Search Access Control | User chỉ search được log trong project mà họ có quyền truy cập. | Search path giữ đúng tenant isolation và resource-level RBAC. |
+| Documentation | Hệ thống có tài liệu requirements, HLD, contracts, LLD, reliability, security, testing và roadmap rõ ràng. | Việc phát triển tiếp theo có thiết kế dẫn đường, không code mù. |
+| Benchmark | Hệ thống có benchmark thể hiện throughput và P95 latency khi hoàn thiện. | Project có số liệu định lượng để chứng minh hiệu năng trong portfolio. |
