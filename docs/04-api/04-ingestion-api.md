@@ -1,6 +1,6 @@
 # Ingestion API
 
-Ingestion API do Go Ingestion Service cung cấp.
+Ingestion API do ASP.NET Core Ingestion API cung cấp.
 
 ## Authentication
 

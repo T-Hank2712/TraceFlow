@@ -1,6 +1,6 @@
-# Go Ingestion Service
+# ASP.NET Core Ingestion API
 
-Go Ingestion Service nhận log từ application và publish vào Kafka.
+ASP.NET Core Ingestion API nhận log từ application và publish vào Kafka.
 
 ## Trách nhiệm
 

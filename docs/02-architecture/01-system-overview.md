@@ -7,9 +7,9 @@ TraceFlow được chia thành hai mặt phẳng chính:
 
 ```text
 Applications
-    -> Go Ingestion API
+    -> ASP.NET Core Ingestion API
     -> Kafka
-    -> Go Log Processor
+    -> .NET Log Processor
     -> OpenSearch
     <- ASP.NET Core Search API
 ```
@@ -17,9 +17,9 @@ Applications
 ## Thành phần chính
 
 - ASP.NET Core API: control plane và search API.
-- Go Ingestion Service: nhận log từ application.
+- ASP.NET Core Ingestion API: nhận log từ application.
 - Kafka: buffer và stream log event.
-- Go Log Processor: consume, batch, enrich và index log.
+- .NET Log Processor: consume, batch, enrich và index log.
 - PostgreSQL: lưu dữ liệu nghiệp vụ.
 - OpenSearch: lưu và tìm kiếm log.
 - Redis: cache, rate limit và counter ngắn hạn.

@@ -1,6 +1,6 @@
-# Go Log Processor
+# .NET Log Processor
 
-Go Log Processor consume log event từ Kafka, xử lý batch và index vào OpenSearch.
+.NET Log Processor consume log event từ Kafka, xử lý batch và index vào OpenSearch.
 
 ## Trách nhiệm
 

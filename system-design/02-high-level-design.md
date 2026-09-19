@@ -124,9 +124,9 @@ flowchart LR
     end
 
     subgraph DataPlane["Data Plane"]
-        Ingestion["Ingestion API (Go)"]
+        Ingestion["Ingestion API (.NET)"]
         Kafka[("Kafka")]
-        Processor["Log Processor (Go)"]
+        Processor["Log Processor (.NET Worker)"]
         RedisData[("Redis")]
         DLQ[("Kafka DLQ Topic")]
     end
@@ -350,5 +350,5 @@ Reliability của core pipeline dựa trên các nguyên tắc:
 | Dùng Kafka giữa ingestion và processing. | Decouple client-facing ingestion khỏi OpenSearch indexing. |
 | Dùng OpenSearch cho log search. | Phù hợp full-text, structured filter và time range query. |
 | Dùng PostgreSQL cho control metadata. | Cần consistency, relationship và transaction rõ ràng. |
-| Dùng Go cho Data Plane. | Phù hợp service nhẹ, network I/O và worker concurrency. |
+| Dùng .NET cho các backend service chính. | Đồng nhất stack backend, giảm chi phí vận hành local và vẫn giữ ranh giới service rõ ràng. |
 | Dùng Redis trong core nhưng giới hạn vai trò. | Có cache/rate protection thực tế mà không làm sai source of truth. |

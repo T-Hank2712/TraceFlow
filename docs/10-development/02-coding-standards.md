@@ -8,15 +8,11 @@
 - Structured logging cho service code.
 - Test đi kèm logic quan trọng.
 
-## Go
-
-- Context propagation cho request và Kafka operation.
-- Timeout rõ ràng cho network call.
-- Graceful shutdown cho HTTP server và consumer.
-
 ## C#
 
 - Validation ở boundary.
 - Authorization policy rõ.
 - Database constraint bảo vệ invariant.
 - Không để controller chứa business logic phức tạp.
+- Timeout rõ ràng cho network call.
+- Graceful shutdown cho HTTP server, worker và Kafka consumer.

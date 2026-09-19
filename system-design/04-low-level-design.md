@@ -573,7 +573,7 @@ Optional alerting, backup/restore và advanced dashboard không được làm th
 | :--- | :--- |
 | Thiết kế hướng tới target system. | Tài liệu định nghĩa hệ thống nên được xây như thế nào, không kể lại hiện trạng code. |
 | Tenant context được xác định phía server. | Client không spoof được workspace/project/application/environment. |
-| Control Plane và Data Plane tách biệt. | Control API sở hữu metadata; Go services xử lý ingestion/processing. |
+| Control Plane và Data Plane tách biệt. | Control API sở hữu metadata; Ingestion API và Log Processor xử lý ingestion/processing. |
 | Processor hot path tránh PostgreSQL. | Kafka event đã mang đủ tenant context. |
 | Redis hữu ích nhưng có giới hạn. | Chỉ dùng cache/rate limit/counter, không có vai trò source of truth. |
 | Bulk indexing failure semantics rõ ràng. | Full failure và partial failure có behavior khác nhau. |

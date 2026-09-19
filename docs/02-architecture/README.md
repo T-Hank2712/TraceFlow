@@ -2,7 +2,7 @@
 
 Nhóm tài liệu này mô tả kiến trúc hệ thống của TraceFlow. Đây là nơi chốt các ranh giới quan trọng: service nào chịu trách nhiệm phần nào, dữ liệu log đi qua pipeline ra sao, control plane và data plane tách nhau thế nào, và hệ thống phản ứng thế nào khi dependency lỗi hoặc downstream chậm.
 
-TraceFlow có nhiều thành phần: ASP.NET Core Control API, Go Ingestion Service, Kafka, Go Log Processor, PostgreSQL, Redis và OpenSearch. Nếu kiến trúc không rõ, project rất dễ bị trộn trách nhiệm, ví dụ ingestion index thẳng vào OpenSearch, search bỏ qua tenant filter hoặc processor commit offset sai thời điểm.
+TraceFlow có nhiều thành phần: ASP.NET Core Control API, ASP.NET Core Ingestion API, Kafka, .NET Log Processor, PostgreSQL, Redis và OpenSearch. Nếu kiến trúc không rõ, project rất dễ bị trộn trách nhiệm, ví dụ ingestion index thẳng vào OpenSearch, search bỏ qua tenant filter hoặc processor commit offset sai thời điểm.
 
 ## Nội dung cần nắm
 
@@ -39,4 +39,4 @@ TraceFlow có nhiều thành phần: ASP.NET Core Control API, Go Ingestion Serv
 
 ## Kết quả mong đợi sau khi đọc
 
-Sau khi đọc xong nhóm này, người đọc phải vẽ lại được sơ đồ TraceFlow, giải thích vì sao Go và ASP.NET Core được dùng ở các phần khác nhau, và chỉ ra dữ liệu log đi từ application tới OpenSearch theo những bước nào.
+Sau khi đọc xong nhóm này, người đọc phải vẽ lại được sơ đồ TraceFlow, giải thích ranh giới giữa control plane và data plane, và chỉ ra dữ liệu log đi từ application tới OpenSearch theo những bước nào.

@@ -213,7 +213,7 @@ Non-functional requirements mô tả chất lượng hệ thống cần đạt �
 | Redis Correctness | Redis chỉ là cache/rate limit/counter ngắn hạn. | PostgreSQL vẫn là source of truth cho API key và metadata. |
 | Consistency | Log search không cần read-after-write immediate consistency. | Chấp nhận eventual consistency giữa Kafka và OpenSearch. |
 | Availability | Nếu OpenSearch lỗi tạm thời, ingestion vẫn có thể nhận log khi Kafka còn hoạt động. | OpenSearch failure xử lý ở processor bằng retry/DLQ. |
-| Maintainability | Control Plane và Data Plane có boundary rõ ràng. | Control API quản lý metadata; Go services xử lý ingestion/processing. |
+| Maintainability | Control Plane và Data Plane có boundary rõ ràng. | Control API quản lý metadata; Ingestion API và Log Processor xử lý ingestion/processing. |
 
 ## 5. Back-of-the-Envelope Estimation
 
@@ -261,7 +261,7 @@ OpenSearch cần nhiều hơn raw payload vì index metadata, inverted index, re
 | Type | Decision |
 | :--- | :--- |
 | Control Plane | ASP.NET Core chịu trách nhiệm authentication, resource management, RBAC, API key lifecycle và log search. |
-| Data Plane | Go chịu trách nhiệm ingestion gateway, Kafka producer/consumer và log processing. |
+| Data Plane | ASP.NET Core Ingestion API và .NET Log Processor chịu trách nhiệm ingestion gateway, Kafka producer/consumer và log processing. |
 | Business Storage | PostgreSQL là source of truth cho user, workspace, project, application, membership và API key metadata. |
 | Event Streaming | Kafka là buffer chính giữa ingestion và processing. |
 | Search Storage | OpenSearch là backend chính cho log indexing, filtering và search. |
