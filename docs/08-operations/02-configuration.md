@@ -10,7 +10,8 @@ TraceFlow cấu hình qua environment variables.
 - JWT.
 - API key hashing.
 - Rate limiting.
-- Retention.
+- Redis cache/rate limit.
+- Retention nếu bật nice-to-have này.
 - Notification channels.
 
 ## Nguyên tắc

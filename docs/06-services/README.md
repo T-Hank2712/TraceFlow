@@ -6,7 +6,7 @@ Service docs phải làm rõ mỗi service sở hữu endpoint/job nào, depende
 
 ## Nội dung cần nắm
 
-- ASP.NET Core Control API sở hữu control plane, search API, dashboard API và cấu hình sản phẩm.
+- ASP.NET Core Control API sở hữu control plane, Search API và internal API key validation.
 - Go Ingestion Service sở hữu HTTP ingestion, API key validation, payload normalization và Kafka publishing.
 - Go Log Processor sở hữu Kafka consumption, batch processing, retry, DLQ và OpenSearch indexing.
 - Local Development Stack mô tả cách các service chạy cùng nhau trong môi trường phát triển.
@@ -14,7 +14,7 @@ Service docs phải làm rõ mỗi service sở hữu endpoint/job nào, depende
 ## Khi nào cần cập nhật nhóm này
 
 - Khi thêm endpoint, worker hoặc background job vào service.
-- Khi service thêm dependency mới như Redis, SMTP, notification provider.
+- Khi service thêm dependency mới như Redis hoặc một extension provider.
 - Khi thay đổi ownership dữ liệu hoặc ranh giới service.
 - Khi thay đổi cách chạy local stack hoặc health check.
 

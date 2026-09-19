@@ -1,15 +1,15 @@
 # API Documentation
 
-Nhóm tài liệu này mô tả contract API của TraceFlow. API docs là ranh giới giữa client, dashboard, Go data plane, ASP.NET Core control plane và các công cụ test/automation.
+Nhóm tài liệu này mô tả contract API của TraceFlow. API docs là ranh giới giữa client application, optional Web UI, Go data plane, ASP.NET Core control plane và các công cụ test/automation.
 
-Vì TraceFlow có cả user-facing API và ingestion API, tài liệu API phải tách rõ hai kiểu xác thực: user access token cho management/search/dashboard và API key cho application gửi log. Không được trộn hai cơ chế này.
+Vì TraceFlow có cả user-facing API và ingestion API, tài liệu API phải tách rõ hai kiểu xác thực: user access token cho management/search và API key cho application gửi log. Không được trộn hai cơ chế này.
 
 ## Nhóm API
 
 - Management API: user, workspace, project, application, API key.
 - Ingestion API: endpoint nhận log từ application.
 - Search API: tìm kiếm và truy vết log.
-- Dashboard API: số liệu tổng quan.
+- Operational Insights/Dashboard API: nice-to-have cho số liệu tổng quan.
 
 ## Nội dung cần nắm
 
@@ -18,7 +18,7 @@ Vì TraceFlow có cả user-facing API và ingestion API, tài liệu API phải
 - Management API quản lý workspace/project/application/API key.
 - Ingestion API ưu tiên response nhanh, validate payload và publish Kafka.
 - Search API bắt buộc enforce tenant filter trước khi query OpenSearch.
-- Dashboard API dùng query/aggregation phục vụ số liệu tổng quan.
+- Operational Insights/Dashboard API nếu bật dùng query/aggregation phục vụ số liệu tổng quan.
 - OpenAPI specs là contract máy đọc được để hỗ trợ client/test.
 
 ## Khi nào cần cập nhật nhóm này
@@ -40,7 +40,7 @@ API contract phải ổn định trước khi các service phụ thuộc vào nh
 3. `03-management-api.md`
 4. `04-ingestion-api.md`
 5. `05-search-api.md`
-6. `06-dashboard-api.md`
+6. `06-dashboard-api.md` - nice-to-have operational insights.
 7. `07-error-response.md`
 8. `08-openapi/README.md`
 

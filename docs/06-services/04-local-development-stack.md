@@ -11,7 +11,7 @@ Local stack giúp chạy TraceFlow trên máy phát triển bằng Docker Compos
 - ASP.NET Core Control API.
 - Go Ingestion Service.
 - Go Log Processor.
-- Redis nếu bật rate limiting/caching.
+- Redis cho validation cache, rate limiting và counter ngắn hạn.
 
 ## Nguyên tắc
 

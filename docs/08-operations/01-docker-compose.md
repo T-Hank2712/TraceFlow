@@ -7,7 +7,8 @@ Docker Compose dùng để chạy local stack của TraceFlow.
 - `postgres`
 - `kafka`
 - `opensearch`
-- `opensearch-dashboards`
+- `redis`
+- `opensearch-dashboards` chỉ bật nếu cần debug index hoặc demo, không phải core service.
 - `control-api`
 - `ingestion-api`
 - `log-processor`

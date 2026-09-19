@@ -2,7 +2,7 @@
 
 TraceFlow được chia thành hai mặt phẳng chính:
 
-- Control plane: quản lý user, workspace, project, application, API key, search và dashboard API.
+- Control plane: quản lý user, workspace, project, application, API key và Search API.
 - Data plane: nhận log tốc độ cao, đẩy vào Kafka, xử lý batch và index vào OpenSearch.
 
 ```text
@@ -22,7 +22,8 @@ Applications
 - Go Log Processor: consume, batch, enrich và index log.
 - PostgreSQL: lưu dữ liệu nghiệp vụ.
 - OpenSearch: lưu và tìm kiếm log.
+- Redis: cache, rate limit và counter ngắn hạn.
 
 ## Nguyên tắc thiết kế
 
-Không thêm service mới nếu chưa có ranh giới trách nhiệm rõ ràng. Ưu tiên correctness, observability và luồng end-to-end chạy được trước khi tối ưu throughput.
+Không thêm service mới nếu chưa có ranh giới trách nhiệm rõ ràng. Ưu tiên correctness, tenant isolation, reliability và luồng end-to-end chạy được trước khi thêm nice-to-have hoặc optional features.

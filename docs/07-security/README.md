@@ -9,7 +9,7 @@ Security docs phải được đọc song song với architecture, API và data 
 - User authentication dùng access token và refresh token.
 - Authorization dựa trên workspace membership và role.
 - API key là credential cho application gửi log, không phải user token.
-- Tenant isolation phải được enforce trong Management API, Search API, Dashboard API, alert evaluation, retention job và usage aggregation.
+- Tenant isolation phải được enforce trong Management API, Search API, ingestion pipeline và mọi nice-to-have/optional worker nếu được bật.
 - Secret management phải tránh commit secret và tránh log credential.
 - Security checklist dùng trước khi merge/release các thay đổi nhạy cảm.
 

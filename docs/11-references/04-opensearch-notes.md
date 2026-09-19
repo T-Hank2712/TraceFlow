@@ -5,7 +5,7 @@
 - Full-text search.
 - Filter theo keyword.
 - Time range query.
-- Aggregation cho dashboard.
+- Aggregation cho operational insights nếu bật.
 - Bulk indexing.
 
 ## Rủi ro
@@ -21,4 +21,4 @@
 - Bulk size.
 - Refresh interval.
 - Query latency theo time range.
-- Dashboard aggregation cost.
+- Operational insights aggregation cost.
