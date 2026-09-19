@@ -1,56 +1,55 @@
 # High-Level Design
 
-## 1. Mục Tiêu Thiết Kế
+## 1. Design Intent
 
-High-Level Design mô tả kiến trúc tổng thể của TraceFlow ở mức component, service boundary, luồng dữ liệu chính và các quyết định kiến trúc nền tảng.
+High-Level Design mô tả kiến trúc tổng thể của TraceFlow ở mức service, boundary, data flow và storage. Tài liệu này bám theo scope đã chốt:
 
-Tài liệu này không đi vào chi tiết class, function hoặc implementation cụ thể. Các chi tiết đó sẽ được mô tả trong Low-Level Design.
+```text
+TraceFlow Core = Multi-tenant log ingestion and search pipeline
+```
 
-Mục tiêu của HLD là làm rõ:
+Core của hệ thống là luồng log end-to-end: user quản lý resource và API key, client application gửi log vào Ingestion API, event đi qua Kafka, Log Processor index vào OpenSearch, user search log qua Control API. Các capability như retention, quota, operational insights, benchmark và minimal Web UI được xem là nice-to-have. Alerting, backup/restore và advanced dashboard là optional, không chi phối kiến trúc core.
 
-- TraceFlow gồm những thành phần chính nào.
-- Mỗi thành phần chịu trách nhiệm gì.
-- Dữ liệu đi qua hệ thống theo luồng tổng thể ra sao.
-- Ranh giới giữa Control Plane và Data Plane nằm ở đâu.
-- Storage nào được dùng cho loại dữ liệu nào.
-- Hệ thống đảm bảo security, tenant isolation, reliability và scalability ở mức kiến trúc như thế nào.
+## 2. Scope Alignment
 
-## 2. Design Assumptions
+| Scope | HLD Treatment |
+| :--- | :--- |
+| Must-have | Được thiết kế như thành phần chính của architecture. |
+| Nice-to-have | Được giữ ở mức extension nhỏ, không làm thay đổi core flow. |
+| Optional | Chỉ ghi nhận boundary, không thiết kế như dependency bắt buộc. |
 
-Các giả định thiết kế dưới đây giúp định hướng kiến trúc tổng thể của TraceFlow trước khi đi vào contract, LLD và reliability design.
+Must-have gồm Auth/RBAC, Workspace/Project/Application, API Key, Ingestion API, Kafka, Log Processor, OpenSearch, Batch + Bulk Indexing, Retry + DLQ, Search API và Redis. Redis là supporting infrastructure cho cache/rate limit/counter, không phải source of truth và không phải log storage.
+
+## 3. Design Assumptions
 
 | Câu hỏi thiết kế | Câu trả lời cho TraceFlow |
 | :--- | :--- |
-| How many users? Growing how fast? | TraceFlow ban đầu hướng tới portfolio/local-demo scale: số user quản trị không lớn, nhưng log ingestion có thể tăng nhanh theo số application và traffic của từng application. Thiết kế ưu tiên khả năng scale ingestion và processing hơn là scale số lượng user quản trị. |
-| Read-heavy or write-heavy? | Hệ thống write-heavy ở ingestion path vì application liên tục gửi log. Search path có tần suất thấp hơn nhưng cần filter/query tốt khi developer điều tra lỗi. |
-| What can never lose? | Business metadata trong PostgreSQL không được mất. Log event đã được Ingestion API accepted không nên mất; nếu không index được thì phải được giữ trong Kafka hoặc DLQ. API key secret không được lưu plaintext và full secret chỉ hiển thị một lần. |
-| How much latency can you afford? | Ingestion response cần thấp vì client application không nên chờ OpenSearch indexing. End-to-end searchable latency có thể cao hơn do pipeline bất đồng bộ và batch processing. |
-| What does it cost? | Kafka, OpenSearch và bulk indexing tăng độ phức tạp nhưng đổi lại có async processing, throughput và search tốt hơn. Redis được xem là optimization cho cache/rate limiting, không phải dependency bắt buộc của core pipeline. |
+| How many users? Growing how fast? | Số user quản trị ban đầu không lớn. Tải đáng quan tâm nằm ở ingestion path vì application có thể gửi log liên tục. |
+| Read-heavy or write-heavy? | Hệ thống write-heavy ở ingestion path; search ít hơn nhưng cần filter tốt khi debug. |
+| What can never lose? | Business metadata trong PostgreSQL không được mất. Log đã accepted vào Kafka phải được index thành công hoặc có DLQ record. API key secret không được lưu plaintext. |
+| How much latency can you afford? | Ingestion response cần thấp và không chờ OpenSearch. Searchable latency có thể cao hơn vì pipeline bất đồng bộ và batching. |
+| What does it cost? | Kafka, OpenSearch, Redis và Bulk API tăng độ phức tạp nhưng giúp hệ thống có async processing, search, rate protection và reliability rõ ràng. |
 
-## 3. System Context
+## 4. System Context
 
-TraceFlow là một centralized logging backend platform cho distributed applications.
+TraceFlow có ba nhóm actor chính:
 
-Hệ thống có ba nhóm tác nhân chính:
-
-| Tác nhân | Vai trò | Cách tương tác với hệ thống |
+| Actor | Vai trò | Entry Point |
 | :--- | :--- | :--- |
-| User / Developer | Tìm kiếm log, điều tra lỗi, quản lý workspace/project/application. | Gọi Control API thông qua Web UI hoặc API client. |
-| Workspace / Project Admin | Quản lý member, quyền truy cập, trace application và API key. | Gọi Control API bằng JWT access token. |
-| Client Application | Gửi structured logs vào TraceFlow. | Gọi Ingestion API bằng API key. |
+| User / Developer | Search log, điều tra lỗi, quản lý resource trong phạm vi quyền. | Control API hoặc Minimal Web UI. |
+| Workspace / Project Admin | Quản lý workspace, project, application, member và API key. | Control API hoặc Minimal Web UI. |
+| Client Application | Gửi structured logs vào TraceFlow. | Ingestion API bằng API key. |
 
-TraceFlow không cho user hoặc client application truy cập trực tiếp PostgreSQL, Kafka hoặc OpenSearch. Mọi thao tác quản trị và search log của user đều đi qua Control API. Mọi log submission từ application bên ngoài đều đi qua Ingestion API.
+User không truy cập trực tiếp PostgreSQL, Kafka, Redis hoặc OpenSearch. Client application không gọi Control API để gửi log. Mọi log search đều đi qua Control API để enforce RBAC và tenant isolation.
 
-## 4. Kiến Trúc Tổng Thể
+## 5. Architecture Overview
 
 TraceFlow được chia thành hai mặt phẳng trách nhiệm:
 
-| Mặt phẳng | Thành phần chính | Trách nhiệm |
+| Plane | Components | Responsibility |
 | :--- | :--- | :--- |
-| Control Plane | Control API | Authentication, authorization, resource management, API key lifecycle, project-scoped log search. |
-| Data Plane | Ingestion API, Kafka, Log Processor | Log ingestion, API key validation call, event streaming, batch processing, OpenSearch indexing, DLQ. |
-
-Sơ đồ tổng thể:
+| Control Plane | Control API, PostgreSQL, Redis cache | Authentication, RBAC, resource management, API key lifecycle, internal validation và log search. |
+| Data Plane | Ingestion API, Kafka, Log Processor, OpenSearch, Redis rate limit | Log ingestion, event streaming, batch processing, bulk indexing, retry và DLQ. |
 
 ```text
                          +----------------+
@@ -61,13 +60,17 @@ Sơ đồ tổng thể:
                                   v
                          +----------------+
                          |  Control API   |
-                         +---+--------+---+
-                             |        |
-                             |        |
-                             v        v
-                     +----------+  +-------------+
-                     |PostgreSQL|  | OpenSearch  |
-                     +----------+  +-------------+
+                         +---+-----+---+--+
+                             |     |   |
+                             v     v   v
+                     +----------+  |  +-------------+
+                     |PostgreSQL|  |  | OpenSearch  |
+                     +----------+  |  +-------------+
+                                   |
+                                   v
+                                +-------+
+                                | Redis |
+                                +-------+
 
 
 +--------------------+
@@ -78,10 +81,16 @@ Sơ đồ tổng thể:
           v
 +--------------------+        internal validation        +----------------+
 |   Ingestion API    +----------------------------------->+  Control API   |
-+---------+----------+                                    +----------------+
-          |
-          | enriched log event
-          v
++----+-----------+---+                                    +----------------+
+     |           |
+     |           | rate limit / validation cache
+     |           v
+     |        +-------+
+     |        | Redis |
+     |        +-------+
+     |
+     | enriched log event
+     v
 +--------------------+
 |       Kafka        |
 +---------+----------+
@@ -99,189 +108,51 @@ Sơ đồ tổng thể:
 +--------------------+
 ```
 
-## 5. Component Responsibilities
+## 6. Component Responsibilities
 
-### 5.1. Control API
+### 6.1. Control API
 
-Control API là control plane của TraceFlow.
+Control API là user-facing control plane. Nó quản lý identity, workspace, project, trace application, member, API key lifecycle và log search. Control API cũng cung cấp internal endpoint để Ingestion API validate API key và nhận tenant context.
 
-Trách nhiệm chính:
+Control API sử dụng PostgreSQL làm source of truth. Khi cần tối ưu, Control API có thể dùng Redis để cache validation result hoặc lưu counter ngắn hạn, nhưng mọi quyết định đúng/sai cuối cùng về API key và resource status vẫn dựa trên PostgreSQL.
 
-- User authentication và session management.
-- Workspace management.
-- Project management.
-- Trace application management.
-- Workspace/project membership và RBAC.
-- API key lifecycle management.
-- Internal API key validation cho Ingestion API.
-- Project-scoped log search.
-- Enforce access control trước khi query OpenSearch.
-- Là lớp user-facing duy nhất cho management và search API.
+### 6.2. Ingestion API
 
-Control API sử dụng PostgreSQL làm source of truth cho business data và control metadata. Control API có thể query OpenSearch để phục vụ search log, nhưng user không được truy cập OpenSearch trực tiếp.
+Ingestion API là gateway nhận log từ client application. Nó đọc API key, validate với Control API hoặc cache hợp lệ trong Redis, kiểm tra rate limit, validate payload, enrich log bằng tenant context và publish event vào Kafka.
 
-### 5.2. Ingestion API
+Ingestion API không quản lý user/resource và không index trực tiếp vào OpenSearch. Response success của Ingestion API chỉ có nghĩa là event đã được nhận vào pipeline theo policy.
 
-Ingestion API là entry point cho Client Application gửi log.
+### 6.3. Kafka
 
-Trách nhiệm chính:
+Kafka là buffer và event stream giữa ingestion và processing. Kafka giúp tách tốc độ nhận log khỏi tốc độ index log, hỗ trợ consumer group scaling và giữ event trong pipeline khi OpenSearch tạm thời chậm hoặc lỗi.
 
-- Nhận single log và batch logs.
-- Đọc API key từ `Authorization: ApiKey {secret}`.
-- Reject request thiếu API key hoặc sai format.
-- Gọi Control API internal endpoint để validate API key.
-- Nhận tenant context hợp lệ từ Control API.
-- Không tin tenant context do client gửi lên.
-- Validate request body, required fields, batch size và request body size.
-- Normalize các field cơ bản.
-- Enrich log event bằng workspace, project, application và environment context.
-- Publish enriched log event vào Kafka.
-- Trả response sau khi Kafka publish thành công.
+Kafka có ít nhất hai topic chính: main log topic và DLQ topic.
 
-Ingestion API không quản lý user, workspace, project hoặc application. Ingestion API cũng không index log trực tiếp vào OpenSearch.
+### 6.4. Log Processor
 
-### 5.3. Kafka
+Log Processor consume Kafka event, parse/validate internal event, buffer valid events thành batch, flush theo batch size hoặc flush interval, và index vào OpenSearch bằng Bulk API.
 
-Kafka là event streaming layer và buffer giữa ingestion và processing.
+Processor chịu trách nhiệm reliability của indexing path: retry full bulk failure, đưa toàn batch vào DLQ khi retry exhausted, phát hiện partial bulk failure và chỉ DLQ item lỗi.
 
-Trách nhiệm chính:
+### 6.5. OpenSearch
 
-- Nhận enriched log event từ Ingestion API.
-- Tách ingestion path khỏi indexing path.
-- Cho phép Log Processor xử lý log bất đồng bộ.
-- Hỗ trợ tăng throughput thông qua partitioning.
-- Hỗ trợ scale Log Processor bằng consumer group.
-- Lưu topic riêng cho main log events và DLQ.
+OpenSearch là search storage cho log document. Nó hỗ trợ filtering theo tenant fields, application, environment, level, service, trace ID, correlation ID và time range. OpenSearch không được expose trực tiếp cho user; Control API là reader boundary duy nhất cho user-facing search.
 
-Kafka không phải nơi lưu trữ log dài hạn. Log sau khi xử lý được index vào OpenSearch.
+### 6.6. PostgreSQL
 
-### 5.4. Log Processor
+PostgreSQL lưu business/control metadata: user, session, workspace, project, membership, trace application và API key metadata/hash. PostgreSQL không lưu high-throughput log events.
 
-Log Processor là worker xử lý log event từ Kafka.
+### 6.7. Redis
 
-Trách nhiệm chính:
+Redis là must-have supporting infrastructure trong scope đã chốt, nhưng vai trò của Redis phải nhỏ và rõ:
 
-- Consume enriched log event từ Kafka main topic.
-- Parse và validate internal log event.
-- Normalize log event trước khi index.
-- Buffer valid events thành batch.
-- Flush batch theo batch size hoặc flush interval.
-- Index batch vào OpenSearch bằng Bulk API.
-- Retry full bulk indexing failure theo policy.
-- Đưa toàn batch vào DLQ nếu full bulk failure vẫn thất bại sau retry.
-- Phát hiện partial bulk failure.
-- Chỉ đưa item failed vào DLQ khi partial failure xảy ra.
-- Không đưa item đã index thành công vào DLQ.
-- Ghi log rõ ràng về batch size, indexed count, failed count, retry attempt và DLQ result.
+| Use case | Purpose | Source of Truth |
+| :--- | :--- | :--- |
+| API key validation cache | Giảm số lần gọi/lookup validation lặp lại. | PostgreSQL qua Control API. |
+| Ingestion rate limit | Chặn burst hoặc client vượt giới hạn. | Redis counter ngắn hạn. |
+| Usage/quota counter đơn giản | Theo dõi volume ngắn hạn nếu bật quota. | PostgreSQL/OpenSearch hoặc job tổng hợp nếu cần lưu dài hạn. |
 
-Log Processor không gọi PostgreSQL để lấy business metadata. Tenant context phải đã được enrich từ Ingestion API trước khi event vào Kafka.
-
-### 5.5. PostgreSQL
-
-PostgreSQL là source of truth cho business data và control metadata.
-
-Dữ liệu chính:
-
-- User.
-- Refresh token/session.
-- Workspace.
-- Workspace member.
-- Workspace invitation.
-- Project.
-- Project member.
-- Project invitation.
-- Trace application.
-- API key metadata và secret hash.
-- Retention configuration nếu thuộc scope hiện tại.
-
-PostgreSQL không lưu log event high-throughput.
-
-### 5.6. OpenSearch
-
-OpenSearch là search storage cho log document.
-
-Trách nhiệm chính:
-
-- Lưu enriched log document.
-- Hỗ trợ project-scoped log search.
-- Hỗ trợ filter theo application, environment, level, service, trace ID, correlation ID và time range.
-- Hỗ trợ sort và pagination theo timestamp.
-- Là backend cho search và analytics cơ bản.
-
-OpenSearch không được expose trực tiếp cho user hoặc client application. Mọi query từ user phải đi qua Control API để enforce authentication, authorization và tenant scope.
-
-### 5.7. Redis
-
-Redis là supporting infrastructure có thể được sử dụng trong các giai đoạn sau.
-
-Vai trò phù hợp:
-
-- Cache kết quả API key validation.
-- Rate limiting theo API key, application hoặc project.
-- Counter ngắn hạn cho usage/quota hoặc burst protection.
-
-Redis không phải source of truth. Nếu Redis chưa có hoặc tạm thời lỗi, hệ thống core vẫn phải dựa trên PostgreSQL, Kafka và OpenSearch.
-
-### 5.8. Docker Compose
-
-Docker Compose là môi trường local development chính.
-
-Trách nhiệm chính:
-
-- Chạy PostgreSQL.
-- Chạy Kafka.
-- Chạy OpenSearch.
-- Chạy Control API.
-- Chạy Ingestion API.
-- Chạy Log Processor.
-- Khởi tạo Kafka topics cần thiết cho local stack.
-- Hỗ trợ developer kiểm tra end-to-end flow trong môi trường local.
-
-## 6. Control Plane Và Data Plane
-
-TraceFlow tách Control Plane và Data Plane để giữ ranh giới trách nhiệm rõ ràng.
-
-### 6.1. Control Plane
-
-Control Plane trả lời câu hỏi:
-
-```text
-Ai được phép làm gì, trong workspace/project/application nào?
-```
-
-Bao gồm:
-
-- Identity.
-- JWT authentication.
-- Workspace/project/application management.
-- Membership và RBAC.
-- API key lifecycle.
-- Internal API key validation.
-- Search API với project access check.
-
-Control Plane ưu tiên correctness, security và consistency của business metadata.
-
-### 6.2. Data Plane
-
-Data Plane trả lời câu hỏi:
-
-```text
-Log đi vào hệ thống, được xử lý và index như thế nào?
-```
-
-Bao gồm:
-
-- Log ingestion.
-- API key authentication trên ingestion path.
-- Payload validation.
-- Tenant context enrichment.
-- Kafka publishing.
-- Kafka consuming.
-- Batch processing.
-- Bulk indexing.
-- Retry và DLQ.
-
-Data Plane ưu tiên throughput, latency, reliability và khả năng xử lý bất đồng bộ.
+Nếu Redis lỗi, hệ thống có thể degrade bằng cách bỏ cache và gọi Control API trực tiếp. Redis không được là nơi duy nhất quyết định resource ownership hoặc lưu log.
 
 ## 7. Main Data Flows
 
@@ -293,38 +164,35 @@ User
 -> PostgreSQL
 ```
 
-Luồng này bao gồm đăng ký, đăng nhập, tạo workspace, tạo project, tạo trace application và tạo API key.
+User đăng ký/đăng nhập, tạo workspace, project, trace application và API key. Kết quả là hệ thống có tenant context và credential để client application gửi log.
 
-Kết quả của luồng này là hệ thống có đầy đủ resource hierarchy và API key để client application gửi log.
-
-### 7.2. API Key Creation Flow
+### 7.2. API Key Validation Flow
 
 ```text
-Project Manager
--> Control API
--> Generate API Key
--> Hash Secret
--> Store API Key Metadata in PostgreSQL
--> Return Full Secret Once
+Ingestion API
+-> Redis cache lookup
+-> Control API validation on cache miss
+-> PostgreSQL
+-> Redis cache write with TTL
+-> Tenant context
 ```
 
-Control API chỉ trả full API key secret một lần khi tạo. Sau đó hệ thống chỉ lưu secret hash và metadata như prefix, status, expiration, environment và last used time.
+Redis giúp giảm tải validation lặp lại nhưng không thay thế Control API. Khi API key bị revoke hoặc expire, cache phải hết hiệu lực theo TTL/invalidation policy được chốt ở Reliability Design.
 
 ### 7.3. Log Ingestion Flow
 
 ```text
 Client Application
 -> Ingestion API
--> Extract API Key
--> Validate API Key with Control API
--> Receive Tenant Context
--> Validate Log Payload
--> Enrich Log Event
+-> Validate API Key
+-> Rate Limit Check
+-> Validate Payload
+-> Enrich Tenant Context
 -> Publish Kafka Event
--> Return Accepted Response
+-> Return Accepted
 ```
 
-Ingestion API không tin workspace, project, application hoặc environment do client gửi lên. Tenant context hợp lệ luôn đến từ Control API sau khi API key được validate.
+Ingestion API không tin tenant fields do client gửi lên. Tenant context luôn đến từ API key hợp lệ.
 
 ### 7.4. Log Processing Flow
 
@@ -333,32 +201,31 @@ Kafka
 -> Log Processor
 -> Parse Event
 -> Validate Internal Event
--> Normalize Event
 -> Buffer Batch
 -> Flush Batch
 -> OpenSearch Bulk Index
 ```
 
-Log Processor index log theo batch để giảm số request đến OpenSearch và tăng throughput.
+Batching là behavior mặc định của processor. Per-message indexing không phải steady-state path.
 
-### 7.5. Failure Và DLQ Flow
+### 7.5. Failure & DLQ Flow
 
 ```text
-Malformed JSON
+Invalid JSON
 -> DLQ
 
 Invalid Internal Event
 -> DLQ
 
-Full Bulk Indexing Failure
+Full Bulk Failure
 -> Retry
 -> DLQ Whole Batch if Retry Exhausted
 
-Partial Bulk Indexing Failure
+Partial Bulk Failure
 -> DLQ Failed Items Only
 ```
 
-DLQ event phải lưu đủ thông tin như failure stage, failure reason, original payload, source topic, partition, offset và tenant context nếu có thể parse được.
+DLQ event phải lưu failure stage, failure reason, original payload, source topic, partition, offset và tenant context nếu parse được.
 
 ### 7.6. Log Search Flow
 
@@ -372,143 +239,53 @@ User
 -> Return Scoped Result
 ```
 
-Search API luôn filter theo workspace ID và project ID. User không được query OpenSearch trực tiếp.
+Control API luôn inject `workspaceId` và `projectId` vào query trước khi áp dụng filter khác.
 
 ## 8. Storage Design Overview
 
-| Storage | Vai trò | Dữ liệu lưu trữ |
+| Storage | Role | Data |
 | :--- | :--- | :--- |
-| PostgreSQL | Source of truth cho control data. | User, workspace, project, application, membership, invitation, API key metadata, refresh token. |
-| Kafka | Event stream và buffer tạm thời. | Enriched log events, DLQ events. |
-| OpenSearch | Search storage cho log. | Enriched log documents phục vụ search, filtering và analytics cơ bản. |
-| Redis | Supporting cache/counter nếu được bật. | API key validation cache, rate limiting counter, usage counter ngắn hạn. |
-| Docker Volumes | Local persistence. | Dữ liệu local của PostgreSQL và OpenSearch trong môi trường development. |
+| PostgreSQL | Source of truth cho control data. | User, workspace, project, application, membership, API key metadata/hash. |
+| Redis | Cache/rate limit/counter ngắn hạn. | Validation cache, rate limit counter, short-lived usage counter. |
+| Kafka | Event stream và buffer. | Enriched log events, DLQ events. |
+| OpenSearch | Search storage. | Enriched log documents phục vụ search/filter. |
+| Docker Volumes | Local persistence. | Dữ liệu local của PostgreSQL, Kafka, Redis và OpenSearch. |
 
-## 9. Security Boundary Overview
+## 9. Scalability & Reliability Overview
 
-TraceFlow có ba nhóm authentication boundary chính:
+Ingestion API có thể scale ngang vì không giữ business state dài hạn. Kafka hỗ trợ tăng throughput bằng partitioning. Log Processor scale bằng consumer group. OpenSearch scale theo index/shard/node nếu cần, nhưng local development chỉ cần single-node.
 
-| Boundary | Cơ chế | Áp dụng cho |
-| :--- | :--- | :--- |
-| User-facing API | JWT access token. | User gọi Control API. |
-| Ingestion API | API key. | Client Application gửi log. |
-| Service-to-service | Internal service secret hoặc cơ chế tương đương. | Ingestion API gọi internal endpoint của Control API. |
+Reliability của core pipeline dựa trên các nguyên tắc:
 
-Nguyên tắc bảo mật chính:
+| Principle | Meaning |
+| :--- | :--- |
+| Accept after Kafka publish | Ingestion success chỉ trả sau khi event vào Kafka. |
+| Fail fast invalid request | Payload lỗi bị reject trước Kafka. |
+| DLQ bad message | Invalid Kafka message không làm nghẽn consumer loop. |
+| Retry full failure | OpenSearch full failure được retry trước khi DLQ. |
+| DLQ failed item only | Partial bulk failure không làm DLQ item đã thành công. |
+| Redis is disposable | Redis cache/counter không được là nguồn dữ liệu duy nhất. |
 
-- API key không dùng để gọi management/search API.
-- JWT không dùng để gửi log thay cho application.
-- API key secret không lưu plaintext.
-- Client không được quyết định tenant context.
-- Search API luôn enforce project access trước khi query OpenSearch.
-- OpenSearch không expose trực tiếp cho user hoặc client application.
+## 10. Nice-To-Have And Optional Boundaries
 
-## 10. Scalability Overview
+| Capability | HLD Boundary |
+| :--- | :--- |
+| Retention | Có thể thêm job hoặc API cấu hình đơn giản sau core; không archive/restore. |
+| Quota | Dùng Redis counter để bảo vệ ingestion; không billing. |
+| Operational Insights | Query summary từ OpenSearch qua Control API; không metrics platform. |
+| Benchmark | Script/test đo throughput và latency; không cần infra phức tạp. |
+| Minimal Web UI | Gọi Control API để demo core flow; không gọi trực tiếp storage. |
+| Alerting | Optional, không ảnh hưởng core architecture. |
+| Backup/Restore | Optional documentation/script sau, không nằm trên hot path. |
+| Advanced Dashboard | Optional, không thiết kế trong core. |
 
-### 10.1. Ingestion API
+## 11. Key Design Decisions
 
-Ingestion API có thể scale ngang vì không giữ business state dài hạn. State quan trọng nằm ở Control API/PostgreSQL và Kafka.
-
-Khi cần tối ưu, Ingestion API có thể dùng Redis để cache API key validation hoặc rate limit theo API key.
-
-### 10.2. Kafka
-
-Kafka hỗ trợ tăng throughput thông qua partitioning. Partitioning strategy sẽ được chốt trong tài liệu Reliability Design hoặc Scalability Design.
-
-Kafka giúp tách tốc độ nhận log khỏi tốc độ index log.
-
-### 10.3. Log Processor
-
-Log Processor có thể scale bằng Kafka consumer group. Nhiều instance processor có thể consume các partition khác nhau.
-
-Processor throughput phụ thuộc vào:
-
-- Kafka partition count.
-- Batch size.
-- Flush interval.
-- OpenSearch bulk indexing capacity.
-- Retry và DLQ behavior.
-
-### 10.4. OpenSearch
-
-OpenSearch có thể scale theo index, shard và node nếu cần. Trong phạm vi local development, OpenSearch chạy single-node.
-
-OpenSearch mapping phải hỗ trợ exact match filtering cho tenant fields và range query cho timestamp.
-
-### 10.5. Control API
-
-Control API có thể scale ngang, nhưng PostgreSQL vẫn là source of truth cho business metadata.
-
-Control API cần được bảo vệ khỏi internal validation traffic quá lớn bằng cache, rate limiting hoặc circuit breaker nếu hệ thống mở rộng.
-
-## 11. Reliability Overview
-
-TraceFlow dùng Kafka để decouple ingestion và indexing. Khi OpenSearch tạm thời lỗi, Ingestion API vẫn có thể nhận log nếu Kafka publish thành công.
-
-Các nguyên tắc reliability chính:
-
-- Ingestion API chỉ trả success sau khi publish Kafka thành công.
-- Invalid request bị reject trước khi vào Kafka.
-- Invalid Kafka message không được làm nghẽn consumer loop.
-- Log Processor retry full bulk indexing failure.
-- Log Processor gửi failed event vào DLQ khi không thể xử lý thành công.
-- Partial bulk failure chỉ DLQ item failed.
-- DLQ event lưu đủ context để debug hoặc replay thủ công trong tương lai.
-- Processor logs phải phân biệt success, retry, full failure và partial failure.
-
-## 12. Design Decisions
-
-### 12.1. Tách Control API Và Ingestion API
-
-Control API xử lý business logic và user-facing API. Ingestion API xử lý log submission tốc độ cao.
-
-Việc tách hai service giúp:
-
-- Giữ ingestion path nhẹ và tập trung.
-- Không để high-throughput log ingestion làm phức tạp Control API.
-- Cho phép Data Plane scale độc lập với Control Plane.
-- Giữ security boundary rõ ràng giữa user management và log ingestion.
-
-### 12.2. Sử Dụng Kafka Giữa Ingestion Và Processing
-
-Kafka được dùng để decouple ingestion khỏi indexing.
-
-Lý do:
-
-- Ingestion API không phải chờ OpenSearch.
-- Hệ thống chịu traffic spike tốt hơn.
-- Processor có thể retry hoặc tạm chậm mà không làm client-facing ingestion path phụ thuộc trực tiếp.
-- Có thể scale processing bằng consumer group.
-
-### 12.3. Sử Dụng OpenSearch Cho Log Search
-
-OpenSearch phù hợp cho log search vì hỗ trợ:
-
-- Full-text search.
-- Filtering theo structured fields.
-- Time range query.
-- Sorting và pagination theo timestamp.
-- Aggregation cơ bản cho dashboard hoặc operational insights.
-
-PostgreSQL không được dùng làm storage chính cho high-throughput log search.
-
-### 12.4. Sử Dụng PostgreSQL Cho Control Data
-
-PostgreSQL được dùng cho business metadata vì dữ liệu control cần consistency, relationship và transaction rõ ràng.
-
-Các dữ liệu như user, workspace, project, membership, application và API key metadata thuộc PostgreSQL.
-
-### 12.5. Sử Dụng Go Cho Data Plane
-
-Go phù hợp cho Ingestion API và Log Processor vì:
-
-- Runtime nhẹ.
-- Concurrency model tốt.
-- Phù hợp với network service và worker.
-- Dễ triển khai service nhỏ, độc lập.
-
-### 12.6. Redis Là Supporting Infrastructure
-
-Redis có thể được dùng cho cache, rate limiting và counter ngắn hạn, nhưng không phải source of truth.
-
-Quyết định này giúp core architecture không phụ thuộc Redis trong giai đoạn đầu, nhưng vẫn có hướng mở rộng rõ ràng khi cần tối ưu ingestion path hoặc usage/quota.
+| Decision | Rationale |
+| :--- | :--- |
+| Tách Control API và Ingestion API. | Giữ user management/RBAC tách khỏi high-throughput ingestion path. |
+| Dùng Kafka giữa ingestion và processing. | Decouple client-facing ingestion khỏi OpenSearch indexing. |
+| Dùng OpenSearch cho log search. | Phù hợp full-text, structured filter và time range query. |
+| Dùng PostgreSQL cho control metadata. | Cần consistency, relationship và transaction rõ ràng. |
+| Dùng Go cho Data Plane. | Phù hợp service nhẹ, network I/O và worker concurrency. |
+| Dùng Redis trong core nhưng giới hạn vai trò. | Có cache/rate protection thực tế mà không làm sai source of truth. |
