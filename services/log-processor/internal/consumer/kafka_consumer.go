@@ -9,6 +9,7 @@ import (
 
 	"github.com/T-Hank2712/traceflow/log-processor/internal/model"
 	"github.com/T-Hank2712/traceflow/log-processor/internal/producer"
+	"github.com/T-Hank2712/traceflow/log-processor/internal/repository"
 	"github.com/T-Hank2712/traceflow/log-processor/internal/service"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
@@ -223,6 +224,45 @@ func (k *KafkaConsumer) processWithRetry(event *model.LogEvent) error {
 	return lastErr
 }
 
+func (k *KafkaConsumer) processBatchWithRetry(
+	batch []model.BatchItem,
+) (*repository.BulkIndexResult, error) {
+	var lastErr error
+
+	events := batchEvents(batch)
+	attempts := k.processorMaxRetries + 1
+	backoff := time.Duration(k.processorRetryBackoffMs) * time.Millisecond
+
+	for attempt := 1; attempt <= attempts; attempt++ {
+		result, err := k.logService.ProcessBatch(events)
+		if err == nil {
+			return result, nil
+		}
+
+		if !errors.Is(err, service.ErrIndexLogFailed) {
+			return nil, err
+		}
+
+		lastErr = err
+
+		if attempt == attempts {
+			break
+		}
+
+		log.Printf(
+			"Retrying batch indexing: attempt=%d maxAttempts=%d batchSize=%d error=%v",
+			attempt,
+			attempts,
+			len(batch),
+			err,
+		)
+
+		time.Sleep(backoff)
+	}
+
+	return nil, lastErr
+}
+
 func (k *KafkaConsumer) addToBatch(item model.BatchItem) {
 	if len(k.batch) == 0 {
 		k.batchStartedAt = time.Now()
@@ -253,44 +293,43 @@ func (k *KafkaConsumer) flushBatch() {
 
 	log.Printf("Flushing log batch: size=%d", len(batch))
 
-	for _, item := range batch {
-		if err := k.processWithRetry(&item.Event); err != nil {
-			log.Printf("Failed to process batched log event: %v", err)
+	result, err := k.processBatchWithRetry(batch)
+	if err != nil {
+		log.Printf(
+			"Failed to bulk index batch after retries: batchSize=%d error=%v",
+			len(batch),
+			err,
+		)
 
-			if errors.Is(err, service.ErrInvalidLogEvent) {
-				if dlqErr := k.publishDeadLetter(
-					context.Background(),
-					item.Message,
-					model.FailureStageValidation,
-					err.Error(),
-					&item.Event,
-				); dlqErr != nil {
-					log.Printf("Failed to publish invalid batched log event to DLQ: %v", dlqErr)
-				}
-
-				continue
-			}
-
-			if errors.Is(err, service.ErrIndexLogFailed) {
-				if dlqErr := k.publishDeadLetter(
-					context.Background(),
-					item.Message,
-					model.FailureStageIndexing,
-					err.Error(),
-					&item.Event,
-				); dlqErr != nil {
-					log.Printf("Failed to publish batched indexing failure to DLQ: %v", dlqErr)
-				}
-
-				continue
-			}
-
-			log.Printf("Unexpected batched log processing error: %v", err)
-			continue
+		for _, item := range batch {
+			k.publishBatchItemToDLQ(item, err.Error())
 		}
+
+		log.Printf(
+			"Batch sent to DLQ after full bulk failure: batchSize=%d",
+			len(batch),
+		)
+
+		return
 	}
 
-	log.Printf("Flushed log batch: size=%d", len(batch))
+	failedCount := 0
+	if result != nil {
+		failedCount = len(result.FailedItems)
+	}
+
+	if result != nil && result.HasFailures() {
+		k.handlePartialBulkFailures(batch, result)
+	}
+
+	indexedCount := len(batch) - failedCount
+
+	log.Printf(
+		"Flushed log batch: batchSize=%d indexedCount=%d failedCount=%d",
+		len(batch),
+		indexedCount,
+		failedCount,
+	)
 }
 
 func (k *KafkaConsumer) shouldFlushByInterval() bool {
@@ -298,4 +337,61 @@ func (k *KafkaConsumer) shouldFlushByInterval() bool {
 		len(k.batch) > 0 &&
 		!k.batchStartedAt.IsZero() &&
 		time.Since(k.batchStartedAt) >= k.flushInterval
+}
+
+func batchEvents(batch []model.BatchItem) []model.LogEvent {
+	events := make([]model.LogEvent, 0, len(batch))
+
+	for _, item := range batch {
+		events = append(events, item.Event)
+	}
+
+	return events
+}
+
+func (k *KafkaConsumer) publishBatchItemToDLQ(
+	item model.BatchItem,
+	reason string,
+) {
+	if dlqErr := k.publishDeadLetter(
+		context.Background(),
+		item.Message,
+		model.FailureStageIndexing,
+		reason,
+		&item.Event,
+	); dlqErr != nil {
+		log.Printf(
+			"Failed to publish batch item to DLQ: eventId=%s error=%v",
+			item.Event.EventID,
+			dlqErr,
+		)
+		return
+	}
+
+	log.Printf(
+		"Batch item sent to DLQ: eventId=%s reason=%s",
+		item.Event.EventID,
+		reason,
+	)
+}
+
+func (k *KafkaConsumer) handlePartialBulkFailures(
+	batch []model.BatchItem,
+	result *repository.BulkIndexResult,
+) {
+	for _, failure := range result.FailedItems {
+		if failure.Index < 0 || failure.Index >= len(batch) {
+			log.Printf(
+				"Bulk failure index out of range: index=%d batchSize=%d reason=%s",
+				failure.Index,
+				len(batch),
+				failure.Reason,
+			)
+			continue
+		}
+
+		item := batch[failure.Index]
+
+		k.publishBatchItemToDLQ(item, failure.Reason)
+	}
 }
