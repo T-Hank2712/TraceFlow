@@ -21,4 +21,4 @@ Sử dụng OpenSearch làm search backend cho log.
 
 ## Hệ quả
 
-PostgreSQL không lưu log chính. Cần thiết kế index mapping, retention và query pattern cẩn thận để tránh lộ dữ liệu giữa project.
+PostgreSQL không lưu log chính. Cần thiết kế index mapping và query pattern cẩn thận để tránh lộ dữ liệu giữa project. Retention là nice-to-have và phải giữ tenant scope nếu triển khai.

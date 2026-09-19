@@ -6,7 +6,7 @@ Chấp nhận.
 
 ## Bối cảnh
 
-Control plane cần quản lý user, workspace, project, application, API key, search API và dashboard API.
+Control plane cần quản lý user, workspace, project, application, API key và Search API. Operational Insights/Dashboard API là nice-to-have nếu được bật.
 
 ## Quyết định
 

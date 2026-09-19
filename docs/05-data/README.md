@@ -7,11 +7,12 @@ TraceFlow có nhiều loại dữ liệu với đặc tính khác nhau. User, wo
 ## Nội dung cần nắm
 
 - PostgreSQL bảo vệ invariant nghiệp vụ bằng foreign key, unique constraint và transaction.
-- OpenSearch phục vụ search, trace lookup và dashboard aggregation.
+- OpenSearch phục vụ search, trace lookup và operational insights nếu bật.
+- Redis phục vụ cache/rate limit/counter ngắn hạn, không phải source of truth.
 - Kafka topic là contract bất đồng bộ giữa producer và consumer.
 - Log event schema phải đủ thông tin để processor index mà không phải tin lại client.
 - API key storage phải tránh lưu plaintext secret.
-- Retention policy quyết định vòng đời log.
+- Retention policy là nice-to-have để kiểm soát vòng đời log.
 - Sample data giúp test và demo luồng end-to-end.
 
 ## Khi nào cần cập nhật nhóm này
@@ -19,7 +20,7 @@ TraceFlow có nhiều loại dữ liệu với đặc tính khác nhau. User, wo
 - Khi thêm bảng, index, topic hoặc event schema mới.
 - Khi đổi mapping OpenSearch hoặc query pattern.
 - Khi đổi cách hash/lưu API key.
-- Khi thêm retention, quota hoặc usage counter.
+- Khi thêm retention, quota, Redis counter hoặc usage counter.
 - Khi thay đổi schema ảnh hưởng API hoặc service boundary.
 
 ## Thứ tự đọc

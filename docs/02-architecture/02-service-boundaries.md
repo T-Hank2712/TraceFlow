@@ -8,10 +8,8 @@ Chịu trách nhiệm:
 - Workspace, Project, Application.
 - API Key management.
 - Search API.
-- Dashboard API.
-- Alert configuration.
-- Retention configuration.
-- Usage and quota configuration.
+- Internal API key validation.
+- Nice-to-have: retention/quota/operational insights ở mức nhỏ nếu được bật.
 
 Không chịu trách nhiệm nhận log tốc độ cao trực tiếp. Data plane luôn đi qua Go Ingestion Service.
 
@@ -23,6 +21,7 @@ Chịu trách nhiệm:
 - Xác thực API key.
 - Validate và chuẩn hóa payload.
 - Publish event vào Kafka.
+- Dùng Redis cho validation cache/rate limit nếu bật.
 - Trả `202 Accepted` nhanh cho client.
 
 Không index trực tiếp vào OpenSearch trong HTTP request.
@@ -34,11 +33,12 @@ Chịu trách nhiệm:
 - Consume Kafka.
 - Normalize/enrich log.
 - Gom batch.
-- Index vào OpenSearch.
-- Xử lý retry, timeout và graceful shutdown.
+- Bulk index vào OpenSearch.
+- Xử lý retry, timeout và DLQ.
 
 ## Storage Boundary
 
 - PostgreSQL lưu metadata nghiệp vụ.
+- Redis lưu cache/counter ngắn hạn, không phải source of truth.
 - Kafka lưu log stream tạm thời.
 - OpenSearch lưu log phục vụ tìm kiếm.

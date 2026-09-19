@@ -1,17 +1,17 @@
 # Operations
 
-Nhóm tài liệu này mô tả cách cấu hình, chạy, quan sát, backup và debug TraceFlow. Đây là phần biến project từ “code có thể compile” thành “hệ thống có thể vận hành”.
+Nhóm tài liệu này mô tả cách cấu hình, chạy, quan sát và debug TraceFlow. Backup/restore được giữ như optional operations topic, không phải điều kiện hoàn thiện core pipeline.
 
-TraceFlow phụ thuộc nhiều thành phần hạ tầng như PostgreSQL, Kafka, OpenSearch và có thể có Redis. Vì vậy operations docs phải giúp người phát triển hiểu cách service khởi động, dependency nào cần health check, cấu hình nào là bắt buộc, log/metrics nào cần nhìn khi lỗi xảy ra.
+TraceFlow phụ thuộc nhiều thành phần hạ tầng như PostgreSQL, Kafka, OpenSearch và Redis. Vì vậy operations docs phải giúp người phát triển hiểu cách service khởi động, dependency nào cần health check, cấu hình nào là bắt buộc, log/metrics nào cần nhìn khi lỗi xảy ra.
 
 ## Nội dung cần nắm
 
 - Docker Compose chạy local stack đầy đủ.
 - Configuration qua environment variables và `.env.example`.
 - Migration quản lý schema PostgreSQL.
-- Logging và metrics giúp debug ingestion, processing, search và alerting.
+- Logging và metrics tối thiểu giúp debug ingestion, processing, search, Redis fallback và DLQ.
 - Health checks phân biệt liveness, readiness và dependency health.
-- Backup/restore bảo vệ metadata và cấu hình quan trọng.
+- Backup/restore là optional topic để bảo vệ metadata và cấu hình nếu cần.
 - Troubleshooting mô tả cách điều tra lỗi thường gặp.
 
 ## Khi nào cần cập nhật nhóm này

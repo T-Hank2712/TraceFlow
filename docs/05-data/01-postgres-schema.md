@@ -11,11 +11,13 @@ PostgreSQL lưu dữ liệu nghiệp vụ và metadata.
 - `projects`
 - `applications`
 - `api_keys`
-- `alert_rules`
-- `notification_channels`
-- `retention_policies`
-- `usage_counters`
 - `audit_logs`
+
+## Bảng nice-to-have / optional
+
+- `retention_policies` nếu triển khai retention.
+- `usage_counters` nếu triển khai quota/usage tracking dài hạn.
+- `alert_rules` và `notification_channels` chỉ thuộc optional alerting.
 
 ## Nguyên tắc
 

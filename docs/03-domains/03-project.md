@@ -6,7 +6,7 @@ Project là boundary chính để cô lập log và search.
 
 - Project.
 - Workspace.
-- Retention Configuration.
+- Retention Configuration nếu triển khai nice-to-have retention.
 
 ## Quy tắc
 
@@ -17,4 +17,4 @@ Project là boundary chính để cô lập log và search.
 
 ## Năng lực cần có
 
-Project cần hỗ trợ tạo, cập nhật, lưu cấu hình retention, quản lý application và dùng `project_id` làm tenant boundary trong search.
+Project cần hỗ trợ tạo, cập nhật, quản lý application và dùng `project_id` làm tenant boundary trong search. Retention configuration là nice-to-have, không phải điều kiện để core pipeline hoạt động.
