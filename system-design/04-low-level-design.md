@@ -45,7 +45,7 @@ TenantContext
   └── attached to LogEvent
 ```
 
-| Model | Key Fields | Design Meaning |
+| Model | Field chính | Ý nghĩa thiết kế |
 | :--- | :--- | :--- |
 | `Workspace` | `id`, `name`, `status` | Tenant boundary cấp cao nhất. |
 | `Project` | `id`, `workspaceId`, `name`, `status` | Scope chính cho log ownership, RBAC và search. |
@@ -62,7 +62,7 @@ TenantContext
 
 Workspace, Project và TraceApplication cần state đủ đơn giản để bảo vệ ingestion và search.
 
-| State | Meaning | API Key Validation |
+| Trạng thái | Ý nghĩa | API Key Validation |
 | :--- | :--- | :--- |
 | `active` | Resource đang dùng bình thường. | Có thể hợp lệ nếu API key cũng hợp lệ. |
 | `archived` | Resource bị ngừng sử dụng nhưng còn dữ liệu. | API key bị từ chối. |
@@ -77,7 +77,7 @@ active -> revoked
 active -> expired
 ```
 
-| State | Meaning | Ingestion Behavior |
+| Trạng thái | Ý nghĩa | Behavior khi ingestion |
 | :--- | :--- | :--- |
 | `active` | Key còn hiệu lực và resource chain active. | Cho phép nếu hash khớp và chưa hết hạn. |
 | `revoked` | User/admin đã thu hồi key. | Từ chối ngay. |
@@ -99,7 +99,7 @@ received/published/consumed
 -> dlq
 ```
 
-| State | Owner | Meaning |
+| Trạng thái | Service sở hữu | Ý nghĩa |
 | :--- | :--- | :--- |
 | `received` | Ingestion API | Request đã vào service nhưng chưa chắc vào Kafka. |
 | `published` | Ingestion API/Kafka | Event đã được Kafka accept. |
@@ -110,68 +110,68 @@ received/published/consumed
 
 Ingestion response success chỉ tương ứng với `published`, không tương ứng với `indexed`.
 
-## 5. Control API Design
+## 5. Thiết Kế Control API
 
-Control API là nơi chốt correctness của user access, resource ownership và API key lifecycle.
+Control API là nơi đảm bảo tính đúng đắn của quyền truy cập user, ownership của resource và vòng đời API key.
 
-### 5.1. Internal Modules
+### 5.1. Module Nội Bộ
 
-| Module | Responsibility | Output |
+| Module | Trách nhiệm | Kết quả đầu ra |
 | :--- | :--- | :--- |
-| Auth | Login, refresh, logout, JWT issuing. | Authenticated user context. |
-| Access Control | Workspace/project permission checks. | Allow/deny decision. |
-| Resource Management | Workspace, project, trace application lifecycle. | Resource metadata. |
-| API Key Management | Create/list/revoke/validate API key. | API key metadata hoặc tenant context. |
-| Search | Build scoped OpenSearch query. | Search result page. |
-| Redis Cache Adapter | Validation cache invalidation/read/write. | Cached tenant context hoặc miss. |
+| Auth | Đăng nhập, refresh token, logout và phát hành JWT. | User context đã xác thực. |
+| Access Control | Kiểm tra quyền ở workspace/project. | Quyết định cho phép hoặc từ chối. |
+| Resource Management | Quản lý vòng đời workspace, project và trace application. | Metadata của resource. |
+| API Key Management | Tạo, liệt kê, thu hồi và validate API key. | API key metadata hoặc tenant context. |
+| Search | Xây dựng OpenSearch query đã scope theo tenant. | Trang kết quả search. |
+| Redis Cache Adapter | Đọc, ghi và invalidate validation cache. | Tenant context từ cache hoặc cache miss. |
 
-### 5.2. Access Control Contract
+### 5.2. Contract Kiểm Tra Quyền
 
-Access control should answer one question only:
+Access control chỉ nên trả lời một câu hỏi:
 
 ```text
-Can this user perform this action on this workspace/project/application?
+User này có được thực hiện hành động này trên workspace/project/application này không?
 ```
 
-| Action | Required Check |
+| Hành động | Điều kiện cần kiểm tra |
 | :--- | :--- |
-| Create project | User can manage workspace. |
-| Create application | User can manage project. |
-| Create/revoke API key | User can manage application/project. |
-| Search logs | User can view project logs. |
+| Tạo project | User có quyền quản lý workspace. |
+| Tạo application | User có quyền quản lý project. |
+| Tạo hoặc thu hồi API key | User có quyền quản lý application/project. |
+| Search logs | User có quyền xem log trong project. |
 
-Handlers không tự viết lại role logic. Chúng gọi access service để giữ rule nhất quán.
+Handler không tự viết lại logic kiểm tra role. Handler phải gọi access service để giữ business rule nhất quán.
 
-### 5.3. API Key Validation Algorithm
+### 5.3. Thuật Toán Validate API Key
 
 ```text
-Input: full API key secret
+Đầu vào: full API key secret
 
-1. Parse key prefix and secret material.
-2. Try Redis validation cache by safe fingerprint.
-3. If cache hit and not expired, return tenant context.
-4. If cache miss, load API key by prefix from PostgreSQL.
+1. Tách key prefix và phần secret.
+2. Kiểm tra Redis validation cache bằng fingerprint an toàn.
+3. Nếu cache hit và chưa hết hạn, trả về tenant context.
+4. Nếu cache miss, load API key theo prefix từ PostgreSQL.
 5. Verify secret hash.
-6. Check API key state: active, not revoked, not expired.
-7. Check Workspace/Project/Application state: active.
-8. Build TenantContext.
-9. Store TenantContext in Redis with short TTL.
-10. Return TenantContext.
+6. Kiểm tra trạng thái API key: active, chưa revoked, chưa expired.
+7. Kiểm tra trạng thái Workspace/Project/Application: active.
+8. Tạo TenantContext.
+9. Lưu TenantContext vào Redis với TTL ngắn.
+10. Trả về TenantContext.
 ```
 
-Redis value must not contain full API key secret or secret hash. Cache key must avoid storing raw secret.
+Giá trị trong Redis không được chứa full API key secret hoặc secret hash. Cache key cũng không được chứa raw secret.
 
-### 5.4. Search Query Construction
+### 5.4. Cách Xây Dựng Search Query
 
-Search query construction follows a strict order:
+Search query phải được xây dựng theo thứ tự cố định:
 
 ```text
-1. Authenticate user.
-2. Check project access.
-3. Start query with mandatory tenant filters:
+1. Xác thực user.
+2. Kiểm tra quyền truy cập project.
+3. Bắt đầu query bằng tenant filters bắt buộc:
    - workspaceId
    - projectId
-4. Add optional filters:
+4. Thêm optional filters:
    - applicationId
    - environment
    - level
@@ -180,77 +180,77 @@ Search query construction follows a strict order:
    - correlationId
    - time range
    - full-text query
-5. Apply pagination and sort.
-6. Execute OpenSearch query.
+5. Áp dụng pagination và sort.
+6. Thực thi OpenSearch query.
 ```
 
-Optional filters are never allowed to replace tenant filters.
+Các filter tùy chọn không bao giờ được thay thế tenant filters bắt buộc.
 
-## 6. Ingestion API Design
+## 6. Thiết Kế Ingestion API
 
-Ingestion API is optimized for short request path and predictable failure behavior.
+Ingestion API được thiết kế để request path ngắn, dễ dự đoán và có behavior rõ ràng khi lỗi xảy ra.
 
-### 6.1. Internal Modules
+### 6.1. Module Nội Bộ
 
-| Module | Responsibility |
+| Module | Trách nhiệm |
 | :--- | :--- |
-| HTTP Transport | Parse headers/body, apply body size limit, map errors to HTTP responses. |
-| API Key Validator | Validate key through Redis/Control API and return tenant context. |
-| Rate Limiter | Use Redis counters to protect ingestion path. |
-| Payload Validator | Validate single/batch log payload. |
-| Event Builder | Create enriched Kafka event from request + tenant context. |
-| Kafka Publisher | Publish event to Kafka main topic. |
+| HTTP Transport | Parse header/body, áp dụng body size limit và map lỗi sang HTTP response. |
+| API Key Validator | Validate API key qua Redis/Control API và trả tenant context. |
+| Rate Limiter | Dùng Redis counter để bảo vệ ingestion path. |
+| Payload Validator | Validate payload single log hoặc batch logs. |
+| Event Builder | Tạo enriched Kafka event từ request và tenant context. |
+| Kafka Publisher | Publish event vào Kafka main topic. |
 
-### 6.2. Single Log Algorithm
+### 6.2. Thuật Toán Xử Lý Single Log
 
 ```text
-Input: HTTP request with API key and log payload
+Đầu vào: HTTP request có API key và log payload
 
-1. Enforce request size limit.
-2. Extract API key from Authorization header.
+1. Áp dụng request size limit.
+2. Lấy API key từ Authorization header.
 3. Decode JSON payload.
-4. Validate API key and receive TenantContext.
-5. Check rate limit using TenantContext/apiKeyId.
-6. Validate log fields.
-7. Create LogEvent with server-side TenantContext.
-8. Publish LogEvent to Kafka.
-9. Return 202 Accepted.
+4. Validate API key và nhận TenantContext.
+5. Kiểm tra rate limit bằng TenantContext/apiKeyId.
+6. Validate các field của log.
+7. Tạo LogEvent với TenantContext phía server.
+8. Publish LogEvent vào Kafka.
+9. Trả về 202 Accepted.
 ```
 
-### 6.3. Batch Log Algorithm
+### 6.3. Thuật Toán Xử Lý Batch Logs
 
 ```text
-Input: HTTP request with API key and logs[]
+Đầu vào: HTTP request có API key và logs[]
 
-1. Enforce request size limit.
-2. Extract API key.
+1. Áp dụng request size limit.
+2. Lấy API key.
 3. Decode batch JSON.
-4. Validate API key once.
-5. Check rate limit for batch count.
-6. Validate every item in the batch.
-7. If any item invalid, reject the batch before Kafka publish.
-8. Build one LogEvent per item.
-9. Publish events to Kafka.
-10. Return accepted count.
+4. Validate API key một lần.
+5. Kiểm tra rate limit theo số lượng log trong batch.
+6. Validate toàn bộ item trong batch.
+7. Nếu có item không hợp lệ, reject cả batch trước khi publish Kafka.
+8. Tạo một LogEvent cho mỗi item.
+9. Publish events vào Kafka.
+10. Trả về số lượng log đã accepted.
 ```
 
-Batch ingestion uses all-or-nothing validation before publish. This keeps client-facing error behavior simple. Partial Kafka publish behavior is a reliability decision and should be handled in `05-reliability-design.md`.
+Batch ingestion dùng all-or-nothing validation trước khi publish. Cách này giúp behavior phía client rõ ràng hơn. Trường hợp Kafka publish lỗi giữa batch là quyết định reliability và sẽ được chốt trong `05-reliability-design.md`.
 
-### 6.4. Ingestion Error Mapping
+### 6.4. Mapping Lỗi Của Ingestion
 
-| Error | HTTP Response | Enters Kafka? |
+| Lỗi | HTTP response | Có vào Kafka không? |
 | :--- | :--- | :--- |
-| Missing API key | `401` | No |
-| Invalid API key | `401` | No |
-| Rate limit exceeded | `429` | No |
-| Invalid JSON request | `400` | No |
-| Invalid log field | `400` | No |
-| Kafka unavailable | `503` | No or unknown, depending publish result |
-| Redis unavailable | Depends policy | Validation can fallback to Control API; rate limit policy decided later. |
+| Thiếu API key | `401` | Không |
+| API key không hợp lệ | `401` | Không |
+| Vượt rate limit | `429` | Không |
+| Request JSON không hợp lệ | `400` | Không |
+| Log field không hợp lệ | `400` | Không |
+| Kafka không khả dụng | `503` | Không hoặc không xác định, tùy kết quả publish |
+| Redis không khả dụng | Tùy policy | Validation có thể fallback sang Control API; rate limit policy chốt sau. |
 
-## 7. Kafka Event Design
+## 7. Thiết Kế Kafka Event
 
-Kafka event is the stable internal handoff between Ingestion API and Log Processor.
+Kafka event là contract nội bộ ổn định giữa Ingestion API và Log Processor.
 
 ```text
 LogEvent
@@ -270,156 +270,156 @@ LogEvent
 └── metadata
 ```
 
-Design rules:
+Quy tắc thiết kế:
 
-| Rule | Reason |
+| Quy tắc | Lý do |
 | :--- | :--- |
-| `schemaVersion` is required. | Allows schema evolution. |
-| `eventId` is generated server-side. | Supports idempotency/debug in processor and OpenSearch. |
-| Tenant fields are required. | Processor should not call PostgreSQL. |
-| `receivedAt` is required. | Supports ingestion/searchable latency measurement. |
-| Metadata has guardrails. | Prevents oversized or deeply nested documents. |
+| `schemaVersion` là bắt buộc. | Hỗ trợ schema evolution. |
+| `eventId` được sinh phía server. | Hỗ trợ idempotency/debug trong processor và OpenSearch. |
+| Tenant fields là bắt buộc. | Processor không cần gọi PostgreSQL. |
+| `receivedAt` là bắt buộc. | Hỗ trợ đo ingestion/searchable latency. |
+| Metadata phải có guardrails. | Tránh document quá lớn hoặc nested quá sâu. |
 
-## 8. Log Processor Design
+## 8. Thiết Kế Log Processor
 
-Log Processor is responsible for converting Kafka events into OpenSearch documents reliably.
+Log Processor chịu trách nhiệm chuyển Kafka event thành OpenSearch document một cách đáng tin cậy.
 
-### 8.1. Internal Modules
+### 8.1. Module Nội Bộ
 
-| Module | Responsibility |
+| Module | Trách nhiệm |
 | :--- | :--- |
-| Kafka Consumer | Pull raw messages and expose topic/partition/offset context. |
-| Event Decoder | Parse JSON and detect malformed message. |
-| Event Validator | Validate required internal fields. |
-| Batch Buffer | Store valid events until size/interval flush. |
-| Bulk Indexer | Send batch to OpenSearch Bulk API. |
-| Retry Executor | Retry full bulk failures according to policy. |
-| DLQ Publisher | Publish failed raw message/event/item to DLQ topic. |
-| Processing Logger | Emit batch-level results and failure context. |
+| Kafka Consumer | Lấy raw message và cung cấp context topic/partition/offset. |
+| Event Decoder | Parse JSON và phát hiện malformed message. |
+| Event Validator | Validate các internal fields bắt buộc. |
+| Batch Buffer | Lưu valid events cho đến khi flush theo size/interval. |
+| Bulk Indexer | Gửi batch vào OpenSearch Bulk API. |
+| Retry Executor | Retry full bulk failure theo policy. |
+| DLQ Publisher | Publish raw message/event/item lỗi vào DLQ topic. |
+| Processing Logger | Ghi batch-level result và failure context. |
 
 ### 8.2. Batch Item Model
 
-Each buffered item must keep both the normalized event and its Kafka context.
+Mỗi item trong batch phải giữ cả event đã normalize và Kafka context gốc.
 
-| Field | Purpose |
+| Field | Mục đích |
 | :--- | :--- |
-| `event` | Normalized LogEvent for indexing. |
-| `rawPayload` | Original Kafka payload for DLQ/debug. |
-| `topic` | Source topic. |
-| `partition` | Source partition. |
-| `offset` | Source offset. |
-| `receivedByProcessorAt` | Processor latency/debug. |
+| `event` | LogEvent đã normalize để index. |
+| `rawPayload` | Kafka payload gốc để đưa vào DLQ/debug. |
+| `topic` | Topic nguồn. |
+| `partition` | Partition nguồn. |
+| `offset` | Offset nguồn. |
+| `receivedByProcessorAt` | Thời điểm processor nhận message để debug latency. |
 
-Without Kafka context, partial failure handling cannot DLQ the correct item safely.
+Nếu không giữ Kafka context, processor không thể đưa đúng item lỗi vào DLQ khi xảy ra partial failure.
 
-### 8.3. Processing Algorithm
+### 8.3. Thuật Toán Xử Lý
 
 ```text
-For each Kafka message:
+Với mỗi Kafka message:
 
 1. Decode raw payload.
-2. If JSON decode fails:
-   - publish DLQ with stage json_decode
-   - continue
+2. Nếu JSON decode thất bại:
+   - publish DLQ với stage json_decode
+   - tiếp tục xử lý message tiếp theo
 3. Validate internal LogEvent.
-4. If validation fails:
-   - publish DLQ with stage validation
-   - continue
-5. Add BatchItem to buffer.
-6. Flush buffer when:
-   - batch size reached, or
-   - flush interval elapsed
+4. Nếu validation thất bại:
+   - publish DLQ với stage validation
+   - tiếp tục xử lý message tiếp theo
+5. Thêm BatchItem vào buffer.
+6. Flush buffer khi:
+   - đạt batch size, hoặc
+   - flush interval đã trôi qua
 ```
 
-Flush algorithm:
+Thuật toán flush:
 
 ```text
-Input: BatchItem[]
+Đầu vào: BatchItem[]
 
-1. Build OpenSearch bulk request.
-2. Execute bulk request.
-3. If full request failure:
-   - retry according to policy
-   - if retry exhausted, DLQ whole batch
-4. If partial item failure:
-   - DLQ failed items only
-   - do not DLQ successful items
-5. If success:
+1. Tạo OpenSearch bulk request.
+2. Thực thi bulk request.
+3. Nếu full request failure:
+   - retry theo policy
+   - nếu retry exhausted, đưa toàn batch vào DLQ
+4. Nếu partial item failure:
+   - chỉ đưa failed items vào DLQ
+   - không đưa successful items vào DLQ
+5. Nếu success:
    - log indexed count
 ```
 
 ### 8.4. Bulk Index Result Model
 
-| Result Type | Meaning | Required Processor Behavior |
+| Result Type | Ý nghĩa | Behavior bắt buộc của Processor |
 | :--- | :--- | :--- |
-| `success` | All items indexed. | Log success and move on. |
-| `full_failure` | Bulk request failed without reliable item-level result. | Retry full batch, then DLQ whole batch if exhausted. |
-| `partial_failure` | Bulk request returned item-level result with some failed items. | DLQ failed items only. |
+| `success` | Tất cả item được index thành công. | Log success và tiếp tục xử lý. |
+| `full_failure` | Bulk request fail toàn bộ, không có item-level result đáng tin cậy. | Retry full batch, sau đó DLQ toàn batch nếu hết retry. |
+| `partial_failure` | Bulk request có response item-level nhưng một số item fail. | Chỉ DLQ failed items. |
 
-This distinction is mandatory. Treating partial failure like full failure would incorrectly DLQ successful items.
+Việc phân biệt này là bắt buộc. Nếu xử lý partial failure như full failure, processor sẽ đưa nhầm cả những item đã index thành công vào DLQ.
 
-## 9. DLQ Design
+## 9. Thiết Kế DLQ
 
-DLQ is the safety boundary for unprocessable messages. A DLQ event must preserve enough context to debug the failure without re-reading the original Kafka topic.
+DLQ là safety boundary cho các message không thể xử lý thành công. DLQ event phải giữ đủ context để debug lỗi mà không cần đọc lại Kafka topic gốc.
 
-| Failure Stage | Source | DLQ Payload |
+| Failure Stage | Nguồn lỗi | DLQ payload |
 | :--- | :--- | :--- |
-| `json_decode` | Raw Kafka message cannot parse. | Raw payload, source topic/partition/offset, reason. |
-| `validation` | Parsed event violates internal contract. | Parsed fields if available, raw payload, reason. |
-| `indexing` | OpenSearch indexing failed after policy. | Event, tenant fields, item-level reason if available. |
+| `json_decode` | Raw Kafka message không parse được. | Raw payload, source topic/partition/offset, reason. |
+| `validation` | Event parse được nhưng vi phạm internal contract. | Parsed fields nếu có, raw payload, reason. |
+| `indexing` | OpenSearch indexing thất bại sau policy. | Event, tenant fields, item-level reason nếu có. |
 
-DLQ publisher should not silently drop failed DLQ publish attempts. Exact behavior for DLQ publish failure belongs to Reliability Design.
+DLQ publisher không được silently drop khi publish DLQ thất bại. Behavior chính xác khi DLQ publish failure sẽ được chốt trong Reliability Design.
 
-## 10. Redis Design
+## 10. Thiết Kế Redis
 
-Redis is part of core infrastructure, but its design is intentionally narrow.
+Redis thuộc core infrastructure, nhưng vai trò được giới hạn có chủ đích.
 
-| Redis Use Case | Key Property | Failure Expectation |
+| Use case của Redis | Thuộc tính chính | Kỳ vọng khi lỗi |
 | :--- | :--- | :--- |
-| API key validation cache | Short TTL, no raw secret, invalidated on revoke when possible. | Fallback to Control API validation. |
-| Rate limit counter | Time-window counter by API key/project. | Fail-open/fail-closed decided by Reliability Design. |
-| Short usage counter | Temporary volume tracking. | Can be rebuilt or ignored if not part of billing. |
+| API key validation cache | TTL ngắn, không lưu raw secret, invalidate khi revoke nếu có thể. | Fallback sang Control API validation khi cache lỗi hoặc cache miss. |
+| Rate limit counter | Counter theo time-window cho API key/project. | Fail-open/fail-closed sẽ chốt trong Reliability Design. |
+| Short usage counter | Theo dõi volume tạm thời. | Có thể rebuild hoặc bỏ qua nếu không dùng cho billing. |
 
-Redis must never be the only place storing API key state, tenant ownership, log events or search documents.
+Redis không bao giờ được là nơi duy nhất lưu API key state, tenant ownership, log events hoặc search documents.
 
-## 11. Configuration Design
+## 11. Thiết Kế Configuration
 
-Core configuration should make behavior explicit and testable.
+Core configuration cần làm behavior của hệ thống rõ ràng và dễ test.
 
-| Config | Owner | Purpose |
+| Config | Service sở hữu | Mục đích |
 | :--- | :--- | :--- |
-| `MAX_REQUEST_BYTES` | Ingestion API | Protect request path. |
-| `MAX_BATCH_ITEMS` | Ingestion API | Limit client batch ingestion. |
-| `API_KEY_CACHE_TTL` | Control/Ingestion | Bound Redis validation staleness. |
-| `RATE_LIMIT_WINDOW` | Ingestion API | Rate limit window. |
-| `PROCESSOR_BATCH_SIZE` | Log Processor | Flush by size. |
-| `PROCESSOR_FLUSH_INTERVAL` | Log Processor | Flush by time. |
+| `MAX_REQUEST_BYTES` | Ingestion API | Bảo vệ request path. |
+| `MAX_BATCH_ITEMS` | Ingestion API | Giới hạn batch ingestion từ client. |
+| `API_KEY_CACHE_TTL` | Control/Ingestion | Giới hạn độ stale của Redis validation cache. |
+| `RATE_LIMIT_WINDOW` | Ingestion API | Time window cho rate limit. |
+| `PROCESSOR_BATCH_SIZE` | Log Processor | Flush theo size. |
+| `PROCESSOR_FLUSH_INTERVAL` | Log Processor | Flush theo thời gian. |
 | `BULK_RETRY_ATTEMPTS` | Log Processor | Retry full bulk failure. |
-| `BULK_RETRY_BACKOFF` | Log Processor | Avoid hammering OpenSearch. |
+| `BULK_RETRY_BACKOFF` | Log Processor | Tránh hammer OpenSearch. |
 | `DLQ_TOPIC` | Log Processor | Route failed events. |
 
 ## 12. Extension Points
 
-Nice-to-have features are designed as extensions, not as core dependencies.
+Nice-to-have features được thiết kế như extension, không phải dependency của core.
 
 | Capability | Extension Point | Guardrail |
 | :--- | :--- | :--- |
-| Retention | Background job or Control API policy config. | Fixed retention values only, no archive/restore. |
-| Quota | Redis counters in ingestion path. | Protect ingestion, no billing model. |
-| Operational Insights | Control API reads OpenSearch aggregations. | Summary API only. |
-| Benchmark | Performance scripts around ingestion/searchable latency. | Evidence for portfolio, not complex load lab. |
-| Minimal Web UI | Thin client over Control API. | Demo core flows only. |
+| Retention | Background job hoặc Control API policy config. | Chỉ dùng fixed retention values, không archive/restore. |
+| Quota | Redis counters trong ingestion path. | Bảo vệ ingestion, không làm billing model. |
+| Operational Insights | Control API đọc OpenSearch aggregations. | Chỉ summary API. |
+| Benchmark | Performance scripts đo ingestion/searchable latency. | Làm evidence cho portfolio, không làm load lab phức tạp. |
+| Minimal Web UI | Thin client gọi Control API. | Chỉ demo core flows. |
 
-Optional alerting, backup/restore and advanced dashboard must not change the core module boundaries.
+Optional alerting, backup/restore và advanced dashboard không được làm thay đổi core module boundaries.
 
-## 13. Acceptance Criteria For This LLD
+## 13. Tiêu Chí Đạt Của LLD
 
-| Criterion | Expected Design Result |
+| Tiêu chí | Kết quả thiết kế mong muốn |
 | :--- | :--- |
-| The design is target-system oriented. | It defines how the system should be built, not what currently exists. |
-| Tenant context is server-side. | Client cannot spoof workspace/project/application/environment. |
-| Control Plane and Data Plane are separated. | Control API owns metadata; Go services own ingestion/processing. |
-| Processor hot path avoids PostgreSQL. | Kafka event already carries tenant context. |
-| Redis is useful but bounded. | Cache/rate limit/counter only; no source-of-truth role. |
-| Bulk indexing failure semantics are explicit. | Full failure and partial failure produce different behavior. |
-| Optional features stay optional. | Alerting/backup/dashboard do not affect core design. |
+| Thiết kế hướng tới target system. | Tài liệu định nghĩa hệ thống nên được xây như thế nào, không kể lại hiện trạng code. |
+| Tenant context được xác định phía server. | Client không spoof được workspace/project/application/environment. |
+| Control Plane và Data Plane tách biệt. | Control API sở hữu metadata; Go services xử lý ingestion/processing. |
+| Processor hot path tránh PostgreSQL. | Kafka event đã mang đủ tenant context. |
+| Redis hữu ích nhưng có giới hạn. | Chỉ dùng cache/rate limit/counter, không có vai trò source of truth. |
+| Bulk indexing failure semantics rõ ràng. | Full failure và partial failure có behavior khác nhau. |
+| Optional features vẫn là optional. | Alerting/backup/dashboard không ảnh hưởng core design. |
