@@ -1,6 +1,6 @@
 # OpenSearch Indexes
 
-OpenSearch lưu log phục vụ search và dashboard.
+OpenSearch lưu log phục vụ search. Operational insights có thể đọc aggregation từ OpenSearch nếu nice-to-have này được bật.
 
 ## Trường index chính
 

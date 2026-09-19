@@ -1,6 +1,6 @@
-# Dashboard API
+# Dashboard / Operational Insights API
 
-Dashboard API cung cấp số liệu tổng quan cho project.
+Dashboard/Operational Insights API là nice-to-have. API này cung cấp số liệu tổng quan cho project, nhưng không phải điều kiện để core ingestion/search pipeline hoàn thiện.
 
 ## Endpoint
 
@@ -17,4 +17,4 @@ Dashboard API cung cấp số liệu tổng quan cho project.
 
 ## Nguyên tắc
 
-Dashboard API lấy dữ liệu từ OpenSearch aggregation hoặc query tối ưu tương đương.
+API này lấy dữ liệu từ OpenSearch aggregation hoặc query tối ưu tương đương. Scope ban đầu nên giữ nhỏ: volume, error count, error rate, top services và recent errors. Advanced dashboard không thuộc core.

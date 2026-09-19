@@ -16,4 +16,4 @@ Boundary chính là `workspace_id` và `project_id`. Mỗi log phải thuộc đ
 
 ## Rủi ro
 
-Lỗi multi-tenancy thường không gây crash, nhưng gây lộ dữ liệu. Vì vậy cần test authorization và tenant isolation trong toàn bộ API, search query, dashboard query và background job.
+Lỗi multi-tenancy thường không gây crash, nhưng gây lộ dữ liệu. Vì vậy cần test authorization và tenant isolation trong Control API, ingestion pipeline, search query và mọi nice-to-have/optional job nếu được bật.

@@ -6,9 +6,9 @@ Tenant isolation đảm bảo dữ liệu workspace/project này không bị tru
 
 - Management API.
 - Search API.
-- Dashboard API.
-- Alert evaluation.
-- Retention job.
+- Operational Insights/Dashboard API nếu bật.
+- Alert evaluation nếu optional alerting được triển khai.
+- Retention job nếu nice-to-have retention được triển khai.
 - Usage aggregation.
 - OpenSearch query filter.
 

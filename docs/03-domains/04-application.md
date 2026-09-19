@@ -17,4 +17,4 @@ Application đại diện cho service hoặc app gửi log vào TraceFlow.
 
 ## Năng lực cần có
 
-Application cần hỗ trợ tạo, cập nhật, vô hiệu hóa, liệt kê theo project và liên kết với API key, metrics, alert rule.
+Application cần hỗ trợ tạo, cập nhật, vô hiệu hóa, liệt kê theo project và liên kết với API key. Metrics/operational insights là nice-to-have; alert rule là optional.

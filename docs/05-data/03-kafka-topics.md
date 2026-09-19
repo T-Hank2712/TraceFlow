@@ -8,17 +8,24 @@ Kafka là buffer giữa ingestion và processing.
 traceflow.logs.ingested
 ```
 
-## Topic lỗi và mở rộng
+## Topic lỗi
 
 ```text
 traceflow.logs.dlq
-traceflow.alerts.events
-traceflow.usage.events
 ```
+
+## Topic mở rộng nếu cần
+
+```text
+traceflow.usage.events
+traceflow.alerts.events
+```
+
+`traceflow.usage.events` chỉ cần khi triển khai quota/usage nâng cao. `traceflow.alerts.events` thuộc optional alerting.
 
 ## Event key
 
-Event key có thể là `project_id` hoặc `application_id` tùy chiến lược partition. Quyết định này ảnh hưởng tới ordering và phân phối tải.
+Event key mặc định nên là `application_id` để cân bằng throughput và giữ ordering tương đối theo application. Nếu strategy thay đổi, cần cập nhật system design và reliability docs.
 
 ## Consumer group
 
