@@ -44,6 +44,45 @@ Scope của TraceFlow được chia thành ba tầng để tránh project phình
 | Optional | Backup/Restore | Hữu ích cho vận hành nhưng không nằm trong core pipeline. |
 | Optional | Advanced Dashboard | Dễ làm project lệch sang frontend/analytics nên không thuộc core. |
 
+### 1.4. Core Capability Map
+
+Sơ đồ dưới đây chốt phạm vi yêu cầu ở mức sản phẩm. Mọi thiết kế chi tiết ở các file sau phải phục vụ trực tiếp một phần của luồng này. Nếu một capability không nằm trong sơ đồ hoặc không làm mạnh hơn luồng này, capability đó không thuộc core scope.
+
+```mermaid
+flowchart LR
+    User[User] --> Control[Control API]
+    Control --> Auth[Auth and RBAC]
+    Control --> Resource[Workspace / Project / Application]
+    Control --> ApiKey[API Key Lifecycle]
+    Control --> Search[Search API]
+
+    Client[Client Application] --> Ingestion[Ingestion API]
+    ApiKey --> Validation[API Key Validation]
+    Ingestion --> Validation
+    Validation --> Redis[Redis]
+    Ingestion --> Kafka[Kafka Log Topic]
+    Kafka --> Processor[Log Processor]
+    Processor --> Bulk[Batch + Bulk Indexing]
+    Bulk --> OpenSearch[OpenSearch]
+    Processor --> DLQ[Retry + DLQ]
+    Search --> OpenSearch
+```
+
+### 1.5. Requirement Traceability
+
+Requirements không chỉ là danh sách mong muốn; mỗi nhóm yêu cầu phải có nơi được thiết kế chi tiết và có bằng chứng kiểm thử tương ứng. Ma trận này giúp giữ tài liệu không bị lý thuyết: đọc từ trái sang phải sẽ thấy yêu cầu, nơi thiết kế, contract cần giữ ổn định và loại test cần chứng minh.
+
+| Capability | Yêu cầu chính | Design owner | Contract chính | Evidence mong muốn |
+| :--- | :--- | :--- | :--- | :--- |
+| Auth/RBAC | User được xác thực và chỉ thao tác trong resource có quyền. | `06-security-and-tenancy.md`, `04-low-level-design.md` | JWT, permission check, project scope. | Unit/integration test cho auth, membership và forbidden access. |
+| Resource hierarchy | Workspace, project và application tạo tenant boundary. | `04-low-level-design.md` | PostgreSQL domain model, resource state. | Test tạo resource, archive/delete và quyền kế thừa. |
+| API key | Client application ingest log bằng secret an toàn. | `03-contracts.md`, `06-security-and-tenancy.md` | API key create/validate/revoke, Redis cache. | Test secret one-time display, hash storage, revoke/expire. |
+| Ingestion API | Nhận single/batch log, validate và enrich server-side. | `03-contracts.md`, `04-low-level-design.md` | Public ingestion request, enriched Kafka event. | Test success, invalid payload, invalid key, tenant spoofing. |
+| Kafka pipeline | Tách ingestion khỏi indexing bằng event stream. | `02-high-level-design.md`, `05-reliability-design.md` | Topic, partition key, schema version. | Test publish/consume và poison message handling. |
+| Log Processor | Validate event, buffer batch, bulk index và xử lý lỗi. | `04-low-level-design.md`, `05-reliability-design.md` | Bulk index result, DLQ event. | Test success, retry, full failure, partial failure. |
+| Search API | User search log qua Control API, không truy cập OpenSearch trực tiếp. | `03-contracts.md`, `06-security-and-tenancy.md` | Search request/response, scoped query. | Test tenant isolation và filter/pagination. |
+| Redis | Cache validation, rate limit và counter ngắn hạn. | `03-contracts.md`, `05-reliability-design.md` | Key format, TTL, fail-open/fail-closed policy. | Test cache hit/miss, stale key, rate limit exceeded. |
+
 ## 2. System Actors & Personas
 
 TraceFlow có ba nhóm actor chính. Mỗi actor đi qua một boundary khác nhau để hệ thống không trộn lẫn user management, ingestion tốc độ cao và search.

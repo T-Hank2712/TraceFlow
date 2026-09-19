@@ -288,7 +288,72 @@ Security failure phải trả response an toàn cho caller và log đủ thông 
 
 Client response không nên tiết lộ key tồn tại hay không, hash mismatch hay resource archived. Server log có thể chi tiết hơn nhưng không được chứa secret.
 
-## 13. Security Acceptance Criteria
+## 13. Security Flow Diagrams
+
+Security của TraceFlow tập trung vào hai boundary quan trọng: user-facing Control API bằng JWT và client-facing Ingestion API bằng API key. Hai loại credential này không được dùng thay nhau.
+
+### 13.1. Authentication Boundary
+
+```mermaid
+flowchart LR
+    User[User / Web UI] -- "Bearer JWT" --> Control[Control API]
+    Client[Client Application] -- "ApiKey secret" --> Ingestion[Ingestion API]
+    Ingestion -- "Internal secret" --> Control
+    Control --> Postgres[(PostgreSQL)]
+    Ingestion --> Kafka[(Kafka)]
+    Control --> OpenSearch[(OpenSearch)]
+
+    User -. not allowed .-> Ingestion
+    Client -. not allowed .-> Control
+```
+
+### 13.2. Tenant Context Propagation
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Ingestion as Ingestion API
+    participant Control as Control API
+    participant Kafka
+    participant Processor as Log Processor
+    participant OS as OpenSearch
+
+    Client->>Ingestion: log payload with ApiKey
+    Ingestion->>Control: validate ApiKey
+    Control-->>Ingestion: TenantContext
+    Ingestion->>Ingestion: ignore client tenant fields
+    Ingestion->>Kafka: enriched event with TenantContext
+    Kafka->>Processor: consume event
+    Processor->>Processor: validate tenant fields exist
+    Processor->>OS: index document with tenant fields
+```
+
+### 13.3. API Key Lifecycle State
+
+```mermaid
+stateDiagram-v2
+    [*] --> active: created and secret shown once
+    active --> revoked: admin revokes key
+    active --> expired: expiresAt reached
+    active --> invalidated_cache: revoke/expiry cache invalidation
+    invalidated_cache --> revoked
+    revoked --> [*]
+    expired --> [*]
+```
+
+## 14. Security Control Matrix
+
+| Control | Enforced at | Data required | Failure behavior |
+| :--- | :--- | :--- | :--- |
+| JWT authentication | Control API middleware | JWT access token | `401`, no business operation. |
+| RBAC authorization | Control API access service | User id, resource id, permission | `403`/`404` according to policy. |
+| API key verification | Control API validation endpoint | Prefix, secret hash, resource chain | Invalid response, no tenant context. |
+| Tenant enrichment | Ingestion API | TenantContext from Control API/cache | Client tenant fields ignored. |
+| Internal event validation | Log Processor | Required tenant fields in Kafka event | DLQ stage `validation`. |
+| Scoped search | Control API query builder | User permission, workspaceId, projectId | Query cannot execute without tenant filters. |
+| Secret protection | API and logging layers | API key/JWT/internal secret | Never return/log full secret. |
+
+## 15. Security Acceptance Criteria
 
 Security design được xem là đạt khi các behavior sau có thể được chứng minh bằng test hoặc manual verification.
 

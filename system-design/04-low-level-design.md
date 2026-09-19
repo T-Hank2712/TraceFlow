@@ -56,6 +56,55 @@ TenantContext
 
 `TenantContext` không được nhận từ client request. Nó chỉ được tạo sau khi API key hợp lệ được validate bởi Control API hoặc cache Redis hợp lệ theo policy.
 
+### 3.1. Domain Relationship Diagram
+
+```mermaid
+erDiagram
+    USER ||--o{ WORKSPACE_MEMBERSHIP : has
+    WORKSPACE ||--o{ WORKSPACE_MEMBERSHIP : contains
+    WORKSPACE ||--o{ PROJECT : owns
+    PROJECT ||--o{ PROJECT_MEMBERSHIP : contains
+    USER ||--o{ PROJECT_MEMBERSHIP : has
+    PROJECT ||--o{ TRACE_APPLICATION : owns
+    TRACE_APPLICATION ||--o{ API_KEY : uses
+    API_KEY ||--|| TENANT_CONTEXT : resolves_to
+    TENANT_CONTEXT ||--o{ LOG_EVENT : enriches
+
+    WORKSPACE {
+        string id
+        string name
+        string status
+    }
+    PROJECT {
+        string id
+        string workspaceId
+        string name
+        string status
+    }
+    TRACE_APPLICATION {
+        string id
+        string projectId
+        string name
+        string status
+    }
+    API_KEY {
+        string id
+        string applicationId
+        string prefix
+        string secretHash
+        string status
+        datetime expiresAt
+    }
+    LOG_EVENT {
+        string eventId
+        string projectId
+        string applicationId
+        datetime timestamp
+        string level
+        string message
+    }
+```
+
 ## 4. State Models
 
 ### 4.1. Resource State
@@ -75,6 +124,15 @@ Search chỉ trả dữ liệu nếu user có quyền với project. Việc proj
 ```text
 active -> revoked
 active -> expired
+```
+
+```mermaid
+stateDiagram-v2
+    [*] --> active: created
+    active --> revoked: user/admin revokes
+    active --> expired: expiresAt passed
+    revoked --> [*]
+    expired --> [*]
 ```
 
 | Trạng thái | Ý nghĩa | Behavior khi ingestion |
@@ -97,6 +155,21 @@ received
 received/published/consumed
 -> failed
 -> dlq
+```
+
+```mermaid
+stateDiagram-v2
+    [*] --> received: HTTP request accepted by Ingestion API
+    received --> published: Kafka publish success
+    received --> rejected: auth/payload/quota failure
+    published --> consumed: Log Processor reads message
+    consumed --> dlq: malformed or invalid internal event
+    consumed --> buffered: valid event
+    buffered --> indexed: bulk item success
+    buffered --> retrying: full bulk failure
+    retrying --> indexed: retry success
+    retrying --> dlq: retry exhausted
+    buffered --> dlq: partial item failure
 ```
 
 | Trạng thái | Service sở hữu | Ý nghĩa |
@@ -161,6 +234,26 @@ Handler không tự viết lại logic kiểm tra role. Handler phải gọi acc
 
 Giá trị trong Redis không được chứa full API key secret hoặc secret hash. Cache key cũng không được chứa raw secret.
 
+```mermaid
+sequenceDiagram
+    participant Ingestion as Ingestion API
+    participant Redis as Redis
+    participant Control as Control API
+    participant DB as PostgreSQL
+
+    Ingestion->>Redis: get validation cache by safe fingerprint
+    alt cache hit and not expired
+        Redis-->>Ingestion: TenantContext
+    else cache miss
+        Ingestion->>Control: validate API key
+        Control->>DB: load key by prefix and resource chain
+        DB-->>Control: key metadata and resource status
+        Control->>Control: verify hash, status, expiry, resource state
+        Control-->>Ingestion: TenantContext or invalid
+        Ingestion->>Redis: set short TTL validation cache
+    end
+```
+
 ### 5.4. Cách Xây Dựng Search Query
 
 Search query phải được xây dựng theo thứ tự cố định:
@@ -185,6 +278,27 @@ Search query phải được xây dựng theo thứ tự cố định:
 ```
 
 Các filter tùy chọn không bao giờ được thay thế tenant filters bắt buộc.
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Control as Control API
+    participant Access as Access Control
+    participant OS as OpenSearch
+
+    User->>Control: GET /logs/search with JWT and filters
+    Control->>Access: can user view project logs?
+    alt authorized
+        Access-->>Control: allowed
+        Control->>Control: build query with mandatory workspaceId/projectId
+        Control->>OS: execute scoped search
+        OS-->>Control: hits and page info
+        Control-->>User: scoped result
+    else forbidden
+        Access-->>Control: denied
+        Control-->>User: 403 forbidden
+    end
+```
 
 ## 6. Thiết Kế Ingestion API
 
@@ -235,6 +349,25 @@ Ingestion API được thiết kế để request path ngắn, dễ dự đoán 
 ```
 
 Batch ingestion dùng all-or-nothing validation trước khi publish. Cách này giúp behavior phía client rõ ràng hơn. Trường hợp Kafka publish lỗi giữa batch là quyết định reliability và sẽ được chốt trong `05-reliability-design.md`.
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Ingestion as Ingestion API
+    participant Redis as Redis
+    participant Control as Control API
+    participant Kafka
+
+    Client->>Ingestion: POST /logs or /logs/batch with ApiKey
+    Ingestion->>Ingestion: apply request size limit and decode JSON
+    Ingestion->>Redis: check validation cache / rate limit
+    Ingestion->>Control: validate API key when cache misses
+    Control-->>Ingestion: TenantContext
+    Ingestion->>Ingestion: validate payload and enrich tenant context
+    Ingestion->>Kafka: publish enriched log event(s)
+    Kafka-->>Ingestion: publish acknowledged
+    Ingestion-->>Client: 202 Accepted
+```
 
 ### 6.4. Mapping Lỗi Của Ingestion
 
@@ -357,6 +490,28 @@ Thuật toán flush:
 | `partial_failure` | Bulk request có response item-level nhưng một số item fail. | Chỉ DLQ failed items. |
 
 Việc phân biệt này là bắt buộc. Nếu xử lý partial failure như full failure, processor sẽ đưa nhầm cả những item đã index thành công vào DLQ.
+
+```mermaid
+flowchart TD
+    A[Consume Kafka message] --> B{Decode JSON}
+    B -- Fail --> C[Publish DLQ: json_decode]
+    B -- Success --> D{Validate internal event}
+    D -- Fail --> E[Publish DLQ: validation]
+    D -- Success --> F[Add BatchItem to buffer]
+    F --> G{Flush condition met?}
+    G -- No --> A
+    G -- Yes --> H[Build OpenSearch bulk request]
+    H --> I{Bulk request result}
+    I -- Success --> J[Log indexed count]
+    I -- Full failure --> K[Retry full batch]
+    K --> L{Retry exhausted?}
+    L -- No --> H
+    L -- Yes --> M[DLQ entire batch]
+    I -- Partial failure --> N[DLQ failed items only]
+    J --> A
+    M --> A
+    N --> A
+```
 
 ## 9. Thiết Kế DLQ
 

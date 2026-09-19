@@ -319,7 +319,38 @@ Performance test không cần chạy trên mọi commit local. Nó nên chạy t
 
 Evidence có thể là test output, script output, screenshots terminal, hoặc document ghi lại command và result. Quan trọng là có thể chứng minh system design đã được kiểm chứng.
 
-## 15. Testing Acceptance Criteria
+## 15. Requirement-To-Test Matrix
+
+Ma trận này nối trực tiếp requirements với test/evidence để tránh tình trạng tài liệu thiết kế đúng nhưng implementation không có cách chứng minh.
+
+| Requirement group | Unit test | Integration test | E2E/manual evidence |
+| :--- | :--- | :--- | :--- |
+| Auth/RBAC | Permission service, role mapping. | Protected endpoints với JWT hợp lệ/không hợp lệ. | User không có quyền project không search được log. |
+| API key lifecycle | Hash verify, expiry, revoke rules. | Create/list/revoke/validate endpoint. | Full secret chỉ hiện một lần, revoked key bị từ chối. |
+| Ingestion validation | Payload validator, tenant field stripping. | API key validation cache, rate limit, Kafka publisher. | Client gửi batch hợp lệ nhận `202`. |
+| Kafka event contract | Event builder/schema validator. | Publish/consume local Kafka topic. | Event có tenant context và schemaVersion. |
+| Processor batch/bulk | Buffer flush, bulk result parser. | OpenSearch bulk success/full/partial failure. | Batch indexed count, failed count, retryAttempts xuất hiện trong log. |
+| DLQ | DLQ event builder. | Publish DLQ topic khi malformed/invalid/indexing failure. | Failed item có original payload và failure stage. |
+| Search API | Query builder inject tenant filters. | OpenSearch query with filters/pagination. | User search thấy đúng project, không thấy project khác. |
+| Redis | Key naming, TTL, rate counter. | Cache hit/miss/fallback, rate limit exceeded. | Redis down không làm sai tenant ownership. |
+
+## 16. Test Flow Map
+
+```mermaid
+flowchart LR
+    A[Unit Tests] --> B[Service Integration Tests]
+    B --> C[Local Docker E2E]
+    C --> D[Reliability Scenarios]
+    D --> E[Benchmark Evidence]
+
+    A1[Validators / domain rules] --> A
+    B1[PostgreSQL / Redis / Kafka / OpenSearch adapters] --> B
+    C1[API key -> ingest -> process -> search] --> C
+    D1[Retry / DLQ / partial failure] --> D
+    E1[logs per second / P95 latency] --> E
+```
+
+## 17. Testing Acceptance Criteria
 
 Testing Strategy được xem là đạt khi các nhóm test sau tồn tại hoặc có kế hoạch implement rõ ràng.
 

@@ -108,6 +108,69 @@ TraceFlow được chia thành hai mặt phẳng trách nhiệm:
 +--------------------+
 ```
 
+Sơ đồ text phía trên mô tả cùng một kiến trúc theo kiểu đọc nhanh. Sơ đồ Mermaid bên dưới là bản dùng để review system design, vì nó thể hiện rõ boundary giữa public API, internal API, storage và asynchronous pipeline.
+
+```mermaid
+flowchart LR
+    subgraph External["External Actors"]
+        User["User / Minimal Web UI"]
+        Client["Client Application"]
+    end
+
+    subgraph ControlPlane["Control Plane"]
+        Control["Control API (.NET)"]
+        Postgres[("PostgreSQL")]
+        RedisControl[("Redis")]
+    end
+
+    subgraph DataPlane["Data Plane"]
+        Ingestion["Ingestion API (Go)"]
+        Kafka[("Kafka")]
+        Processor["Log Processor (Go)"]
+        RedisData[("Redis")]
+        DLQ[("Kafka DLQ Topic")]
+    end
+
+    subgraph SearchPlane["Search Storage"]
+        OpenSearch[("OpenSearch")]
+    end
+
+    User -- "JWT" --> Control
+    Control -- "business data" --> Postgres
+    Control -- "project-scoped query" --> OpenSearch
+    Control -- "validation cache / counters" --> RedisControl
+
+    Client -- "ApiKey" --> Ingestion
+    Ingestion -- "internal key validation" --> Control
+    Ingestion -- "rate limit / cache" --> RedisData
+    Ingestion -- "enriched log event" --> Kafka
+    Kafka --> Processor
+    Processor -- "bulk index" --> OpenSearch
+    Processor -- "failed event" --> DLQ
+```
+
+### 5.1. Runtime Interaction Matrix
+
+| Interaction | Sync/Async | Contract | Latency expectation | Failure boundary |
+| :--- | :--- | :--- | :--- | :--- |
+| User -> Control API | Synchronous | JWT HTTP API | User-facing latency, ưu tiên rõ lỗi. | Request fail trực tiếp, không retry ẩn. |
+| Client -> Ingestion API | Synchronous | API key HTTP API | Nhanh, chỉ chờ validate và publish Kafka. | Reject rõ ràng nếu auth/payload/quota lỗi. |
+| Ingestion API -> Control API | Synchronous internal | API key validation contract | Phải ngắn để không làm nghẽn ingestion. | Có Redis cache hỗ trợ, nhưng không phá revoke/expire correctness. |
+| Ingestion API -> Kafka | Asynchronous handoff | Enriched log event | Success nghĩa là event đã vào pipeline. | Publish fail trả lỗi ingestion, không giả success. |
+| Log Processor -> OpenSearch | Asynchronous downstream | Bulk API/document contract | Tối ưu throughput bằng batch. | Retry trước, DLQ sau theo failure type. |
+| Control API -> OpenSearch | Synchronous query | Search contract | Có pagination và default time range. | Fail trả lỗi search an toàn, không expose OpenSearch details. |
+
+### 5.2. Data Ownership Matrix
+
+| Data | Owner | Storage | Read by | Write by |
+| :--- | :--- | :--- | :--- | :--- |
+| User/session/resource/member/API key metadata | Control API | PostgreSQL | Control API | Control API |
+| API key validation cache | Control API/Ingestion API | Redis | Ingestion API | Control API/Ingestion API |
+| Rate limit counters | Ingestion API | Redis | Ingestion API | Ingestion API |
+| Enriched log event | Ingestion API | Kafka | Log Processor | Ingestion API |
+| Indexed log document | Log Processor | OpenSearch | Control API Search | Log Processor |
+| DLQ event | Log Processor | Kafka DLQ topic | Debug/replay tooling | Log Processor |
+
 ## 6. Component Responsibilities
 
 ### 6.1. Control API

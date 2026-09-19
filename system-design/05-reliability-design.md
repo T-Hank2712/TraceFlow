@@ -313,7 +313,70 @@ Reliability chỉ có giá trị khi có đủ log để biết hệ thống đa
 
 Log không được chứa full API key secret, raw credential hoặc metadata nhạy cảm không cần thiết.
 
-## 12. Reliability Acceptance Criteria
+## 12. Reliability Flow Diagrams
+
+Các flow dưới đây là phần có thể dùng trực tiếp khi review implementation. Mỗi nhánh trong sơ đồ phải có log evidence hoặc test tương ứng, đặc biệt là retry, full failure, partial failure và DLQ.
+
+### 12.1. Ingestion Failure Boundary
+
+```mermaid
+flowchart TD
+    A[Client request] --> B{API key valid?}
+    B -- No --> C[Reject 401]
+    B -- Yes --> D{Rate limit allowed?}
+    D -- No --> E[Reject 429]
+    D -- Yes --> F{Payload valid?}
+    F -- No --> G[Reject 400]
+    F -- Yes --> H{Kafka publish success?}
+    H -- Yes --> I[Return 202 Accepted]
+    H -- No --> J[Return 503 and log kafka_publish_failed]
+```
+
+### 12.2. Processor Bulk Failure Boundary
+
+```mermaid
+flowchart TD
+    A[Flush batch] --> B[Call OpenSearch Bulk API]
+    B --> C{Bulk response type}
+    C -- success --> D[Log indexedCount=batchSize]
+    C -- full failure --> E[Retry full batch with backoff]
+    E --> F{Retry success?}
+    F -- Yes --> D
+    F -- No --> G[Publish every batch item to DLQ]
+    C -- partial failure --> H[Split successful and failed items]
+    H --> I[Do not DLQ successful items]
+    H --> J[Publish failed items to DLQ]
+```
+
+### 12.3. DLQ Publish Failure Boundary
+
+```mermaid
+flowchart TD
+    A[Need DLQ publish] --> B{DLQ publish success?}
+    B -- Yes --> C[Commit/continue according to consumer policy]
+    B -- No --> D[Retry DLQ publish]
+    D --> E{Retry exhausted?}
+    E -- No --> B
+    E -- Yes --> F[Log critical with original context]
+    F --> G[Do not silently drop failure]
+```
+
+## 13. Reliability Decision Matrix
+
+| Failure | Retry? | DLQ? | Client response | Log evidence |
+| :--- | :--- | :--- | :--- | :--- |
+| Invalid ingestion JSON | Không | Không | `400` | `ingestion_rejected` |
+| Invalid API key | Không | Không | `401` | `ingestion_rejected` |
+| Rate limit exceeded | Không | Không | `429` | `ingestion_rejected` |
+| Kafka publish failed | Có thể retry ngắn trong request path | Không | `503` nếu không chắc đã publish | `kafka_publish_failed` |
+| Malformed Kafka message | Không | Có, stage `json_decode` | Không áp dụng | `dlq_publish_result` |
+| Invalid internal event | Không | Có, stage `validation` | Không áp dụng | `dlq_publish_result` |
+| OpenSearch full bulk failure | Có | Có toàn batch nếu exhausted | Không áp dụng | `bulk_index_result` |
+| OpenSearch partial item failure | Không retry toàn batch | Có failed items | Không áp dụng | `bulk_index_result`, `dlq_publish_result` |
+| Redis validation cache failure | Fallback Control API | Không | Theo kết quả fallback | `redis_fallback` |
+| Redis rate limit failure | Không trong core mode | Không | Fail-open có warning | `redis_fallback` |
+
+## 14. Reliability Acceptance Criteria
 
 Reliability design được xem là đạt khi các behavior sau được chứng minh bằng test, manual verification hoặc log evidence.
 

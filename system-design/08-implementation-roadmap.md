@@ -340,7 +340,41 @@ TraceFlow được xem là portfolio-ready khi core pipeline có thể demo và 
 
 Khi đạt các tiêu chí này, TraceFlow có thể được mô tả như một backend project hoàn chỉnh thay vì một tập hợp service rời rạc.
 
-## 16. Roadmap Summary
+## 16. Roadmap Dependency Graph
+
+Roadmap không nên được hiểu như danh sách việc độc lập. Mỗi phase tạo nền cho phase sau, và core pipeline chỉ thật sự có giá trị khi đi được từ resource setup đến search result.
+
+```mermaid
+flowchart TD
+    P1[Phase 1: Control Plane Foundation] --> P2[Phase 2: API Key Security]
+    P2 --> P3[Phase 3: Ingestion Pipeline]
+    P3 --> P4[Phase 4: Processing and Indexing]
+    P4 --> P5[Phase 5: Reliability Hardening]
+    P5 --> P6[Phase 6: Search API]
+    P2 --> P7[Phase 7: Redis Integration]
+    P3 --> P7
+    P7 --> P8[Phase 8: Core Verification]
+    P6 --> P8
+    P8 --> P9[Phase 9: Nice-To-Have Extensions]
+    P9 --> P10[Phase 10: Optional Polish]
+```
+
+## 17. Phase Artifact Matrix
+
+| Phase | Main deliverable | Design artifact cần khớp | Evidence bắt buộc |
+| :--- | :--- | :--- | :--- |
+| 1 | Auth/RBAC/resource foundation | Domain model, permission contract | Auth/resource tests pass. |
+| 2 | Secure API key lifecycle | API key contract, lifecycle state | Secret one-time display, revoke/expire validation. |
+| 3 | Ingestion API + Kafka publish | Ingestion contract, Kafka event schema | Single/batch log accepted into Kafka. |
+| 4 | Processor + OpenSearch bulk indexing | Batch/bulk flow, document contract | Valid batch indexed and searchable. |
+| 5 | Retry + DLQ hardening | Reliability flow diagrams | Full failure, partial failure and malformed event evidence. |
+| 6 | Project-scoped Search API | Search contract, tenant query builder | Cross-project search blocked. |
+| 7 | Redis cache/rate limit/counter | Redis key contract, reliability policy | Cache hit/miss, fallback and rate limit evidence. |
+| 8 | Core verification | Requirement-to-test matrix | E2E success plus benchmark baseline. |
+| 9 | Nice-to-have extensions | Scope table in requirements | Retention/quota/insights kept small. |
+| 10 | Optional polish | README/docs/final portfolio story | Demo-ready README and verification guide. |
+
+## 18. Roadmap Summary
 
 Roadmap của TraceFlow có một thứ tự ưu tiên rõ ràng:
 

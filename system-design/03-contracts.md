@@ -24,6 +24,36 @@ Contracts không mô tả toàn bộ endpoint CRUD chi tiết. Tài liệu này 
 
 Optional features như alerting, backup/restore và advanced dashboard không có contract bắt buộc trong core design.
 
+### 2.1. Contract Dependency Map
+
+Sơ đồ này thể hiện contract nào nằm giữa các boundary chính. Contract không chỉ là payload mẫu; nó là cam kết để một service có thể thay đổi implementation bên trong mà không phá service còn lại.
+
+```mermaid
+flowchart LR
+    User[User or Web UI] -- "JWT HTTP Contract" --> Control[Control API]
+    Client[Client Application] -- "Ingestion HTTP Contract" --> Ingestion[Ingestion API]
+    Ingestion -- "Internal Validation Contract" --> Control
+    Control -- "SQL Domain Contract" --> Postgres[(PostgreSQL)]
+    Ingestion -- "Redis Key Contract" --> Redis[(Redis)]
+    Control -- "Redis Key Contract" --> Redis
+    Ingestion -- "Kafka Event Contract" --> Kafka[(Kafka)]
+    Kafka --> Processor[Log Processor]
+    Processor -- "OpenSearch Document Contract" --> OpenSearch[(OpenSearch)]
+    Processor -- "DLQ Event Contract" --> DLQ[(DLQ Topic)]
+    Control -- "Search Query Contract" --> OpenSearch
+```
+
+### 2.2. Contract Coverage Matrix
+
+| Contract | Stable fields | Evolvable fields | Breaking change cần tránh |
+| :--- | :--- | :--- | :--- |
+| API key validation response | `valid`, `workspaceId`, `projectId`, `applicationId`, `environment` | `quota`, `plan`, `metadata` | Đổi nghĩa `valid` hoặc thiếu tenant context khi key hợp lệ. |
+| Ingestion request | `timestamp`, `level`, `message`, `service` | `traceId`, `correlationId`, `metadata` | Cho phép client tự gửi `workspaceId/projectId/applicationId`. |
+| Kafka log event | `schemaVersion`, `eventId`, tenant context, log payload | Additional attributes trong `metadata` | Processor không đọc được event cũ sau khi schema đổi. |
+| OpenSearch document | Tenant fields, timestamp, level, message, service | Searchable metadata bổ sung | Document không còn đủ field để enforce project-scoped search. |
+| DLQ event | Original payload, failure stage, reason, attempts | Debug metadata | Mất original payload khiến không thể điều tra/replay. |
+| Redis key format | Prefix, tenant/resource id, TTL | Counter granularity | Key collision giữa tenant hoặc cache sống lâu hơn revoke/expire. |
+
 ## 3. Common Conventions
 
 TraceFlow dùng JSON cho HTTP request/response và Kafka event. JSON field dùng `camelCase`. Timestamp dùng RFC3339 UTC. Resource ID dùng string dạng ULID.
