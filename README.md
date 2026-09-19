@@ -312,12 +312,8 @@ Trước khi mở PR hoặc chốt một phase, cần đảm bảo:
 - test hoặc manual evidence phù hợp đã được ghi nhận
 - không commit secret hoặc file môi trường nhạy cảm
 
-## 10. License
-
-License chưa được khai báo trong repository. Nếu project được public/open-source, cần bổ sung file `LICENSE` và cập nhật phần này.
-
-## 11. Tác Giả / Liên Hệ
+## 10. Tác Giả / Liên Hệ
 
 TraceFlow được xây dựng như một backend engineering portfolio project, tập trung vào system design, multi-service architecture, security, reliability và data pipeline.
 
-Maintainer: `ltthanh`
+Maintainer: `T-Hank`

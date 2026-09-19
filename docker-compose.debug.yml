@@ -1,0 +1,30 @@
+services:
+  control-api:
+    build:
+      context: ./services/control-api
+      dockerfile: Dockerfile.debug
+    ports:
+      - "5075:5075"
+
+  ingestion-api:
+    build:
+      context: ./services/ingestion-api
+      dockerfile: Dockerfile.debug
+    ports:
+      - "8080:8080"
+      - "40001:40001"
+    security_opt:
+      - apparmor=unconfined
+    cap_add:
+      - SYS_PTRACE
+
+  log-processor:
+    build:
+      context: ./services/log-processor
+      dockerfile: Dockerfile.debug
+    ports:
+      - "40002:40002"
+    security_opt:
+      - apparmor=unconfined
+    cap_add:
+      - SYS_PTRACE

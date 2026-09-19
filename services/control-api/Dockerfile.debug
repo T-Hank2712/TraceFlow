@@ -1,0 +1,18 @@
+FROM mcr.microsoft.com/dotnet/sdk:8.0
+
+WORKDIR /src
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends unzip curl procps \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN curl -sSL https://aka.ms/getvsdbgsh -o /tmp/getvsdbg.sh \
+    && bash /tmp/getvsdbg.sh -v latest -l /vsdbg
+
+COPY . .
+
+WORKDIR /src/TraceFlow.api
+
+EXPOSE 5075
+
+CMD ["dotnet", "run", "--urls", "http://0.0.0.0:5075"]
