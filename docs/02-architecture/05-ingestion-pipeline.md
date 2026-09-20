@@ -4,8 +4,8 @@ Ingestion pipeline nhận log từ application và đưa vào Kafka.
 
 ## Endpoint
 
-- `POST /v1/logs`
-- `POST /v1/logs/batch`
+- `POST /logs`
+- `POST /logs/batch`
 
 ## Các bước xử lý
 
