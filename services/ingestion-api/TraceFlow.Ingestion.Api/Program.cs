@@ -3,6 +3,7 @@ using TraceFlow.Ingestion.Api.Endpoints;
 using TraceFlow.Ingestion.Api.Clients;
 using TraceFlow.Ingestion.Api.Ingestion;
 using TraceFlow.Ingestion.Api.Kafka;
+using TraceFlow.Ingestion.Api.Security;
 
 DotNetEnv.Env.Load();
 var builder = WebApplication.CreateBuilder(args);
@@ -39,6 +40,7 @@ builder.Services
 
 builder.Services.AddSingleton<ApiKeyHeaderParser>();
 builder.Services.AddSingleton<EnrichedLogEventFactory>();
+builder.Services.AddScoped<Authenticator>();
 
 builder.Services.AddHttpClient<IApiKeyValidator, ControlApiClient>();
 
@@ -58,5 +60,6 @@ app.UseHttpsRedirection();
 
 app.MapHealthEndpoints();
 app.MapLogIngestionEndpoints();
+app.MapBatchLogEndpoints();
 
 app.Run();

@@ -12,6 +12,12 @@ RUN dotnet publish TraceFlow.Ingestion.Api/TraceFlow.Ingestion.Api.csproj \
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl unzip procps \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN curl -sSL https://aka.ms/getvsdbgsh | bash /dev/stdin -v latest -l /vsdbg
+
 COPY --from=build /app/publish .
 
 ENV ASPNETCORE_URLS=http://+:5100

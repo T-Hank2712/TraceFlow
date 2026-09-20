@@ -1,54 +1,47 @@
 using TraceFlow.Ingestion.Api.Clients;
 using TraceFlow.Ingestion.Api.Contracts;
+using TraceFlow.Ingestion.Api.Contracts.Log;
+using TraceFlow.Ingestion.Api.Contracts.BatchLog;
 using TraceFlow.Ingestion.Api.Errors;
 using TraceFlow.Ingestion.Api.Kafka;
+using TraceFlow.Ingestion.Api.Security;
 
 namespace TraceFlow.Ingestion.Api.Ingestion;
 
 public sealed class IngestLogService : IIngestLogService
 {
-    private readonly ApiKeyHeaderParser _apiKeyParser;
-    private readonly IApiKeyValidator _apiKeyValidator;
+    private readonly Authenticator _authenticator;
     private readonly EnrichedLogEventFactory _eventFactory;
     private readonly ILogEventPublisher _publisher;
 
     public IngestLogService(
-        ApiKeyHeaderParser apiKeyParser,
-        IApiKeyValidator apiKeyValidator,
+        Authenticator authenticator,
         EnrichedLogEventFactory eventFactory,
         ILogEventPublisher publisher)
     {
-        _apiKeyParser = apiKeyParser;
-        _apiKeyValidator = apiKeyValidator;
+        _authenticator = authenticator;
         _eventFactory = eventFactory;
         _publisher = publisher;
     }
 
-    public async Task<IngestLogResult> IngestAsync(
+    public async Task<Result<IngestLogResponse>> IngestAsync(
         IngestLogRequest request,
         string? authorizationHeader,
         CancellationToken cancellationToken)
     {
-        var parsedKey = _apiKeyParser.Parse(authorizationHeader);
+        var authResult = await _authenticator.AuthenticateAsync(
+            authorizationHeader,
+            cancellationToken);
 
-        if (!parsedKey.Success)
+        if (!authResult.Success)
         {
-            return Fail(parsedKey.ErrorCode!, parsedKey.ErrorMessage!, StatusCodes.Status401Unauthorized);
+            return Result<IngestLogResponse>.Fail(
+                authResult.Error!.Code,
+                authResult.Error.Message,
+                authResult.StatusCode);
         }
 
-        var validationError = ValidateRequest(request);
-
-        if (validationError is not null)
-        {
-            return Fail(ErrorCodes.InvalidPayload, validationError, StatusCodes.Status400BadRequest);
-        }
-
-        var tenant = await _apiKeyValidator.ValidateAsync(parsedKey.ApiKey!, cancellationToken);
-
-        if (!tenant.Valid)
-        {
-            return Fail(ErrorCodes.InvalidApiKey, "API key is invalid, revoked, or expired.", StatusCodes.Status401Unauthorized);
-        }
+        var tenant = authResult.Data!;
 
         var logEvent = _eventFactory.Create(request, tenant);
 
@@ -58,12 +51,63 @@ public sealed class IngestLogService : IIngestLogService
         }
         catch
         {
-            return Fail(ErrorCodes.KafkaPublishFailed, "Failed to publish log event to Kafka.", StatusCodes.Status503ServiceUnavailable);
+            return Result<IngestLogResponse>.Fail(ErrorCodes.KafkaPublishFailed, "Failed to publish log event to Kafka.", StatusCodes.Status503ServiceUnavailable);
+        }
+        return new Result<IngestLogResponse>(
+            true,
+            new IngestLogResponse(
+                logEvent.EventId,
+                true,
+                DateTimeOffset.UtcNow),
+            null,
+            StatusCodes.Status202Accepted);
+    }
+
+    public async Task<Result<BatchLogResponse>> BatchLogAsync(
+        BatchLogRequest request,
+        string? authorizationHeader,
+        CancellationToken cancellationToken
+    )
+    {
+        var authResult = await _authenticator.AuthenticateAsync(authorizationHeader, cancellationToken);
+
+        if (!authResult.Success)
+        {
+            return Result<BatchLogResponse>.Fail(
+                authResult.Error!.Code,
+                authResult.Error.Message,
+                authResult.StatusCode);
         }
 
-        return new IngestLogResult(
+        var tenant = authResult.Data!;
+
+        var logEvents = request.Logs
+            .Select(log => _eventFactory.Create(log, tenant))
+            .ToList();
+
+        var batchLog = new BatchLogResult(
+            Ulid.NewUlid(),
+            logEvents);
+
+        try
+        {
+            await _publisher.PublishAsync(
+                logEvents,
+                cancellationToken);
+        }
+        catch
+        {
+            return Result<BatchLogResponse>.Fail(
+                ErrorCodes.KafkaPublishFailed,
+                "Failed to publish log events to Kafka.",
+                StatusCodes.Status503ServiceUnavailable);
+        }
+        return new Result<BatchLogResponse>(
             true,
-            new IngestLogResponse(logEvent.EventId, "accepted", DateTimeOffset.UtcNow),
+            new BatchLogResponse(
+                batchLog.BatchId,
+                logEvents.Count,
+                DateTimeOffset.UtcNow),
             null,
             StatusCodes.Status202Accepted);
     }
@@ -82,10 +126,5 @@ public sealed class IngestLogService : IIngestLogService
         }
 
         return null;
-    }
-
-    private static IngestLogResult Fail(string code, string message, int statusCode)
-    {
-        return new IngestLogResult(false, null, new ErrorResponse(code, message), statusCode);
     }
 }

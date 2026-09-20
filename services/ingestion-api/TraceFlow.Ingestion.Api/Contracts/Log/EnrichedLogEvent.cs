@@ -1,4 +1,4 @@
-namespace TraceFlow.Ingestion.Api.Ingestion;
+namespace TraceFlow.Ingestion.Api.Contracts.Log;
 
 public sealed record EnrichedLogEvent(
     Ulid EventId,

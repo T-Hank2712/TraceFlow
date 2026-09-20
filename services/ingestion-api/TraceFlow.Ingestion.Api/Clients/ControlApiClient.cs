@@ -8,7 +8,7 @@ public sealed class ControlApiClient : IApiKeyValidator
 {
     private readonly HttpClient _httpClient;
     private readonly ControlApiOptions _options;
-    public ControlApiClient (HttpClient httpClient, IOptions<ControlApiOptions> options)
+    public ControlApiClient(HttpClient httpClient, IOptions<ControlApiOptions> options)
     {
         _httpClient = httpClient;
         _options = options.Value;

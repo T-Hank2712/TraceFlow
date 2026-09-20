@@ -3,6 +3,7 @@ using Confluent.Kafka;
 using Microsoft.Extensions.Options;
 using TraceFlow.Ingestion.Api.Configuration;
 using TraceFlow.Ingestion.Api.Ingestion;
+using TraceFlow.Ingestion.Api.Contracts.Log;
 
 namespace TraceFlow.Ingestion.Api.Kafka;
 
@@ -34,6 +35,22 @@ public sealed class KafkaLogProducer : ILogEventPublisher, IDisposable
             },
             cancellationToken
         );
+    }
+    public async Task PublishAsync(IReadOnlyList<EnrichedLogEvent> logEvents, CancellationToken cancellationToken)
+    {
+        foreach (var logEvent in logEvents)
+        {
+            var payload = JsonSerializer.Serialize(logEvent);
+
+            await _producer.ProduceAsync(
+                _options.Topic,
+                new Message<string, string>
+                {
+                    Key = logEvent.ProjectId.ToString(),
+                    Value = payload
+                },
+                cancellationToken);
+        }
     }
     public void Dispose()
     {

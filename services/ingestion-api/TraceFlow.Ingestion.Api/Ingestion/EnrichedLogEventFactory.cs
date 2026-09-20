@@ -1,6 +1,5 @@
 using TraceFlow.Ingestion.Api.Clients;
-
-using TraceFlow.Ingestion.Api.Contracts;
+using TraceFlow.Ingestion.Api.Contracts.Log;
 
 namespace TraceFlow.Ingestion.Api.Ingestion;
 

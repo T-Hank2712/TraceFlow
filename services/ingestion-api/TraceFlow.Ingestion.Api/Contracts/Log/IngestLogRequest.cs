@@ -1,4 +1,4 @@
-namespace TraceFlow.Ingestion.Api.Contracts;
+namespace TraceFlow.Ingestion.Api.Contracts.Log;
 
 public sealed record IngestLogRequest(
     DateTimeOffset? Timestamp,
