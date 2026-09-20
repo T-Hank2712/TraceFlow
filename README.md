@@ -169,7 +169,7 @@ Khi chạy bằng Docker Compose:
 | Service | URL |
 | :--- | :--- |
 | Control API | `http://localhost:5075` |
-| Ingestion API | `http://localhost:8080` |
+| Ingestion API | `http://localhost:5100` |
 | OpenSearch | `https://localhost:9200` |
 | Kafka | `localhost:9092` |
 
@@ -211,7 +211,7 @@ Luồng sử dụng chính:
 Ví dụ gửi log:
 
 ```bash
-curl -X POST http://localhost:8080/v1/logs \
+curl -X POST http://localhost:5100/logs \
   -H "Authorization: ApiKey <your-api-key>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -225,7 +225,7 @@ curl -X POST http://localhost:8080/v1/logs \
       "provider": "stripe",
       "durationMs": 3500
     }
-  }'
+    '
 ```
 
 Tài liệu liên quan:
