@@ -2,7 +2,7 @@
 
 Nhóm tài liệu này mô tả TraceFlow dưới góc nhìn sản phẩm. Mục tiêu của folder này là trả lời câu hỏi: TraceFlow giải quyết vấn đề gì, phục vụ ai, luồng sử dụng chính là gì, phạm vi Core/Nice-to-have/Optional gồm những năng lực nào và nên triển khai theo thứ tự nào.
 
-Đây là phần nên đọc đầu tiên trước khi bàn về Kafka, OpenSearch, Go hay ASP.NET Core. Nếu không hiểu rõ sản phẩm, các quyết định kỹ thuật rất dễ biến thành việc thêm công nghệ vì thích công nghệ thay vì vì nhu cầu thật.
+Đây là phần nên đọc đầu tiên trước khi bàn về Kafka, OpenSearch, ASP.NET Core hay bất kỳ lựa chọn kỹ thuật nào khác. Nếu không hiểu rõ sản phẩm, các quyết định kỹ thuật rất dễ biến thành việc thêm công nghệ vì thích công nghệ thay vì vì nhu cầu thật.
 
 ## Nội dung cần nắm
 

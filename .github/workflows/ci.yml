@@ -26,31 +26,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Go for services
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: services/ingestion-api/go.mod
-          cache-dependency-path: |
-            services/ingestion-api/go.sum
-            services/log-processor/go.sum
-
-      - name: Check Go formatting
-        run: |
-          files=$(gofmt -l services/ingestion-api services/log-processor)
-          if [ -n "$files" ]; then
-            echo "The following Go files are not formatted:"
-            echo "$files"
-            exit 1
-          fi
-
-      - name: Run Go vet for Ingestion API
-        working-directory: services/ingestion-api
-        run: go vet ./...
-
-      - name: Run Go vet for Log Processor
-        working-directory: services/log-processor
-        run: go vet ./...
-
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -63,6 +38,14 @@ jobs:
       - name: Check Control API formatting
         working-directory: services/control-api/TraceFlow.api
         run: dotnet format TraceFlow.api.csproj --verify-no-changes --verbosity diagnostic
+
+      - name: Check Ingestion API formatting
+        working-directory: services/ingestion-api/TraceFlow.Ingestion.Api
+        run: dotnet format TraceFlow.Ingestion.Api.csproj --verify-no-changes --verbosity diagnostic
+
+      - name: Check Log Processor formatting
+        working-directory: services/log-processor/TraceFlow.LogProcessor
+        run: dotnet format TraceFlow.LogProcessor.csproj --verify-no-changes --verbosity diagnostic
 
   secret-scan:
     name: Secret and Security Scan
@@ -107,58 +90,56 @@ jobs:
     #     run: dotnet test --configuration Release --no-build --collect:"XPlat Code Coverage"
 
   ingestion-api:
-    name: Ingestion API Build, Test and Coverage
+    name: Ingestion API Build and Test
     runs-on: ubuntu-latest
 
     defaults:
       run:
-        working-directory: services/ingestion-api
+        working-directory: services/ingestion-api/TraceFlow.Ingestion.Api
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Go
-        uses: actions/setup-go@v5
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
         with:
-          go-version-file: services/ingestion-api/go.mod
-          cache-dependency-path: services/ingestion-api/go.sum
+          dotnet-version: "10.0.x"
 
-      - name: Run tests with coverage
-        run: go test ./... -coverprofile=coverage.out
-
-      - name: Show coverage summary
-        run: go tool cover -func=coverage.out
+      - name: Restore dependencies
+        run: dotnet restore
 
       - name: Build
-        run: go build ./cmd/api
+        run: dotnet build --configuration Release --no-restore
+
+    # - name: Test
+    #   run: dotnet test --configuration Release --no-build --collect:"XPlat Code Coverage"
 
   log-processor:
-    name: Log Processor Build, Test and Coverage
+    name: Log Processor Build and Test
     runs-on: ubuntu-latest
 
     defaults:
       run:
-        working-directory: services/log-processor
+        working-directory: services/log-processor/TraceFlow.LogProcessor
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Go
-        uses: actions/setup-go@v5
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
         with:
-          go-version-file: services/log-processor/go.mod
-          cache-dependency-path: services/log-processor/go.sum
+          dotnet-version: "10.0.x"
 
-      - name: Run tests with coverage
-        run: go test ./... -coverprofile=coverage.out
-
-      - name: Show coverage summary
-        run: go tool cover -func=coverage.out
+      - name: Restore dependencies
+        run: dotnet restore
 
       - name: Build
-        run: go build ./cmd/worker
+        run: dotnet build --configuration Release --no-restore
+
+      # - name: Test
+      #   run: dotnet test --configuration Release --no-build --collect:"XPlat Code Coverage"
 
   container-build:
     name: Container Build

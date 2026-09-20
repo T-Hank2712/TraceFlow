@@ -2,13 +2,13 @@
 
 Nhóm tài liệu này mô tả các service chính trong TraceFlow và trách nhiệm của từng service. Đây là cầu nối giữa kiến trúc tổng thể và implementation thực tế.
 
-Service docs phải làm rõ mỗi service sở hữu endpoint/job nào, dependency nào là bắt buộc, dữ liệu nào được đọc/ghi và ranh giới nào không được vượt qua. Ví dụ Go Ingestion Service được phép validate API key và publish Kafka, nhưng không được tự ý trở thành service quản lý workspace.
+Service docs phải làm rõ mỗi service sở hữu endpoint/job nào, dependency nào là bắt buộc, dữ liệu nào được đọc/ghi và ranh giới nào không được vượt qua. Ví dụ Ingestion API được phép validate API key và publish Kafka, nhưng không được tự ý trở thành service quản lý workspace.
 
 ## Nội dung cần nắm
 
 - ASP.NET Core Control API sở hữu control plane, Search API và internal API key validation.
-- Go Ingestion Service sở hữu HTTP ingestion, API key validation, payload normalization và Kafka publishing.
-- Go Log Processor sở hữu Kafka consumption, batch processing, retry, DLQ và OpenSearch indexing.
+- ASP.NET Core Ingestion API sở hữu HTTP ingestion, API key validation, payload normalization và Kafka publishing.
+- .NET Log Processor sở hữu Kafka consumption, batch processing, retry, DLQ và OpenSearch indexing.
 - Local Development Stack mô tả cách các service chạy cùng nhau trong môi trường phát triển.
 
 ## Khi nào cần cập nhật nhóm này
@@ -21,8 +21,8 @@ Service docs phải làm rõ mỗi service sở hữu endpoint/job nào, depende
 ## Thứ tự đọc
 
 1. `01-aspnet-control-api.md`
-2. `02-go-ingestion-service.md`
-3. `03-go-log-processor.md`
+2. `02-aspnet-ingestion-api.md`
+3. `03-dotnet-log-processor.md`
 4. `04-local-development-stack.md`
 
 ## Kết quả mong đợi sau khi đọc

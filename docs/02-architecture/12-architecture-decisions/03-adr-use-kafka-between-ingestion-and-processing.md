@@ -10,7 +10,7 @@ Ingestion API cần trả response nhanh, trong khi OpenSearch indexing có th�
 
 ## Quyết định
 
-Đặt Kafka giữa Go Ingestion Service và Go Log Processor.
+Đặt Kafka giữa Ingestion API và Log Processor.
 
 ## Lý do
 

@@ -29,4 +29,4 @@ Event key mặc định nên là `application_id` để cân bằng throughput v
 
 ## Consumer group
 
-Go Log Processor dùng consumer group để scale ngang.
+Log Processor dùng consumer group để scale ngang.

@@ -132,14 +132,15 @@ services:
 
   ingestion-api:
     env_file:
-      - ./services/ingestion-api/.env
+      - ./services/ingestion-api/TraceFlow.Ingestion.Api/.env
     build:
       context: ./services/ingestion-api
       dockerfile: Dockerfile
     container_name: traceflow-ingestion-api
     restart: unless-stopped
     environment:
-      PORT: ":8080"
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:5100
       CONTROL_API_BASE_URL: ${CONTROL_API_BASE_URL}
       VALIDATE_API_URL: ${VALIDATE_API_URL}
       INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET}
@@ -149,7 +150,7 @@ services:
       MAX_BATCH_SIZE: ${MAX_BATCH_SIZE}
       MAX_REQUEST_BODY_BYTES: ${MAX_REQUEST_BODY_BYTES}
     ports:
-      - "8080:8080"
+      - "5100:5100"
     depends_on:
       kafka:
         condition: service_healthy
@@ -159,10 +160,16 @@ services:
         condition: service_healthy
     networks:
       - traceflow-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5100/health > /dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
   
   log-processor:
     env_file:
-      - ./services/log-processor/.env
+      - ./services/log-processor/TraceFlow.LogProcessor/.env
     build: 
       context: ./services/log-processor
       dockerfile: Dockerfile

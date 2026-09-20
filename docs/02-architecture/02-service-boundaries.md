@@ -11,9 +11,9 @@ Chịu trách nhiệm:
 - Internal API key validation.
 - Nice-to-have: retention/quota/operational insights ở mức nhỏ nếu được bật.
 
-Không chịu trách nhiệm nhận log tốc độ cao trực tiếp. Data plane luôn đi qua Go Ingestion Service.
+Không chịu trách nhiệm nhận log tốc độ cao trực tiếp. Data plane luôn đi qua Ingestion API.
 
-## Go Ingestion Service
+## ASP.NET Core Ingestion API
 
 Chịu trách nhiệm:
 
@@ -26,7 +26,7 @@ Chịu trách nhiệm:
 
 Không index trực tiếp vào OpenSearch trong HTTP request.
 
-## Go Log Processor
+## .NET Log Processor
 
 Chịu trách nhiệm:
 

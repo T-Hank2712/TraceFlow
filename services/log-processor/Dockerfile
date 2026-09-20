@@ -1,19 +1,17 @@
-FROM golang:1.26 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
-COPY go.mod go.sum ./
-RUN go mod download
+COPY TraceFlow.LogProcessor/TraceFlow.LogProcessor.csproj TraceFlow.LogProcessor/
+RUN dotnet restore TraceFlow.LogProcessor/TraceFlow.LogProcessor.csproj
 
-COPY . .
-RUN CGO_ENABLED=1 GOOS=linux go build -o /app/log-processor ./cmd/worker
+COPY TraceFlow.LogProcessor/ TraceFlow.LogProcessor/
+RUN dotnet publish TraceFlow.LogProcessor/TraceFlow.LogProcessor.csproj \
+    -c Release \
+    -o /app/publish
 
-FROM debian:bookworm-slim AS runtime
+FROM mcr.microsoft.com/dotnet/runtime:10.0 AS runtime
 WORKDIR /app
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates librdkafka1 \
-    && rm -rf /var/lib/apt/lists/*
+COPY --from=build /app/publish .
 
-COPY --from=build /app/log-processor .
-
-ENTRYPOINT ["./log-processor"]
+ENTRYPOINT ["dotnet", "TraceFlow.LogProcessor.dll"]

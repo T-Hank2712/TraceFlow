@@ -1,6 +1,6 @@
 # API Documentation
 
-Nhóm tài liệu này mô tả contract API của TraceFlow. API docs là ranh giới giữa client application, optional Web UI, Go data plane, ASP.NET Core control plane và các công cụ test/automation.
+Nhóm tài liệu này mô tả contract API của TraceFlow. API docs là ranh giới giữa client application, optional Web UI, data plane, control plane và các công cụ test/automation.
 
 Vì TraceFlow có cả user-facing API và ingestion API, tài liệu API phải tách rõ hai kiểu xác thực: user access token cho management/search và API key cho application gửi log. Không được trộn hai cơ chế này.
 

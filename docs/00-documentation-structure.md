@@ -28,7 +28,7 @@ docs/
 │   ├── 11-observability.md
 │   └── 12-architecture-decisions/
 │       ├── README.md
-│       ├── 01-adr-use-go-for-data-plane.md
+│       ├── 01-adr-use-dotnet-for-backend-services.md
 │       ├── 02-adr-use-aspnetcore-for-control-plane.md
 │       ├── 03-adr-use-kafka-between-ingestion-and-processing.md
 │       └── 04-adr-use-opensearch-for-log-search.md
@@ -71,8 +71,8 @@ docs/
 ├── 06-services/
 │   ├── README.md
 │   ├── 01-aspnet-control-api.md
-│   ├── 02-go-ingestion-service.md
-│   ├── 03-go-log-processor.md
+│   ├── 02-aspnet-ingestion-api.md
+│   ├── 03-dotnet-log-processor.md
 │   └── 04-local-development-stack.md
 ├── 07-security/
 │   ├── README.md
@@ -149,7 +149,7 @@ Mô tả thiết kế dữ liệu: PostgreSQL schema, OpenSearch index mapping, 
 
 ### `06-services/`
 
-Mô tả từng service chính: ASP.NET Core Control API, Go Ingestion Service, Go Log Processor và local development stack.
+Mô tả từng service chính: ASP.NET Core Control API, ASP.NET Core Ingestion API, .NET Log Processor và local development stack.
 
 ### `07-security/`
 

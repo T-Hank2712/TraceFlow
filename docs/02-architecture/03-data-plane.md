@@ -4,9 +4,9 @@ Data plane là phần xử lý luồng log tốc độ cao.
 
 ## Thành phần
 
-- Go Ingestion Service.
+- ASP.NET Core Ingestion API.
 - Kafka topic chứa log event.
-- Go Log Processor.
+- .NET Log Processor.
 - OpenSearch index.
 
 ## Luồng xử lý

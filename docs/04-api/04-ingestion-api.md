@@ -1,6 +1,6 @@
 # Ingestion API
 
-Ingestion API do Go Ingestion Service cung cấp.
+Ingestion API do ASP.NET Core Ingestion API cung cấp.
 
 ## Authentication
 
@@ -13,7 +13,7 @@ Authorization: ApiKey <secret>
 ## Single log
 
 ```text
-POST /v1/logs
+POST /logs
 ```
 
 Nhận một log object và trả `202 Accepted` nếu đã publish vào Kafka thành công.
@@ -21,7 +21,7 @@ Nhận một log object và trả `202 Accepted` nếu đã publish vào Kafka t
 ## Batch logs
 
 ```text
-POST /v1/logs/batch
+POST /logs/batch
 ```
 
 Nhận danh sách log. Batch phải có giới hạn số lượng và dung lượng.
