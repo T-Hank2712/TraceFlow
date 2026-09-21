@@ -5,6 +5,8 @@ using TraceFlow.Ingestion.Api.Contracts.BatchLog;
 using TraceFlow.Ingestion.Api.Errors;
 using TraceFlow.Ingestion.Api.Kafka;
 using TraceFlow.Ingestion.Api.Security;
+using Microsoft.Extensions.Options;
+using FluentValidation;
 
 namespace TraceFlow.Ingestion.Api.Ingestion;
 
@@ -13,15 +15,21 @@ public sealed class IngestLogService : IIngestLogService
     private readonly Authenticator _authenticator;
     private readonly EnrichedLogEventFactory _eventFactory;
     private readonly ILogEventPublisher _publisher;
+    private readonly IValidator<IngestLogRequest> _logValidator;
+    private readonly IValidator<BatchLogRequest> _batchValidator;
 
     public IngestLogService(
         Authenticator authenticator,
         EnrichedLogEventFactory eventFactory,
-        ILogEventPublisher publisher)
+        ILogEventPublisher publisher,
+        IValidator<IngestLogRequest> logValidator,
+        IValidator<BatchLogRequest> batchValidator)
     {
         _authenticator = authenticator;
         _eventFactory = eventFactory;
         _publisher = publisher;
+        _logValidator = logValidator;
+        _batchValidator = batchValidator;
     }
 
     public async Task<Result<IngestLogResponse>> IngestAsync(
@@ -41,9 +49,20 @@ public sealed class IngestLogService : IIngestLogService
                 authResult.StatusCode);
         }
 
-        var tenant = authResult.Data!;
+        var validationResult = await _logValidator.ValidateAsync(request);
+        if (!validationResult.IsValid)
+        {
+            return Result<IngestLogResponse>.Fail(
+                ErrorCodes.ValidateError,
+                validationResult.Errors.First().ErrorMessage,
+                StatusCodes.Status400BadRequest);
+        }
 
-        var logEvent = _eventFactory.Create(request, tenant);
+        var tenant = authResult.Data!;
+        var eventId = Ulid.NewUlid();
+        var batchId = Ulid.NewUlid(); 
+
+        var logEvent = _eventFactory.Create(request, tenant, eventId, batchId);
 
         try
         {
@@ -53,14 +72,13 @@ public sealed class IngestLogService : IIngestLogService
         {
             return Result<IngestLogResponse>.Fail(ErrorCodes.KafkaPublishFailed, "Failed to publish log event to Kafka.", StatusCodes.Status503ServiceUnavailable);
         }
-        return new Result<IngestLogResponse>(
+
+        var response = new IngestLogResponse(
+            eventId,
             true,
-            new IngestLogResponse(
-                logEvent.EventId,
-                true,
-                DateTimeOffset.UtcNow),
-            null,
-            StatusCodes.Status202Accepted);
+            DateTimeOffset.UtcNow
+        );
+        return Result<IngestLogResponse>.Ok(response);
     }
 
     public async Task<Result<BatchLogResponse>> BatchLogAsync(
@@ -79,52 +97,55 @@ public sealed class IngestLogService : IIngestLogService
                 authResult.StatusCode);
         }
 
-        var tenant = authResult.Data!;
-
-        var logEvents = request.Logs
-            .Select(log => _eventFactory.Create(log, tenant))
-            .ToList();
-
-        var batchLog = new BatchLogResult(
-            Ulid.NewUlid(),
-            logEvents);
-
-        try
-        {
-            await _publisher.PublishAsync(
-                logEvents,
+        var validationBatch = await _batchValidator.ValidateAsync(
+                request,
                 cancellationToken);
-        }
-        catch
+        
+        if (!validationBatch.IsValid)
         {
             return Result<BatchLogResponse>.Fail(
-                ErrorCodes.KafkaPublishFailed,
-                "Failed to publish log events to Kafka.",
-                StatusCodes.Status503ServiceUnavailable);
+                ErrorCodes.ValidateError,
+                validationBatch.Errors.First().ErrorMessage,
+                StatusCodes.Status400BadRequest);
         }
-        return new Result<BatchLogResponse>(
-            true,
-            new BatchLogResponse(
-                batchLog.BatchId,
-                logEvents.Count,
-                DateTimeOffset.UtcNow),
-            null,
-            StatusCodes.Status202Accepted);
-    }
 
-    private static string? ValidateRequest(IngestLogRequest request)
-    {
-        if (string.IsNullOrWhiteSpace(request.Message)) return "Message is required.";
-        if (string.IsNullOrWhiteSpace(request.Service)) return "Service is required.";
-        if (request.Level == LogLevel.None) return "Level is required.";
+        var batchId = Ulid.NewUlid();
 
-        var normalizedLevel = request.Level;
+        var results = new List<BatchLogItemResult>(request.Logs.Count);
 
-        if (normalizedLevel == LogLevel.None)
+        for (int i = 0; i < request.Logs.Count; i++)
         {
-            return "Level must be one of Trace, Debug, Information, Warning, Error, Critical.";
-        }
+            var log = request.Logs[i];
 
-        return null;
+            var validationResult = await _logValidator.ValidateAsync(log, cancellationToken);
+
+            if (!validationResult.IsValid)
+            {
+                var error = string.Join("; ", validationResult.Errors.Select(x => x.ErrorMessage).Distinct());
+                results.Add(
+                    new BatchLogItemResult(
+                        Index: i,
+                        Accepted: false,
+                        EventId: null,
+                        Error: error));
+                continue;
+            }
+            var eventId = Ulid.NewUlid();
+            var logEvent = _eventFactory.Create(log, authResult.Data!, eventId, batchId);
+            
+            await _publisher.PublishAsync(logEvent, cancellationToken);
+            results.Add(new BatchLogItemResult(i, true, eventId, null));
+        }
+        var accepted = results.Count(x => x.Accepted);
+        var rejected = results.Count(x => !x.Accepted);
+
+        var response = new BatchLogResponse(
+            BatchId: batchId,
+            Total: request.Logs.Count,
+            Accepted: accepted,
+            Rejected: rejected,
+            Results: results);
+
+        return Result<BatchLogResponse>.Ok(response);
     }
 }

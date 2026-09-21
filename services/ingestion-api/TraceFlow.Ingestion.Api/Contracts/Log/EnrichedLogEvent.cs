@@ -2,6 +2,7 @@ namespace TraceFlow.Ingestion.Api.Contracts.Log;
 
 public sealed record EnrichedLogEvent(
     Ulid EventId,
+    Ulid BatchID,
     Ulid WorkspaceId,
     Ulid ProjectId,
     Ulid ApplicationId,

@@ -4,6 +4,9 @@ using TraceFlow.Ingestion.Api.Clients;
 using TraceFlow.Ingestion.Api.Ingestion;
 using TraceFlow.Ingestion.Api.Kafka;
 using TraceFlow.Ingestion.Api.Security;
+using FluentValidation;
+using TraceFlow.Ingestion.Api.Contracts.BatchLog;
+using TraceFlow.Ingestion.Api.Contracts.Log;
 
 DotNetEnv.Env.Load();
 var builder = WebApplication.CreateBuilder(args);
@@ -41,6 +44,8 @@ builder.Services
 builder.Services.AddSingleton<ApiKeyHeaderParser>();
 builder.Services.AddSingleton<EnrichedLogEventFactory>();
 builder.Services.AddScoped<Authenticator>();
+builder.Services.AddScoped<IValidator<BatchLogRequest>, BatchLogRequestValidator>();
+builder.Services.AddScoped<IValidator<IngestLogRequest>, IngestLogRequestValidator>();
 
 builder.Services.AddHttpClient<IApiKeyValidator, ControlApiClient>();
 

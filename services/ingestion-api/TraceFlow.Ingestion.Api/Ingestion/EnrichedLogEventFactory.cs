@@ -5,7 +5,7 @@ namespace TraceFlow.Ingestion.Api.Ingestion;
 
 public sealed class EnrichedLogEventFactory
 {
-    public EnrichedLogEvent Create(IngestLogRequest request, ApiKeyValidationResult tenant)
+    public EnrichedLogEvent Create(IngestLogRequest request, ApiKeyValidationResult tenant, Ulid EventId, Ulid BatchId)
     {
         if (tenant.WorkspaceId is not Ulid workspaceId ||
             tenant.ProjectId is not Ulid projectId ||
@@ -18,6 +18,7 @@ public sealed class EnrichedLogEventFactory
 
         return new EnrichedLogEvent(
             EventId: Ulid.NewUlid(),
+            BatchID: Ulid.NewUlid(),
             WorkspaceId: workspaceId,
             ProjectId: projectId,
             ApplicationId: applicationId,
