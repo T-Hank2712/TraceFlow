@@ -60,7 +60,7 @@ public sealed class IngestLogService : IIngestLogService
 
         var tenant = authResult.Data!;
         var eventId = Ulid.NewUlid();
-        var batchId = Ulid.NewUlid(); 
+        var batchId = Ulid.NewUlid();
 
         var logEvent = _eventFactory.Create(request, tenant, eventId, batchId);
 
@@ -100,7 +100,7 @@ public sealed class IngestLogService : IIngestLogService
         var validationBatch = await _batchValidator.ValidateAsync(
                 request,
                 cancellationToken);
-        
+
         if (!validationBatch.IsValid)
         {
             return Result<BatchLogResponse>.Fail(
@@ -132,7 +132,7 @@ public sealed class IngestLogService : IIngestLogService
             }
             var eventId = Ulid.NewUlid();
             var logEvent = _eventFactory.Create(log, authResult.Data!, eventId, batchId);
-            
+
             await _publisher.PublishAsync(logEvent, cancellationToken);
             results.Add(new BatchLogItemResult(i, true, eventId, null));
         }
