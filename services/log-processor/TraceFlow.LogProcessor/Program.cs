@@ -29,6 +29,7 @@ builder.Services.AddSingleton<ILogEventNormalizer, LogEventNormalizer>();
 builder.Services.AddSingleton<IBatchProcessor, BatchProcessor>();
 
 builder.Services.AddHostedService<LogConsumerWorker>();
+builder.Services.AddHostedService<BatchFlushWorker>();
 
 var host = builder.Build();
 host.Run();

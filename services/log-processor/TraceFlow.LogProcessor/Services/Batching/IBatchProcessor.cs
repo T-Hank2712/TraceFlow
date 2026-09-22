@@ -8,6 +8,6 @@ public interface IBatchProcessor
         LogEvent logEvent,
         CancellationToken cancellationToken);
 
-    // Task FlushAsync(
-    //     CancellationToken cancellationToken);
+    Task FlushAsync(
+        CancellationToken cancellationToken);
 }

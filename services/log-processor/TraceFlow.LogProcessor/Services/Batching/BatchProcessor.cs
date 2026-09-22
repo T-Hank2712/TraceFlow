@@ -35,6 +35,19 @@ public sealed class BatchProcessor : IBatchProcessor
             _lock.Release();
         }
     }
+    public async Task FlushAsync(CancellationToken cancellationToken)
+    {
+        await _lock.WaitAsync(cancellationToken);
+
+        try
+        {
+            await FlushInternalAsync(cancellationToken);
+        }
+        finally
+        {
+            _lock.Release();
+        }
+    }
     public Task FlushInternalAsync(CancellationToken cancellationToken)
     {
         if (_buffer.Count == 0) return Task.CompletedTask;
