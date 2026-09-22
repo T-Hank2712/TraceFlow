@@ -1,7 +1,30 @@
 using TraceFlow.LogProcessor;
+using TraceFlow.LogProcessor.Configurations;
+using DotNetEnv;
+using TraceFlow.LogProcessor.Services.Kafka;
+using TraceFlow.LogProcessor.Workers;
 
+Env.Load();
 var builder = Host.CreateApplicationBuilder(args);
-builder.Services.AddHostedService<Worker>();
+
+builder.Services
+    .AddOptions<KafkaOptions>()
+    .Bind(builder.Configuration.GetSection("Kafka"))
+    .ValidateOnStart();
+
+builder.Services
+    .AddOptions<ProcessorOptions>()
+    .Bind(builder.Configuration.GetSection("Processor"))
+    .ValidateOnStart();
+
+builder.Services
+    .AddOptions<OpenSearchOptions>()
+    .Bind(builder.Configuration.GetSection("OpenSearch"))
+    .ValidateOnStart();
+
+builder.Services.AddSingleton<IKafkaConsumer, KafkaConsumer>();
+
+builder.Services.AddHostedService<LogConsumerWorker>();
 
 var host = builder.Build();
 host.Run();

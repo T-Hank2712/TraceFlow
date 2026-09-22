@@ -5,6 +5,10 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>dotnet-TraceFlow.LogProcessor-3106f48f-68a7-4367-a6ab-739c3b8db396</UserSecretsId>
+
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>portable</DebugType>
+    <Optimize>false</Optimize>
   </PropertyGroup>
 
   <ItemGroup>
@@ -12,5 +16,6 @@
     <PackageReference Include="DotNetEnv" Version="3.2.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.10" />
     <PackageReference Include="OpenSearch.Client" Version="2.1.0" />
+    <PackageReference Include="Ulid" Version="1.4.1" />
   </ItemGroup>
 </Project>
