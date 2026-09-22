@@ -1,10 +1,10 @@
 namespace TraceFlow.LogProcessor.Contracts;
 
 public sealed record LogEvent(
-    Ulid EventId,
-    Ulid WorkspaceId,
-    Ulid ProjectId,
-    Ulid ApplicationId,
+    string EventId,
+    string WorkspaceId,
+    string ProjectId,
+    string ApplicationId,
     string Environment,
     string Service,
     int Level,

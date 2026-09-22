@@ -13,6 +13,7 @@ public sealed class LogEventNormalizer : ILogEventNormalizer
         }
         return logEvent with
         {
+            EventId = logEvent.EventId,
             Service = logEvent.Service.Trim(),
             Environment = logEvent.Environment.Trim().ToLowerInvariant(),
             Message = logEvent.Message.Trim(),
