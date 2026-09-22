@@ -16,7 +16,8 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
     {
         _options = options.Value;
         _logger = logger;
-        var config = new ConsumerConfig{
+        var config = new ConsumerConfig
+        {
             BootstrapServers = _options.BootstrapServers,
             GroupId = _options.GroupId,
             AutoOffsetReset = AutoOffsetReset.Earliest,
@@ -42,7 +43,7 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
                 {
                     result = _consumer.Consume(cancellationToken);
                 }
-                catch(ConsumeException ex)
+                catch (ConsumeException ex)
                 {
                     _logger.LogError(ex, "Kafka consumption error. Error: {Reason}", ex.Error.Reason);
                     continue;
@@ -62,7 +63,7 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
                 {
                     logEvent = JsonSerializer.Deserialize<LogEvent>(result.Message.Value);
                 }
-                catch(JSException ex)
+                catch (JSException ex)
                 {
                     _logger.LogWarning(
                         ex,

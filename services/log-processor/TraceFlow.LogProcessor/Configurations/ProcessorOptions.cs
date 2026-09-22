@@ -1,4 +1,5 @@
 namespace TraceFlow.LogProcessor.Configurations;
+
 public sealed class ProcessorOptions
 {
     public int MaxRetries { get; set; }

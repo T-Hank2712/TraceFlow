@@ -1,4 +1,5 @@
 namespace TraceFlow.LogProcessor.Configurations;
+
 public sealed class OpenSearchOptions
 {
     public required string Username { get; init; }
