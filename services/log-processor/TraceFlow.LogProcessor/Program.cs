@@ -2,6 +2,7 @@ using TraceFlow.LogProcessor;
 using TraceFlow.LogProcessor.Configurations;
 using DotNetEnv;
 using TraceFlow.LogProcessor.Services.Kafka;
+using TraceFlow.LogProcessor.Services.Batching;
 using TraceFlow.LogProcessor.Workers;
 using TraceFlow.LogProcessor.Processing;
 
@@ -25,6 +26,7 @@ builder.Services
 
 builder.Services.AddSingleton<IKafkaConsumer, KafkaConsumer>();
 builder.Services.AddSingleton<ILogEventNormalizer, LogEventNormalizer>();
+builder.Services.AddSingleton<IBatchProcessor, BatchProcessor>();
 
 builder.Services.AddHostedService<LogConsumerWorker>();
 
