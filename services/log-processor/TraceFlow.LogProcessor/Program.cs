@@ -3,6 +3,7 @@ using TraceFlow.LogProcessor.Configurations;
 using DotNetEnv;
 using TraceFlow.LogProcessor.Services.Kafka;
 using TraceFlow.LogProcessor.Workers;
+using TraceFlow.LogProcessor.Processing;
 
 Env.Load();
 var builder = Host.CreateApplicationBuilder(args);
@@ -23,6 +24,7 @@ builder.Services
     .ValidateOnStart();
 
 builder.Services.AddSingleton<IKafkaConsumer, KafkaConsumer>();
+builder.Services.AddSingleton<ILogEventNormalizer, LogEventNormalizer>();
 
 builder.Services.AddHostedService<LogConsumerWorker>();
 

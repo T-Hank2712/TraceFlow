@@ -4,6 +4,7 @@ using Confluent.Kafka;
 using Microsoft.Extensions.Options;
 using TraceFlow.LogProcessor.Configurations;
 using TraceFlow.LogProcessor.Contracts;
+using TraceFlow.LogProcessor.Processing;
 
 namespace TraceFlow.LogProcessor.Services.Kafka;
 
@@ -12,10 +13,12 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
     private readonly IConsumer<Ignore, string> _consumer;
     private readonly KafkaOptions _options;
     private readonly ILogger<KafkaConsumer> _logger;
-    public KafkaConsumer(IOptions<KafkaOptions> options, ILogger<KafkaConsumer> logger)
+    private readonly ILogEventNormalizer _logEventNormalizer;
+    public KafkaConsumer(IOptions<KafkaOptions> options, ILogger<KafkaConsumer> logger, ILogEventNormalizer logEventNormalizer)
     {
         _options = options.Value;
         _logger = logger;
+        _logEventNormalizer = logEventNormalizer;
         var config = new ConsumerConfig
         {
             BootstrapServers = _options.BootstrapServers,
@@ -59,11 +62,12 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
                     continue;
                 }
                 LogEvent? logEvent;
+                
                 try
                 {
                     logEvent = JsonSerializer.Deserialize<LogEvent>(result.Message.Value);
                 }
-                catch (JSException ex)
+                catch (JsonException ex)
                 {
                     _logger.LogWarning(
                         ex,
@@ -85,6 +89,21 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
 
                     continue;
                 }
+
+                try
+                {
+                    _logEventNormalizer.Normalize(logEvent);
+                }
+                catch (FormatException ex)
+                {
+                    _logger.LogWarning(
+                        ex,
+                        "Incorrect data format, Offset: {Offset}",
+                        result.Offset);
+
+                    continue;
+                }
+
                 await handler(logEvent, cancellationToken);
             }
         }
