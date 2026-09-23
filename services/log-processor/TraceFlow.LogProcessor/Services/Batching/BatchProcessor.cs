@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Options;
 using TraceFlow.LogProcessor.Configurations;
 using TraceFlow.LogProcessor.Contracts;
+using TraceFlow.LogProcessor.Services.Kafka;
 using TraceFlow.LogProcessor.Services.OpenSearch;
 
 namespace TraceFlow.LogProcessor.Services.Batching;
@@ -12,11 +13,13 @@ public sealed class BatchProcessor : IBatchProcessor
     private readonly List<LogEvent> _buffer = [];
     private readonly SemaphoreSlim _lock = new(1, 1);
     private readonly ILogIndexer _logIndexer;
-    public BatchProcessor(IOptions<ProcessorOptions> options, ILogger<BatchProcessor> logger, ILogIndexer logIndexer)
+    private readonly IDlqProducer _dlqProducer;
+    public BatchProcessor(IOptions<ProcessorOptions> options, ILogger<BatchProcessor> logger, ILogIndexer logIndexer, IDlqProducer dlqProducer)
     {
         _options = options.Value;
         _logger = logger;
         _logIndexer = logIndexer;
+        _dlqProducer = dlqProducer;
     }
     public async Task AddAsync(LogEvent logEvent, CancellationToken cancellationToken)
     {
@@ -51,16 +54,52 @@ public sealed class BatchProcessor : IBatchProcessor
             _lock.Release();
         }
     }
-    public async Task FlushInternalAsync(CancellationToken cancellationToken)
+    private async Task FlushInternalAsync(CancellationToken cancellationToken)
     {
         if (_buffer.Count == 0) return;
 
         var batch = _buffer.ToList();
 
-        _buffer.Clear();
-
         _logger.LogInformation("Flushing log batch. Count: {Count}", batch.Count);
 
-        await _logIndexer.IndexAsync(batch, cancellationToken);
+        try
+        {
+            await _logIndexer.IndexAsync(batch, cancellationToken);
+
+            _buffer.RemoveRange(0, batch.Count);
+
+            _logger.LogInformation("Log batch indexed successfully. Count: {Count}", batch.Count);
+        }
+        catch (OpenSearchBulkException ex)
+        {
+            _logger.LogError(ex, "OpenSearch bulk indexing failed after retries. Publishing batch to DLQ. Count: {Count}", batch.Count);
+
+            var dlqEvents = batch
+                .Select(logEvent =>
+                    new DlqLogEvent(
+                        logEvent,
+                        "OpenSearchBulkFailure",
+                        ex.Message,
+                        DateTimeOffset.UtcNow))
+                .ToList();
+
+            try
+            {
+                await _dlqProducer.PublishAsync(dlqEvents, cancellationToken);
+
+                _buffer.RemoveRange(0, batch.Count);
+
+                _logger.LogInformation("Log batch moved to DLQ successfully. Count: {Count}", batch.Count);
+            }
+            catch (Exception dlqException) when (dlqException is not OperationCanceledException)
+            {
+                _logger.LogError(
+                    dlqException,
+                    "Failed to publish log batch to DLQ. Batch remains buffered. Count: {Count}",
+                    batch.Count);
+                    
+                throw;
+            }
+        }
     }
 }

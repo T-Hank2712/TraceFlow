@@ -52,6 +52,7 @@ builder.Services.AddSingleton<ILogEventNormalizer, LogEventNormalizer>();
 builder.Services.AddSingleton<IBatchProcessor, BatchProcessor>();
 builder.Services.AddSingleton<ILogIndexer, LogIndexer>();
 builder.Services.AddSingleton<IOpenSearchClient>(new OpenSearchClient(settings));
+builder.Services.AddSingleton<IDlqProducer, DlqProducer>();
 
 builder.Services.AddHostedService<LogConsumerWorker>();
 builder.Services.AddHostedService<BatchFlushWorker>();
