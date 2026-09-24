@@ -46,7 +46,7 @@ public sealed class BatchProcessor : IBatchProcessor
 
         try
         {
-            if (_buffer.Count == 0)return new BatchProcessResult([]);
+            if (_buffer.Count == 0) return new BatchProcessResult([]);
 
             return await FlushInternalAsync(cancellationToken);
         }
@@ -58,7 +58,7 @@ public sealed class BatchProcessor : IBatchProcessor
     private async Task<BatchProcessResult> FlushInternalAsync(CancellationToken cancellationToken)
     {
         var batch = _buffer.ToList();
- 
+
         var events = batch
             .Select(x => x.Event)
             .ToList();
