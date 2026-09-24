@@ -5,6 +5,6 @@ namespace TraceFlow.LogProcessor.Services.Kafka;
 public interface IKafkaConsumer
 {
     Task ConsumeAsync(
-        Func<LogEvent, CancellationToken, Task> handler,
+        Func<PendingLogEvent, CancellationToken, Task<BatchProcessResult>> handler,
         CancellationToken cancellationToken);
 }

@@ -1,3 +1,5 @@
+using TraceFlow.LogProcessor.Contracts;
+using TraceFlow.LogProcessor.Services.Batching;
 using TraceFlow.LogProcessor.Services.Kafka;
 
 namespace TraceFlow.LogProcessor.Workers;
@@ -6,13 +8,16 @@ public sealed class LogConsumerWorker : BackgroundService
 {
     private readonly IKafkaConsumer _kafkaConsumer;
     private readonly ILogger<LogConsumerWorker> _logger;
+    private readonly IBatchProcessor _batchProcessor;
 
     public LogConsumerWorker(
         IKafkaConsumer kafkaConsumer,
-        ILogger<LogConsumerWorker> logger)
+        ILogger<LogConsumerWorker> logger,
+        IBatchProcessor batchProcessor)
     {
         _kafkaConsumer = kafkaConsumer;
         _logger = logger;
+        _batchProcessor = batchProcessor;
     }
 
     protected override async Task ExecuteAsync(
@@ -27,16 +32,12 @@ public sealed class LogConsumerWorker : BackgroundService
         _logger.LogInformation("TraceFlow Log Processor stopped.");
     }
 
-    private Task ProcessAsync(
-        Contracts.LogEvent logEvent,
+    private async Task<BatchProcessResult> ProcessAsync(
+        PendingLogEvent pendingEvent,
         CancellationToken cancellationToken)
     {
-        _logger.LogInformation(
-            "Consumed log event {EventId} from service {Service}: {Message}",
-            logEvent.EventId,
-            logEvent.Service,
-            logEvent.Message);
-
-        return Task.CompletedTask;
+        return await _batchProcessor.AddAsync(
+            pendingEvent,
+            cancellationToken);
     }
 }
