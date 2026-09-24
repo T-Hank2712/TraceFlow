@@ -105,6 +105,8 @@ services:
       --maxmemory-policy allkeys-lru
     volumes:
     - redis_data:/data
+    networks:
+      - traceflow-network
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 5s
@@ -173,6 +175,8 @@ services:
       Ingestion__MaxRequestBodyBytes: ${Ingestion__MaxRequestBodyBytes}
       Ingestion__MaxMessageLength: ${Ingestion__MaxMessageLength}
       Ingestion__MaxServiceLength: ${Ingestion__MaxServiceLength}
+      Redis__SectionName: ${Redis__SectionName}
+      Redis__ConnectionString: redis:6379,password=${REDIS_PASSWORD}
     ports:
       - "5100:5100"
     depends_on:
@@ -181,6 +185,8 @@ services:
       kafka-init:
         condition: service_completed_successfully
       control-api:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     networks:
       - traceflow-network

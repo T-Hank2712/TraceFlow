@@ -7,6 +7,8 @@ using TraceFlow.Ingestion.Api.Security;
 using FluentValidation;
 using TraceFlow.Ingestion.Api.Contracts.BatchLog;
 using TraceFlow.Ingestion.Api.Contracts.Log;
+using StackExchange.Redis;
+using TraceFlow.Ingestion.Api.Configurations;
 
 DotNetEnv.Env.Load();
 var builder = WebApplication.CreateBuilder(args);
@@ -41,6 +43,16 @@ builder.Services
     .Validate(options => options.MaxServiceLength > 0, "Ingestion__MaxServiceLength must be greater than 0.")
     .ValidateOnStart();
 
+builder.Services
+    .AddOptions<RedisOptions>()
+    .Bind(builder.Configuration.GetSection(RedisOptions.SectionName))
+    .ValidateOnStart();
+
+var redisConnectionString =
+    builder.Configuration.GetSection(RedisOptions.SectionName)["ConnectionString"]
+    ?? throw new InvalidOperationException(
+        "Redis connection string is not configured.");
+
 builder.Services.AddSingleton<ApiKeyHeaderParser>();
 builder.Services.AddSingleton<EnrichedLogEventFactory>();
 builder.Services.AddScoped<Authenticator>();
@@ -52,6 +64,7 @@ builder.Services.AddHttpClient<IApiKeyValidator, ControlApiClient>();
 builder.Services.AddSingleton<ILogEventPublisher, KafkaLogProducer>();
 
 builder.Services.AddScoped<IIngestLogService, IngestLogService>();
+builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(redisConnectionString));
 
 var app = builder.Build();
 
