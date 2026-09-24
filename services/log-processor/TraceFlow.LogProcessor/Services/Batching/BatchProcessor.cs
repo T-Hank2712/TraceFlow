@@ -32,7 +32,7 @@ public sealed class BatchProcessor : IBatchProcessor
 
             _logger.LogInformation("Add LogEvent into Batch: {EventId}", logEvent.EventId);
 
-            if(_buffer.Count >= _options.BatchSize)
+            if (_buffer.Count >= _options.BatchSize)
             {
                 await FlushInternalAsync(cancellationToken);
             }
@@ -67,7 +67,7 @@ public sealed class BatchProcessor : IBatchProcessor
         {
             var result = await _logIndexer.IndexAsync(_buffer, cancellationToken);
 
-            if(result.FailedEvents.Count > 0)
+            if (result.FailedEvents.Count > 0)
             {
                 _logger.LogWarning(
                 "OpenSearch partial indexing failure. Publishing {FailedCount}/{TotalCount} poison events to DLQ.",
@@ -119,7 +119,7 @@ public sealed class BatchProcessor : IBatchProcessor
                     dlqException,
                     "Failed to publish log batch to DLQ. Batch remains buffered. Count: {Count}",
                     batchCount);
-                    
+
                 throw;
             }
         }

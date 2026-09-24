@@ -62,7 +62,7 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
                     continue;
                 }
                 LogEvent? logEvent;
-                
+
                 try
                 {
                     logEvent = JsonSerializer.Deserialize<LogEvent>(result.Message.Value);

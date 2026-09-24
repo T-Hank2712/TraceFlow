@@ -26,13 +26,13 @@ public sealed class LogIndexer : ILogIndexer
             return new BulkIndexResult(Array.Empty<LogEvent>(), Array.Empty<LogEvent>());
         }
 
-        for(int attempt = 0; attempt <= _processorOptions.MaxRetries; attempt++)
+        for (int attempt = 0; attempt <= _processorOptions.MaxRetries; attempt++)
         {
             try
             {
                 var response = await ExecuteBulkAsync(logEvents, cancellationToken);
 
-                if(response.Items == null)
+                if (response.Items == null)
                     throw new OpenSearchBulkException("OpenSearch cluster unreachable or request failed at connection level.", response.OriginalException);
 
                 var succeededEvents = new List<LogEvent>();
@@ -45,7 +45,7 @@ public sealed class LogIndexer : ILogIndexer
                     var logEvent = logEvents[index];
                     var item = responseItems[index];
 
-                    if(item.IsValid) succeededEvents.Add(logEvent);
+                    if (item.IsValid) succeededEvents.Add(logEvent);
                     else
                     {
                         failedEvents.Add(logEvent);
@@ -67,13 +67,13 @@ public sealed class LogIndexer : ILogIndexer
                     succeededEvents,
                     failedEvents);
             }
-            catch(Exception ex) when (ex is not OperationCanceledException)
+            catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 _logger.LogWarning(ex, "OpenSearch bulk request failed. Attempt: {Attempt}/{MaxAttempts}. Count: {Count}",
                 attempt + 1, _processorOptions.MaxRetries + 1, logEvents.Count);
             }
 
-            if(attempt < _processorOptions.MaxRetries)
+            if (attempt < _processorOptions.MaxRetries)
             {
                 await Task.Delay(_processorOptions.RetryBackoffMs, cancellationToken);
             }

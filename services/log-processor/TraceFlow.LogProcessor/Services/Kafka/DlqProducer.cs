@@ -25,13 +25,13 @@ public sealed class DlqProducer : IDlqProducer, IDisposable
     }
     public async Task PublishAsync(IReadOnlyCollection<DlqLogEvent> events, CancellationToken cancellationToken)
     {
-        foreach(var dlqEvent in events)
+        foreach (var dlqEvent in events)
         {
             var value = JsonSerializer.Serialize(dlqEvent);
             await _producer.ProduceAsync(_kafkaOptions.DlqTopic, new Message<Null, string> { Value = value }, cancellationToken);
         }
-        _logger.LogInformation("Published failed log events to DLQ. Count: {Count}, Topic: {Topic}", 
-        events.Count,_kafkaOptions.DlqTopic);
+        _logger.LogInformation("Published failed log events to DLQ. Count: {Count}, Topic: {Topic}",
+        events.Count, _kafkaOptions.DlqTopic);
     }
     public void Dispose()
     {
