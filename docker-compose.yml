@@ -89,6 +89,28 @@ services:
       retries: 12
       start_period: 30s
 
+  redis:
+    image: redis:7.2-alpine
+    container_name: traceflow-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT}:6379"
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    command: >
+      redis-server
+      --appendonly yes
+      --requirepass ${REDIS_PASSWORD}
+      --maxmemory ${REDIS_MAXMEMORY}
+      --maxmemory-policy allkeys-lru
+    volumes:
+    - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   control-api:
     env_file:
       - ./.env
@@ -207,6 +229,8 @@ volumes:
       name: traceflow-postgres-data
     opensearch_data:
       name: traceflow-opensearch-data
+    redis_data:
+      name: traceflow-redis-data
 
 networks:
     traceflow-network:
