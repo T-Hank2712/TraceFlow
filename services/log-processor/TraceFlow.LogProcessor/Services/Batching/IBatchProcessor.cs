@@ -4,10 +4,10 @@ namespace TraceFlow.LogProcessor.Services.Batching;
 
 public interface IBatchProcessor
 {
-    Task AddAsync(
-        LogEvent logEvent,
+    Task<BatchProcessResult> AddAsync(
+        PendingLogEvent pendingEvent,
         CancellationToken cancellationToken);
 
-    Task FlushAsync(
+    Task<BatchProcessResult> FlushAsync(
         CancellationToken cancellationToken);
 }

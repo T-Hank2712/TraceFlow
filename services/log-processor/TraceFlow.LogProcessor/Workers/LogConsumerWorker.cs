@@ -1,3 +1,4 @@
+using TraceFlow.LogProcessor.Contracts;
 using TraceFlow.LogProcessor.Services.Batching;
 using TraceFlow.LogProcessor.Services.Kafka;
 
@@ -31,12 +32,12 @@ public sealed class LogConsumerWorker : BackgroundService
         _logger.LogInformation("TraceFlow Log Processor stopped.");
     }
 
-    private async Task ProcessAsync(
-        Contracts.LogEvent logEvent,
+    private async Task<BatchProcessResult> ProcessAsync(
+        PendingLogEvent pendingEvent,
         CancellationToken cancellationToken)
     {
-        await _batchProcessor.AddAsync(
-            logEvent,
+        return await _batchProcessor.AddAsync(
+            pendingEvent,
             cancellationToken);
     }
 }

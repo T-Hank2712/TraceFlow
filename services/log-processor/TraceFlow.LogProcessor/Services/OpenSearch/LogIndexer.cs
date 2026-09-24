@@ -57,11 +57,11 @@ public sealed class LogIndexer : ILogIndexer
                     }
                 }
                 _logger.LogInformation(
-                "OpenSearch bulk indexing completed. Total: {Total}, Succeeded: {Succeeded}, Failed: {Failed}, Index: {Index}",
-                logEvents.Count,
-                succeededEvents.Count,
-                failedEvents.Count,
-                _options.Index);
+                    "OpenSearch bulk indexing completed. Total: {Total}, Succeeded: {Succeeded}, Failed: {Failed}, Index: {Index}",
+                    logEvents.Count,
+                    succeededEvents.Count,
+                    failedEvents.Count,
+                    _options.Index);
 
                 return new BulkIndexResult(
                     succeededEvents,
