@@ -1,4 +1,4 @@
-namespace TraceFlow.LogProcessor.Services.OpenSearch;
+namespace TraceFlow.LogProcessor.Extentions.Exceptions;
 
 public sealed class OpenSearchBulkException : Exception
 {

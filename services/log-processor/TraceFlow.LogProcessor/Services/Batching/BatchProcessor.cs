@@ -3,6 +3,7 @@ using TraceFlow.LogProcessor.Configurations;
 using TraceFlow.LogProcessor.Contracts;
 using TraceFlow.LogProcessor.Services.Kafka;
 using TraceFlow.LogProcessor.Services.OpenSearch;
+using TraceFlow.LogProcessor.Extentions.Exceptions;
 
 namespace TraceFlow.LogProcessor.Services.Batching;
 
@@ -58,23 +59,44 @@ public sealed class BatchProcessor : IBatchProcessor
     {
         if (_buffer.Count == 0) return;
 
-        var batch = _buffer.ToList();
+        var batchCount = _buffer.Count;
 
-        _logger.LogInformation("Flushing log batch. Count: {Count}", batch.Count);
+        _logger.LogInformation("Flushing log batch. Count: {Count}", batchCount);
 
         try
         {
-            await _logIndexer.IndexAsync(batch, cancellationToken);
+            var result = await _logIndexer.IndexAsync(_buffer, cancellationToken);
 
-            _buffer.RemoveRange(0, batch.Count);
+            if(result.FailedEvents.Count > 0)
+            {
+                _logger.LogWarning(
+                "OpenSearch partial indexing failure. Publishing {FailedCount}/{TotalCount} poison events to DLQ.",
+                result.FailedEvents.Count,
+                batchCount);
 
-            _logger.LogInformation("Log batch indexed successfully. Count: {Count}", batch.Count);
+                var poisonDlqEvents = result.FailedEvents
+                .Select(logEvent => new DlqLogEvent(
+                    logEvent,
+                    "OpenSearchBadDataFailure",
+                    "Invalid document format or mapping error in OpenSearch",
+                    DateTimeOffset.UtcNow))
+                .ToList();
+
+                await _dlqProducer.PublishAsync(poisonDlqEvents, cancellationToken);
+            }
+
+            _buffer.Clear();
+
+            _logger.LogInformation(
+                "Log batch processed successfully. Indexed: {SucceededCount}, Sent to DLQ: {FailedCount}",
+                result.SucceededEvents.Count,
+                result.FailedEvents.Count);
         }
         catch (OpenSearchBulkException ex)
         {
-            _logger.LogError(ex, "OpenSearch bulk indexing failed after retries. Publishing batch to DLQ. Count: {Count}", batch.Count);
+            _logger.LogError(ex, "OpenSearch bulk indexing failed after retries. Publishing batch to DLQ. Count: {Count}", _buffer.Count);
 
-            var dlqEvents = batch
+            var dlqEvents = _buffer
                 .Select(logEvent =>
                     new DlqLogEvent(
                         logEvent,
@@ -87,16 +109,16 @@ public sealed class BatchProcessor : IBatchProcessor
             {
                 await _dlqProducer.PublishAsync(dlqEvents, cancellationToken);
 
-                _buffer.RemoveRange(0, batch.Count);
+                _buffer.RemoveRange(0, batchCount);
 
-                _logger.LogInformation("Log batch moved to DLQ successfully. Count: {Count}", batch.Count);
+                _logger.LogInformation("Log batch moved to DLQ successfully. Count: {Count}", batchCount);
             }
             catch (Exception dlqException) when (dlqException is not OperationCanceledException)
             {
                 _logger.LogError(
                     dlqException,
                     "Failed to publish log batch to DLQ. Batch remains buffered. Count: {Count}",
-                    batch.Count);
+                    batchCount);
                     
                 throw;
             }

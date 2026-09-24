@@ -92,7 +92,7 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
 
                 try
                 {
-                    _logEventNormalizer.Normalize(logEvent);
+                    logEvent = _logEventNormalizer.Normalize(logEvent);
                 }
                 catch (FormatException ex)
                 {
