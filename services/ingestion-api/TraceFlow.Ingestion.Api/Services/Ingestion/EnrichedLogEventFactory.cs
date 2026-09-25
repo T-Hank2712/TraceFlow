@@ -1,7 +1,7 @@
 using TraceFlow.Ingestion.Api.Clients;
 using TraceFlow.Ingestion.Api.Contracts.Log;
 
-namespace TraceFlow.Ingestion.Api.Ingestion;
+namespace TraceFlow.Ingestion.Api.Services.Ingestion;
 
 public sealed class EnrichedLogEventFactory
 {

@@ -1,7 +1,7 @@
 using TraceFlow.Ingestion.Api.Configuration;
 using TraceFlow.Ingestion.Api.Endpoints;
 using TraceFlow.Ingestion.Api.Clients;
-using TraceFlow.Ingestion.Api.Ingestion;
+using TraceFlow.Ingestion.Api.Services.Ingestion;
 using TraceFlow.Ingestion.Api.Kafka;
 using TraceFlow.Ingestion.Api.Security;
 using FluentValidation;
@@ -9,6 +9,7 @@ using TraceFlow.Ingestion.Api.Contracts.BatchLog;
 using TraceFlow.Ingestion.Api.Contracts.Log;
 using StackExchange.Redis;
 using TraceFlow.Ingestion.Api.Configurations;
+using TraceFlow.Ingestion.Api.Services.Redis;
 
 DotNetEnv.Env.Load();
 var builder = WebApplication.CreateBuilder(args);
@@ -65,6 +66,8 @@ builder.Services.AddSingleton<ILogEventPublisher, KafkaLogProducer>();
 
 builder.Services.AddScoped<IIngestLogService, IngestLogService>();
 builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(redisConnectionString));
+builder.Services.AddSingleton<IRedisCache, RedisCache>();
+builder.Services.AddSingleton<TenantContextCacheKey>();
 
 var app = builder.Build();
 

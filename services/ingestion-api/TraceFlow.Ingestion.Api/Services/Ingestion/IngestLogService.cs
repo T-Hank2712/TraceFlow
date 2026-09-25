@@ -8,7 +8,7 @@ using TraceFlow.Ingestion.Api.Security;
 using Microsoft.Extensions.Options;
 using FluentValidation;
 
-namespace TraceFlow.Ingestion.Api.Ingestion;
+namespace TraceFlow.Ingestion.Api.Services.Ingestion;
 
 public sealed class IngestLogService : IIngestLogService
 {

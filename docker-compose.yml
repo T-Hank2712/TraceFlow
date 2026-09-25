@@ -177,6 +177,8 @@ services:
       Ingestion__MaxServiceLength: ${Ingestion__MaxServiceLength}
       Redis__SectionName: ${Redis__SectionName}
       Redis__ConnectionString: redis:6379,password=${REDIS_PASSWORD}
+      Redis__TenantContextCacheTtlSeconds: ${Redis__TenantContextCacheTtlSeconds}
+      Redis__TenantContextCacheKeyPrefix: ${Redis__TenantContextCacheKeyPrefix}
     ports:
       - "5100:5100"
     depends_on:

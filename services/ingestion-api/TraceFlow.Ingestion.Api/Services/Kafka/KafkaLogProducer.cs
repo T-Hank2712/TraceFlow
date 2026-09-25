@@ -2,7 +2,7 @@ using System.Text.Json;
 using Confluent.Kafka;
 using Microsoft.Extensions.Options;
 using TraceFlow.Ingestion.Api.Configuration;
-using TraceFlow.Ingestion.Api.Ingestion;
+using TraceFlow.Ingestion.Api.Services.Ingestion;
 using TraceFlow.Ingestion.Api.Contracts.Log;
 
 namespace TraceFlow.Ingestion.Api.Kafka;
