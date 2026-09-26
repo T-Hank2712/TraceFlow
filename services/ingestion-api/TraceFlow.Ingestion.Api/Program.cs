@@ -10,6 +10,8 @@ using TraceFlow.Ingestion.Api.Contracts.Log;
 using StackExchange.Redis;
 using TraceFlow.Ingestion.Api.Configurations;
 using TraceFlow.Ingestion.Api.Services.Redis;
+using TraceFlow.Ingestion.Api.Services.RateLimiting;
+using System.Threading.RateLimiting;
 
 DotNetEnv.Env.Load();
 var builder = WebApplication.CreateBuilder(args);
@@ -49,6 +51,11 @@ builder.Services
     .Bind(builder.Configuration.GetSection(RedisOptions.SectionName))
     .ValidateOnStart();
 
+builder.Services
+    .AddOptions<RateLimitOptions>()
+    .Bind(builder.Configuration.GetSection(RateLimitOptions.SectionName))
+    .ValidateOnStart();
+
 var redisConnectionString =
     builder.Configuration.GetSection(RedisOptions.SectionName)["ConnectionString"]
     ?? throw new InvalidOperationException(
@@ -67,6 +74,7 @@ builder.Services.AddSingleton<ILogEventPublisher, KafkaLogProducer>();
 builder.Services.AddScoped<IIngestLogService, IngestLogService>();
 builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(redisConnectionString));
 builder.Services.AddSingleton<IRedisCache, RedisCache>();
+builder.Services.AddSingleton<IRateLimiter, RedisRateLimiter>();
 builder.Services.AddSingleton<TenantContextCacheKey>();
 
 var app = builder.Build();

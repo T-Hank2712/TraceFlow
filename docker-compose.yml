@@ -179,6 +179,9 @@ services:
       Redis__ConnectionString: redis:6379,password=${REDIS_PASSWORD}
       Redis__TenantContextCacheTtlSeconds: ${Redis__TenantContextCacheTtlSeconds}
       Redis__TenantContextCacheKeyPrefix: ${Redis__TenantContextCacheKeyPrefix}
+      Redis__RateLimitKeyPrefix: ${Redis__RateLimitKeyPrefix}
+      RateLimiting__PermitLimit: ${RateLimiting__PermitLimit}
+      RateLimiting__WindowSeconds: ${RateLimiting__WindowSeconds}
     ports:
       - "5100:5100"
     depends_on:

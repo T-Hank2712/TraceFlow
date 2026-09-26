@@ -5,6 +5,7 @@ using TraceFlow.Ingestion.Api.Configurations;
 using TraceFlow.Ingestion.Api.Contracts;
 using TraceFlow.Ingestion.Api.Errors;
 using TraceFlow.Ingestion.Api.Services.Ingestion;
+using TraceFlow.Ingestion.Api.Services.RateLimiting;
 using TraceFlow.Ingestion.Api.Services.Redis;
 
 namespace TraceFlow.Ingestion.Api.Security;
@@ -16,6 +17,7 @@ public sealed class Authenticator
     private readonly IRedisCache _redisCache;
     private readonly RedisOptions _redisOptions;
     private readonly TenantContextCacheKey _tenantContextCacheKey;
+    private readonly IRateLimiter _rateLimiter;
     private readonly ILogger _logger;
 
     public Authenticator(
@@ -24,6 +26,7 @@ public sealed class Authenticator
         IRedisCache redisCache,
         IOptions<RedisOptions> redisOptions,
         TenantContextCacheKey tenantContextCacheKey,
+        IRateLimiter rateLimiter,
         ILogger<Authenticator> logger)
     {
         _apiKeyParser = apiKeyParser;
@@ -31,6 +34,7 @@ public sealed class Authenticator
         _redisCache = redisCache;
         _redisOptions = redisOptions.Value;
         _tenantContextCacheKey = tenantContextCacheKey;
+        _rateLimiter = rateLimiter;
         _logger = logger;
     }
 
@@ -52,46 +56,72 @@ public sealed class Authenticator
 
         var cacheKey = _tenantContextCacheKey.Create(apiKey);
 
+        ApiKeyValidationResult? tenant = null;
+
         try
         {
-            var cached = await _redisCache.GetAsync<ApiKeyValidationResult>(
+            tenant = await _redisCache.GetAsync<ApiKeyValidationResult>(
                 cacheKey,
                 cancellationToken);
 
-            if (cached is not null)
+            if (tenant is not null)
             {
-                return Result<ApiKeyValidationResult>.Ok(cached);
+                _logger.LogInformation(
+                    "Tenant context cache hit.");
             }
         }
         catch (RedisException ex)
         {
-            _logger.LogWarning(ex, "Redis cache unavailable while validating API key. Falling back to Control API.");
+            _logger.LogWarning(
+                ex,
+                "Redis cache unavailable while reading tenant context. " +
+                "Falling back to Control API.");
         }
 
-        var tenant = await _apiKeyValidator.ValidateAsync(
+        if (tenant is null)
+        {
+            _logger.LogInformation(
+                "Tenant context cache miss. Validating API key through Control API.");
+
+            tenant = await _apiKeyValidator.ValidateAsync(
+                apiKey,
+                cancellationToken);
+
+            if (!tenant.Valid)
+            {
+                return Result<ApiKeyValidationResult>.Fail(
+                    ErrorCodes.InvalidApiKey,
+                    "API key is invalid, revoked, or expired.",
+                    StatusCodes.Status401Unauthorized);
+            }
+
+            try
+            {
+                await _redisCache.SetAsync(
+                    cacheKey,
+                    tenant,
+                    TimeSpan.FromSeconds(
+                        _redisOptions.TenantContextCacheTtlSeconds),
+                    cancellationToken);
+            }
+            catch (RedisException ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Redis cache unavailable while storing tenant context.");
+            }
+        }
+
+        var rateLimit = await _rateLimiter.CheckAsync(
             apiKey,
             cancellationToken);
 
-        if (!tenant.Valid)
+        if (!rateLimit.Allowed)
         {
             return Result<ApiKeyValidationResult>.Fail(
-                ErrorCodes.InvalidApiKey,
-                "API key is invalid, revoked, or expired.",
-                StatusCodes.Status401Unauthorized);
-        }
-
-        try
-        {
-            await _redisCache.SetAsync(
-                cacheKey,
-                tenant,
-                TimeSpan.FromSeconds(
-                    _redisOptions.TenantContextCacheTtlSeconds),
-                cancellationToken);
-        }
-        catch (RedisException ex)
-        {
-            _logger.LogWarning(ex, "Redis cache unavailable while storing tenant context.");
+                "rate_limit_exceeded",
+                "Too many requests.",
+                StatusCodes.Status429TooManyRequests);
         }
 
         return Result<ApiKeyValidationResult>.Ok(tenant);
