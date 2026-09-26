@@ -1,4 +1,4 @@
-namespace TraceFlow.Ingestion.Api.Clients;
+namespace TraceFlow.Ingestion.Api.Contracts.Authentication;
 
 public sealed record ApiKeyValidationResult(
     bool Valid,

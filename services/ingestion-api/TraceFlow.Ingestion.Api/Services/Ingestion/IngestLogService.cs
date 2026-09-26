@@ -1,31 +1,26 @@
-using TraceFlow.Ingestion.Api.Clients;
 using TraceFlow.Ingestion.Api.Contracts;
+using TraceFlow.Ingestion.Api.Contracts.Authentication;
 using TraceFlow.Ingestion.Api.Contracts.Log;
 using TraceFlow.Ingestion.Api.Contracts.BatchLog;
 using TraceFlow.Ingestion.Api.Errors;
 using TraceFlow.Ingestion.Api.Kafka;
-using TraceFlow.Ingestion.Api.Security;
-using Microsoft.Extensions.Options;
 using FluentValidation;
 
 namespace TraceFlow.Ingestion.Api.Services.Ingestion;
 
 public sealed class IngestLogService : IIngestLogService
 {
-    private readonly Authenticator _authenticator;
     private readonly EnrichedLogEventFactory _eventFactory;
     private readonly ILogEventPublisher _publisher;
     private readonly IValidator<IngestLogRequest> _logValidator;
     private readonly IValidator<BatchLogRequest> _batchValidator;
 
     public IngestLogService(
-        Authenticator authenticator,
         EnrichedLogEventFactory eventFactory,
         ILogEventPublisher publisher,
         IValidator<IngestLogRequest> logValidator,
         IValidator<BatchLogRequest> batchValidator)
     {
-        _authenticator = authenticator;
         _eventFactory = eventFactory;
         _publisher = publisher;
         _logValidator = logValidator;
@@ -34,20 +29,9 @@ public sealed class IngestLogService : IIngestLogService
 
     public async Task<Result<IngestLogResponse>> IngestAsync(
         IngestLogRequest request,
-        string? authorizationHeader,
+        AuthenticatedContext authentication,
         CancellationToken cancellationToken)
     {
-        var authResult = await _authenticator.AuthenticateAsync(
-            authorizationHeader,
-            cancellationToken);
-
-        if (!authResult.Success)
-        {
-            return Result<IngestLogResponse>.Fail(
-                authResult.Error!.Code,
-                authResult.Error.Message,
-                authResult.StatusCode);
-        }
 
         var validationResult = await _logValidator.ValidateAsync(request);
         if (!validationResult.IsValid)
@@ -58,7 +42,7 @@ public sealed class IngestLogService : IIngestLogService
                 StatusCodes.Status400BadRequest);
         }
 
-        var tenant = authResult.Data!;
+        var tenant = authentication.Tenant;
         var eventId = Ulid.NewUlid();
         var batchId = Ulid.NewUlid();
 
@@ -83,19 +67,10 @@ public sealed class IngestLogService : IIngestLogService
 
     public async Task<Result<BatchLogResponse>> BatchLogAsync(
         BatchLogRequest request,
-        string? authorizationHeader,
+        AuthenticatedContext authentication,
         CancellationToken cancellationToken
     )
     {
-        var authResult = await _authenticator.AuthenticateAsync(authorizationHeader, cancellationToken);
-
-        if (!authResult.Success)
-        {
-            return Result<BatchLogResponse>.Fail(
-                authResult.Error!.Code,
-                authResult.Error.Message,
-                authResult.StatusCode);
-        }
 
         var validationBatch = await _batchValidator.ValidateAsync(
                 request,
@@ -112,6 +87,8 @@ public sealed class IngestLogService : IIngestLogService
         var batchId = Ulid.NewUlid();
 
         var results = new List<BatchLogItemResult>(request.Logs.Count);
+
+        var tenant = authentication.Tenant;
 
         for (int i = 0; i < request.Logs.Count; i++)
         {
@@ -131,7 +108,7 @@ public sealed class IngestLogService : IIngestLogService
                 continue;
             }
             var eventId = Ulid.NewUlid();
-            var logEvent = _eventFactory.Create(log, authResult.Data!, eventId, batchId);
+            var logEvent = _eventFactory.Create(log, tenant, eventId, batchId);
 
             await _publisher.PublishAsync(logEvent, cancellationToken);
             results.Add(new BatchLogItemResult(i, true, eventId, null));

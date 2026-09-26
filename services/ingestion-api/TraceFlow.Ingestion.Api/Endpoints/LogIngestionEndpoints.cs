@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Primitives;
 using TraceFlow.Ingestion.Api.Contracts.BatchLog;
 using TraceFlow.Ingestion.Api.Contracts.Log;
+using TraceFlow.Ingestion.Api.Security;
 using TraceFlow.Ingestion.Api.Services.Ingestion;
 
 namespace TraceFlow.Ingestion.Api.Endpoints;
@@ -15,11 +16,18 @@ public static class LogIngestionEndpoints
             IIngestLogService service,
             CancellationToken cancellationToken) =>
         {
-            httpContext.Request.Headers.TryGetValue("Authorization", out StringValues authorization);
+            var authentication =
+                AuthenticationContext.Get(httpContext);
+
+            if (authentication is null)
+            {
+                return Results.StatusCode(
+                    StatusCodes.Status500InternalServerError);
+            }
 
             var result = await service.IngestAsync(
                 request,
-                authorization.ToString(),
+                authentication,
                 cancellationToken);
 
             return result.Success
@@ -37,11 +45,17 @@ public static class LogIngestionEndpoints
             IIngestLogService service,
             CancellationToken cancellationToken) =>
         {
-            httpContext.Request.Headers.TryGetValue("Authorization", out StringValues authorization);
+            var authentication = AuthenticationContext.Get(httpContext);
 
+            if (authentication is null)
+            {
+                return Results.StatusCode(
+                    StatusCodes.Status500InternalServerError);
+            }
+            
             var result = await service.BatchLogAsync(
                 request,
-                authorization.ToString(),
+                authentication,
                 cancellationToken);
 
             return result.Success

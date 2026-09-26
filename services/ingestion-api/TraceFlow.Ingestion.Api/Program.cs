@@ -11,6 +11,7 @@ using StackExchange.Redis;
 using TraceFlow.Ingestion.Api.Services.Redis;
 using TraceFlow.Ingestion.Api.Services.RateLimiting;
 using TraceFlow.Ingestion.Api.Extensions;
+using TraceFlow.Ingestion.Api.Middleware;
 
 DotNetEnv.Env.Load();
 var builder = WebApplication.CreateBuilder(args);
@@ -90,5 +91,7 @@ app.MapHealthEndpoints();
 app.MapLogIngestionEndpoints();
 app.MapBatchLogEndpoints();
 app.UseRequestBodySizeLimit();
+app.UseMiddleware<AuthenticationMiddleware>();
+app.UseMiddleware<RateLimitingMiddleware>();
 
 app.Run();
