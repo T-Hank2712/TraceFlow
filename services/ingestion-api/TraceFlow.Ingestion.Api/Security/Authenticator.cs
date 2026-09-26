@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Options;
 using StackExchange.Redis;
 using TraceFlow.Ingestion.Api.Clients;
-using TraceFlow.Ingestion.Api.Configurations;
+using TraceFlow.Ingestion.Api.Configuration;
 using TraceFlow.Ingestion.Api.Contracts;
 using TraceFlow.Ingestion.Api.Errors;
 using TraceFlow.Ingestion.Api.Services.Ingestion;

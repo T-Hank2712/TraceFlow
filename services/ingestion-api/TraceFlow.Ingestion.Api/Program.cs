@@ -8,10 +8,9 @@ using FluentValidation;
 using TraceFlow.Ingestion.Api.Contracts.BatchLog;
 using TraceFlow.Ingestion.Api.Contracts.Log;
 using StackExchange.Redis;
-using TraceFlow.Ingestion.Api.Configurations;
 using TraceFlow.Ingestion.Api.Services.Redis;
 using TraceFlow.Ingestion.Api.Services.RateLimiting;
-using System.Threading.RateLimiting;
+using TraceFlow.Ingestion.Api.Extensions;
 
 DotNetEnv.Env.Load();
 var builder = WebApplication.CreateBuilder(args);
@@ -90,5 +89,6 @@ app.UseHttpsRedirection();
 app.MapHealthEndpoints();
 app.MapLogIngestionEndpoints();
 app.MapBatchLogEndpoints();
+app.UseRequestBodySizeLimit();
 
 app.Run();

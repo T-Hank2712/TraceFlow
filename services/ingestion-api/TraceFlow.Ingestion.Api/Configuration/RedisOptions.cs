@@ -1,4 +1,4 @@
-namespace TraceFlow.Ingestion.Api.Configurations;
+namespace TraceFlow.Ingestion.Api.Configuration;
 
 public sealed class RedisOptions
 {
