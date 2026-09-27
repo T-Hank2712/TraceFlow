@@ -12,19 +12,20 @@ public sealed class IngestionApiFactory : WebApplicationFactory<Program>
 {
     private readonly KafkaFixture _kafka;
     private readonly RedisFixture _redis;
-    private readonly bool _useRealKafkaPublisher;
+    private readonly TestPublisherMode _publisherMode;
 
     public FakeApiKeyValidator ApiKeyValidator { get; } = new();
     public NoopLogEventPublisher LogEventPublisher { get; } = new();
+    public FailingLogEventPublisher FailingLogEventPublisher { get; } = new();
 
     public IngestionApiFactory(
         KafkaFixture kafka,
         RedisFixture redis,
-        bool useRealKafkaPublisher = false)
+        TestPublisherMode publisherMode = TestPublisherMode.Recording)
     {
         _kafka = kafka;
         _redis = redis;
-        _useRealKafkaPublisher = useRealKafkaPublisher;
+        _publisherMode = publisherMode;
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -64,11 +65,20 @@ public sealed class IngestionApiFactory : WebApplicationFactory<Program>
             services.RemoveAll<IApiKeyValidator>();
             services.AddSingleton<IApiKeyValidator>(ApiKeyValidator);
 
-            if (!_useRealKafkaPublisher)
+            if (_publisherMode == TestPublisherMode.RealKafka)
             {
-                services.RemoveAll<ILogEventPublisher>();
-                services.AddSingleton<ILogEventPublisher>(LogEventPublisher);
+                return;
             }
+
+            services.RemoveAll<ILogEventPublisher>();
+
+            if (_publisherMode == TestPublisherMode.Failing)
+            {
+                services.AddSingleton<ILogEventPublisher>(FailingLogEventPublisher);
+                return;
+            }
+
+            services.AddSingleton<ILogEventPublisher>(LogEventPublisher);
         });
     }
 }

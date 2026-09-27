@@ -27,7 +27,7 @@ public sealed class BatchKafkaPublishingTests
         await using var factory = new IngestionApiFactory(
             _kafka,
             _redis,
-            useRealKafkaPublisher: true);
+            TestPublisherMode.RealKafka);
 
         var apiKey = "tf_test_batch_kafka_partial_key";
         var workspaceId = Ulid.NewUlid();

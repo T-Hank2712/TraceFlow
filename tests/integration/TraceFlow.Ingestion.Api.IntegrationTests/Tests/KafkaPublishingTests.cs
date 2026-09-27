@@ -26,7 +26,7 @@ public sealed class KafkaPublishingTests
         await using var factory = new IngestionApiFactory(
             _kafka,
             _redis,
-            useRealKafkaPublisher: true);
+            TestPublisherMode.RealKafka);
 
         var apiKey = "tf_test_kafka_publish_key";
         var workspaceId = Ulid.NewUlid();
