@@ -1,6 +1,6 @@
 using TraceFlow.Ingestion.Api.Errors;
 
-namespace TraceFlow.Ingestion.Api.Ingestion;
+namespace TraceFlow.Ingestion.Api.Services.Ingestion;
 
 public sealed class ApiKeyHeaderParser
 {

@@ -89,6 +89,30 @@ services:
       retries: 12
       start_period: 30s
 
+  redis:
+    image: redis:7.2-alpine
+    container_name: traceflow-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT}:6379"
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    command: >
+      redis-server
+      --appendonly yes
+      --requirepass ${REDIS_PASSWORD}
+      --maxmemory ${REDIS_MAXMEMORY}
+      --maxmemory-policy allkeys-lru
+    volumes:
+    - redis_data:/data
+    networks:
+      - traceflow-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   control-api:
     env_file:
       - ./.env
@@ -147,10 +171,24 @@ services:
       ControlApi__TimeoutSeconds: ${ControlApi__TimeoutSeconds}
       KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS}
       KAFKA_TOPIC: ${KAFKA_TOPIC}
+      Kafka__MessageSendMaxRetries: ${Kafka__MessageSendMaxRetries}
+      Kafka__RetryBackoffMs: ${Kafka__RetryBackoffMs}
+      Kafka__MessageTimeoutMs: ${Kafka__MessageTimeoutMs}
+      Kafka__DeliveryTimeoutMs: ${Kafka__DeliveryTimeoutMs}
+      Kafka__QueueBufferingMaxMessages: ${Kafka__QueueBufferingMaxMessages}
+      Kafka__QueueBufferingMaxKbytes: ${Kafka__QueueBufferingMaxKbytes}
+      Kafka__LingerMs: ${Kafka__LingerMs}
       Ingestion__MaxBatchSize: ${Ingestion__MaxBatchSize}
       Ingestion__MaxRequestBodyBytes: ${Ingestion__MaxRequestBodyBytes}
       Ingestion__MaxMessageLength: ${Ingestion__MaxMessageLength}
       Ingestion__MaxServiceLength: ${Ingestion__MaxServiceLength}
+      Redis__SectionName: ${Redis__SectionName}
+      Redis__ConnectionString: redis:6379,password=${REDIS_PASSWORD}
+      Redis__TenantContextCacheTtlSeconds: ${Redis__TenantContextCacheTtlSeconds}
+      Redis__TenantContextCacheKeyPrefix: ${Redis__TenantContextCacheKeyPrefix}
+      Redis__RateLimitKeyPrefix: ${Redis__RateLimitKeyPrefix}
+      RateLimiting__PermitLimit: ${RateLimiting__PermitLimit}
+      RateLimiting__WindowSeconds: ${RateLimiting__WindowSeconds}
     ports:
       - "5100:5100"
     depends_on:
@@ -159,6 +197,8 @@ services:
       kafka-init:
         condition: service_completed_successfully
       control-api:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     networks:
       - traceflow-network
@@ -207,6 +247,8 @@ volumes:
       name: traceflow-postgres-data
     opensearch_data:
       name: traceflow-opensearch-data
+    redis_data:
+      name: traceflow-redis-data
 
 networks:
     traceflow-network:

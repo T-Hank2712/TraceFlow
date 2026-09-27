@@ -1,19 +1,20 @@
 using TraceFlow.Ingestion.Api.Contracts.Log;
 using TraceFlow.Ingestion.Api.Contracts.BatchLog;
 using TraceFlow.Ingestion.Api.Contracts;
+using TraceFlow.Ingestion.Api.Contracts.Authentication;
 
-namespace TraceFlow.Ingestion.Api.Ingestion;
+namespace TraceFlow.Ingestion.Api.Services.Ingestion;
 
 public interface IIngestLogService
 {
     Task<Result<IngestLogResponse>> IngestAsync(
         IngestLogRequest request,
-        string? authorizationHeader,
+        AuthenticatedContext authentication,
         CancellationToken cancellationToken);
 
     Task<Result<BatchLogResponse>> BatchLogAsync(
         BatchLogRequest request,
-        string? authorizationHeader,
+        AuthenticatedContext authentication,
         CancellationToken cancellationToken
     );
 }
