@@ -26,4 +26,10 @@
     <ProjectReference Include="..\..\..\services\ingestion-api\TraceFlow.Ingestion.Api\TraceFlow.Ingestion.Api.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="../../../.env"
+          Link=".env"
+          CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

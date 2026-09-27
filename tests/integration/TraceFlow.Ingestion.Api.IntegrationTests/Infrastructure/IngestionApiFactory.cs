@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.Configuration;
 
 namespace TraceFlow.Ingestion.Api.IntegrationTests.Infrastructure;
 
@@ -21,19 +20,12 @@ public sealed class IngestionApiFactory : WebApplicationFactory<Program>
     {
         builder.UseEnvironment("Integration");
 
-        builder.ConfigureAppConfiguration((_, configuration) =>
-        {
-            configuration.AddInMemoryCollection(
-                new Dictionary<string, string?>
-                {
-                    // Kafka endpoint được lấy động từ Testcontainer.
-                    ["Kafka:BootstrapServers"] =
-                        _kafka.BootstrapServers,
+        Environment.SetEnvironmentVariable(
+            "Kafka__BootstrapServers",
+            _kafka.BootstrapServers);
 
-                    // Redis endpoint được lấy động từ Testcontainer.
-                    ["Redis:ConnectionString"] =
-                        _redis.ConnectionString
-                });
-        });
+        Environment.SetEnvironmentVariable(
+            "Redis__ConnectionString",
+            _redis.ConnectionString);
     }
 }
