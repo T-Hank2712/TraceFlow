@@ -29,7 +29,7 @@ public sealed class OpenSearchLogDocument
     public string Service { get; init; } = string.Empty;
 
     [JsonPropertyName("level")]
-    public string Level { get; init; } = string.Empty;
+    public LogLevel Level { get; init; }
 
     [JsonPropertyName("message")]
     public string Message { get; init; } = string.Empty;
