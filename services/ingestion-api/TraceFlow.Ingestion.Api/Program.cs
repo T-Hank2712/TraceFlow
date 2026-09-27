@@ -13,7 +13,7 @@ using TraceFlow.Ingestion.Api.Services.RateLimiting;
 using TraceFlow.Ingestion.Api.Extensions;
 using TraceFlow.Ingestion.Api.Middleware;
 
-DotNetEnv.Env.Load();
+DotNetEnv.Env.NoClobber().Load();
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
