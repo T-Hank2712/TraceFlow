@@ -68,13 +68,11 @@ public sealed class IngestLogService : IIngestLogService
     public async Task<Result<BatchLogResponse>> BatchLogAsync(
         BatchLogRequest request,
         AuthenticatedContext authentication,
-        CancellationToken cancellationToken
-    )
+        CancellationToken cancellationToken)
     {
-
         var validationBatch = await _batchValidator.ValidateAsync(
-                request,
-                cancellationToken);
+            request,
+            cancellationToken);
 
         if (!validationBatch.IsValid)
         {
@@ -85,40 +83,72 @@ public sealed class IngestLogService : IIngestLogService
         }
 
         var batchId = Ulid.NewUlid();
-
-        var results = new List<BatchLogItemResult>(request.Logs.Count);
-
         var tenant = authentication.Tenant;
+        var totalLogs = request.Logs.Count;
 
-        for (int i = 0; i < request.Logs.Count; i++)
+        var results = new BatchLogItemResult[totalLogs];
+        var validEvents = new List<(int Index, EnrichedLogEvent Event)>(totalLogs);
+
+        for (var index = 0; index < totalLogs; index++)
         {
-            var log = request.Logs[i];
-
-            var validationResult = await _logValidator.ValidateAsync(log, cancellationToken);
+            var log = request.Logs[index];
+            var validationResult = _logValidator.Validate(log);
 
             if (!validationResult.IsValid)
             {
-                var error = string.Join("; ", validationResult.Errors.Select(x => x.ErrorMessage).Distinct());
-                results.Add(
-                    new BatchLogItemResult(
-                        Index: i,
-                        Accepted: false,
-                        EventId: null,
-                        Error: error));
+                var error = string.Join(
+                    "; ",
+                    validationResult.Errors
+                        .Select(x => x.ErrorMessage)
+                        .Distinct());
+
+                results[index] = new BatchLogItemResult(
+                    Index: index,
+                    Accepted: false,
+                    EventId: null,
+                    Error: error);
+
                 continue;
             }
-            var eventId = Ulid.NewUlid();
-            var logEvent = _eventFactory.Create(log, tenant, eventId, batchId);
 
-            await _publisher.PublishAsync(logEvent, cancellationToken);
-            results.Add(new BatchLogItemResult(i, true, eventId, null));
+            var eventId = Ulid.NewUlid();
+            var logEvent = _eventFactory.Create(
+                log,
+                tenant,
+                eventId,
+                batchId);
+
+            validEvents.Add((Index: index, Event: logEvent));
         }
-        var accepted = results.Count(x => x.Accepted);
-        var rejected = results.Count(x => !x.Accepted);
+
+        if (validEvents.Count > 0)
+        {
+            var publishResults = _publisher.Publish(validEvents);
+
+            foreach (var publishResult in publishResults)
+            {
+                results[publishResult.Index] = publishResult;
+            }
+        }
+
+        var accepted = 0;
+        var rejected = 0;
+
+        for (var i = 0; i < totalLogs; i++)
+        {
+            if (results[i]?.Accepted == true)
+            {
+                accepted++;
+            }
+            else
+            {
+                rejected++;
+            }
+        }
 
         var response = new BatchLogResponse(
             BatchId: batchId,
-            Total: request.Logs.Count,
+            Total: totalLogs,
             Accepted: accepted,
             Rejected: rejected,
             Results: results);

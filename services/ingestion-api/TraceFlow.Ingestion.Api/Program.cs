@@ -32,9 +32,33 @@ builder.Services
 builder.Services
     .AddOptions<KafkaOptions>()
     .Bind(builder.Configuration.GetSection("Kafka"))
-    .Validate(options => !string.IsNullOrWhiteSpace(options.BootstrapServers), "Kafka__BootstrapServers is required.")
-    .Validate(options => !string.IsNullOrWhiteSpace(options.Topic), "Kafka__Topic is required.")
-    .Validate(options => options.DeliveryTimeoutSeconds > 0, "Kafka__DeliveryTimeoutSeconds must be greater than 0.")
+    .Validate(
+        options => !string.IsNullOrWhiteSpace(options.BootstrapServers),
+        "Kafka bootstrap servers are required.")
+    .Validate(
+        options => !string.IsNullOrWhiteSpace(options.Topic),
+        "Kafka topic is required.")
+    .Validate(
+        options => options.MessageSendMaxRetries >= 0,
+        "MessageSendMaxRetries must be greater than or equal to 0.")
+    .Validate(
+        options => options.RetryBackoffMs >= 0,
+        "RetryBackoffMs must be greater than or equal to 0.")
+    .Validate(
+        options => options.DeliveryTimeoutMs > 0,
+        "DeliveryTimeoutMs must be greater than 0.")
+    .Validate(
+        options => options.MessageTimeoutMs > 0,
+        "MessageTimeoutMs must be greater than 0.")
+    .Validate(
+        options => options.QueueBufferingMaxMessages > 0,
+        "QueueBufferingMaxMessages must be greater than 0.")
+    .Validate(
+        options => options.QueueBufferingMaxKbytes > 0,
+        "QueueBufferingMaxKbytes must be greater than 0.")
+    .Validate(
+        options => options.LingerMs >= 0,
+        "LingerMs must be greater than or equal to 0.")
     .ValidateOnStart();
 
 builder.Services
