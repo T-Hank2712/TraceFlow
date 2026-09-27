@@ -9,7 +9,7 @@ public sealed record LogSearchItemResponse(
     Ulid ApplicationId,
     string Environment,
     string Service,
-    string Level,
+    LogLevel Level,
     string Message,
     string? TraceId,
     string? CorrelationId,
