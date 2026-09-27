@@ -42,6 +42,77 @@ public sealed class AuthenticationTests
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         factory.ApiKeyValidator.CallCount.Should().Be(1);
     }
+
+    [Fact]
+    public async Task PostLogs_WithRevokedApiKey_ShouldReturnUnauthorized()
+    {
+        await using var factory = new IngestionApiFactory(_kafka, _redis);
+
+        var apiKey = "tf_test_revoked_key";
+
+        factory.ApiKeyValidator.Register(
+            apiKey,
+            new TraceFlow.Ingestion.Api.Contracts.Authentication.ApiKeyValidationResult(
+                false,
+                null,
+                null,
+                null,
+                null));
+
+        var client = factory.CreateClient();
+
+        client.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue(
+                "ApiKey",
+                apiKey);
+
+        var response = await client.PostAsJsonAsync("/logs", new
+        {
+            timestamp = DateTimeOffset.UtcNow,
+            level = LogLevel.Error,
+            service = "checkout-api",
+            message = "Payment failed"
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        factory.ApiKeyValidator.CallCount.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task PostLogs_WithExpiredApiKey_ShouldReturnUnauthorized()
+    {
+        await using var factory = new IngestionApiFactory(_kafka, _redis);
+
+        var apiKey = "tf_test_expired_key";
+
+        factory.ApiKeyValidator.Register(
+            apiKey,
+            new TraceFlow.Ingestion.Api.Contracts.Authentication.ApiKeyValidationResult(
+                false,
+                null,
+                null,
+                null,
+                null));
+
+        var client = factory.CreateClient();
+
+        client.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue(
+                "ApiKey",
+                apiKey);
+
+        var response = await client.PostAsJsonAsync("/logs", new
+        {
+            timestamp = DateTimeOffset.UtcNow,
+            level = LogLevel.Error,
+            service = "checkout-api",
+            message = "Payment failed"
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        factory.ApiKeyValidator.CallCount.Should().Be(1);
+    }
+
     [Fact]
     public async Task PostLogs_WithoutAuthorizationHeader_ShouldReturnUnauthorized()
     {
