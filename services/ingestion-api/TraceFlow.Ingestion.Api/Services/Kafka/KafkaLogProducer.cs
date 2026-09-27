@@ -114,7 +114,7 @@ public sealed class KafkaLogProducer : ILogEventPublisher, IDisposable
                     EventId: eventId,
                     Error: null);
             }
-            catch (ProduceException<string, EnrichedLogEvent> ex)
+            catch (ProduceException<string, string> ex)
             {
                 results[i] = new BatchLogItemResult(
                     Index: item.Index,
