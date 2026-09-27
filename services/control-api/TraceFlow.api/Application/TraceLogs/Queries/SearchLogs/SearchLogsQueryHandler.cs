@@ -61,7 +61,7 @@ public sealed class SearchLogsQueryHandler
         var normalizedQuery = NormalizeTimeRange(request);
 
         return await _logSearchReader.SearchAsync(
-            request,
+            normalizedQuery,
             cancellationToken);
     }
     private static SearchLogsQuery NormalizeTimeRange(SearchLogsQuery query)
