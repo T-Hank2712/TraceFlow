@@ -14,6 +14,7 @@ public sealed class IngestionApiFactory : WebApplicationFactory<Program>
     private readonly RedisFixture _redis;
 
     public FakeApiKeyValidator ApiKeyValidator { get; } = new();
+    public NoopLogEventPublisher LogEventPublisher { get; } = new();
 
     public IngestionApiFactory(
         KafkaFixture kafka,
@@ -61,7 +62,7 @@ public sealed class IngestionApiFactory : WebApplicationFactory<Program>
             services.AddSingleton<IApiKeyValidator>(ApiKeyValidator);
 
             services.RemoveAll<ILogEventPublisher>();
-            services.AddSingleton<ILogEventPublisher, NoopLogEventPublisher>();
+            services.AddSingleton<ILogEventPublisher>(LogEventPublisher);
         });
     }
 }
