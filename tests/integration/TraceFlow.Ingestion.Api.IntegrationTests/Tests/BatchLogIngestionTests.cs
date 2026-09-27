@@ -182,4 +182,159 @@ public sealed class BatchLogIngestionTests
         body.Results[0].EventId.Should().Be(firstEvent.EventId);
         body.Results[1].EventId.Should().Be(secondEvent.EventId);
     }
+    [Fact]
+    public async Task PostBatchLogs_WithMixedValidAndInvalidItems_ShouldReturnPartialSuccessResponse()
+    {
+        await using var factory = new IngestionApiFactory(_kafka, _redis);
+
+        var apiKey = "tf_test_batch_partial_key";
+
+        factory.ApiKeyValidator.Register(
+            apiKey,
+            new ApiKeyValidationResult(
+                true,
+                Ulid.NewUlid(),
+                Ulid.NewUlid(),
+                Ulid.NewUlid(),
+                "production"));
+
+        var client = factory.CreateClient();
+
+        client.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("ApiKey", apiKey);
+
+        var response = await client.PostAsJsonAsync("/batch-logs", new
+        {
+            logs = new object[]
+            {
+                new
+                {
+                    timestamp = DateTimeOffset.UtcNow.AddMinutes(-2),
+                    level = LogLevel.Information,
+                    service = "checkout-api",
+                    message = "Checkout started",
+                    traceId = "trace-valid",
+                    correlationId = "corr-valid",
+                    metadata = new Dictionary<string, object?>
+                    {
+                        ["step"] = "start"
+                    }
+                },
+                new
+                {
+                    timestamp = DateTimeOffset.UtcNow.AddMinutes(-1),
+                    level = LogLevel.None,
+                    service = "payment-api",
+                    message = "Invalid log level",
+                    traceId = "trace-invalid",
+                    correlationId = "corr-invalid",
+                    metadata = new Dictionary<string, object?>
+                    {
+                        ["step"] = "invalid"
+                    }
+                }
+            }
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var body = await response.Content.ReadFromJsonAsync<BatchLogResponse>();
+
+        body.Should().NotBeNull();
+        body!.Total.Should().Be(2);
+        body.Accepted.Should().Be(1);
+        body.Rejected.Should().Be(1);
+        body.Results.Should().HaveCount(2);
+
+        body.Results[0].Index.Should().Be(0);
+        body.Results[0].Accepted.Should().BeTrue();
+        body.Results[0].EventId.Should().NotBeNull();
+        body.Results[0].Error.Should().BeNull();
+
+        body.Results[1].Index.Should().Be(1);
+        body.Results[1].Accepted.Should().BeFalse();
+        body.Results[1].EventId.Should().BeNull();
+        body.Results[1].Error.Should().NotBeNullOrWhiteSpace();
+    }
+    [Fact]
+    public async Task PostBatchLogs_WithMixedValidAndInvalidItems_ShouldPublishOnlyValidItems()
+    {
+        await using var factory = new IngestionApiFactory(_kafka, _redis);
+
+        var apiKey = "tf_test_batch_partial_publish_key";
+        var workspaceId = Ulid.NewUlid();
+        var projectId = Ulid.NewUlid();
+        var applicationId = Ulid.NewUlid();
+
+        factory.ApiKeyValidator.Register(
+            apiKey,
+            new ApiKeyValidationResult(
+                true,
+                workspaceId,
+                projectId,
+                applicationId,
+                "production"));
+
+        var client = factory.CreateClient();
+
+        client.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("ApiKey", apiKey);
+
+        var response = await client.PostAsJsonAsync("/batch-logs", new
+        {
+            logs = new object[]
+            {
+                new
+                {
+                    timestamp = DateTimeOffset.UtcNow.AddMinutes(-2),
+                    level = LogLevel.Warning,
+                    service = "checkout-api",
+                    message = "Slow checkout",
+                    traceId = "trace-valid",
+                    correlationId = "corr-valid",
+                    metadata = new Dictionary<string, object?>
+                    {
+                        ["step"] = "valid"
+                    }
+                },
+                new
+                {
+                    timestamp = DateTimeOffset.UtcNow.AddMinutes(-1),
+                    level = LogLevel.Error,
+                    service = "",
+                    message = "Missing service",
+                    traceId = "trace-invalid",
+                    correlationId = "corr-invalid",
+                    metadata = new Dictionary<string, object?>
+                    {
+                        ["step"] = "invalid"
+                    }
+                }
+            }
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var body = await response.Content.ReadFromJsonAsync<BatchLogResponse>();
+
+        factory.LogEventPublisher.PublishedEvents.Should().ContainSingle();
+
+        var publishedEvent = factory.LogEventPublisher.PublishedEvents.Single();
+
+        publishedEvent.WorkspaceId.Should().Be(workspaceId);
+        publishedEvent.ProjectId.Should().Be(projectId);
+        publishedEvent.ApplicationId.Should().Be(applicationId);
+        publishedEvent.Environment.Should().Be("production");
+
+        publishedEvent.Service.Should().Be("checkout-api");
+        publishedEvent.Message.Should().Be("Slow checkout");
+        publishedEvent.TraceId.Should().Be("trace-valid");
+        publishedEvent.CorrelationId.Should().Be("corr-valid");
+
+        body!.Results[0].Accepted.Should().BeTrue();
+        body.Results[0].EventId.Should().Be(publishedEvent.EventId);
+
+        body.Results[1].Accepted.Should().BeFalse();
+        body.Results[1].EventId.Should().BeNull();
+    }
 }
