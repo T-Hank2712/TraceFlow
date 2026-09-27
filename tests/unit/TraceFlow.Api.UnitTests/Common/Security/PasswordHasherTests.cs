@@ -1,6 +1,5 @@
 using FluentAssertions;
 using TraceFlow.Api.Application.Common.Security;
-using Xunit;
 
 namespace TraceFlow.Api.UnitTests.Common.Security;
 
