@@ -47,13 +47,13 @@ public class Workspace : Entity
     }
     public void Archive()
     {
-        Status = ResourceStatuses.Active;
+        Status = ResourceStatuses.Archived;
         UpdatedAt = DateTime.UtcNow;
     }
 
     public void Activate()
     {
-        Status = ResourceStatuses.Archived;
+        Status = ResourceStatuses.Active;
         UpdatedAt = DateTime.UtcNow;
     }
 }
