@@ -17,8 +17,8 @@ public sealed class EnrichedLogEventFactory
         }
 
         return new EnrichedLogEvent(
-            EventId: Ulid.NewUlid(),
-            BatchID: Ulid.NewUlid(),
+            EventId: EventId,
+            BatchID: BatchId,
             WorkspaceId: workspaceId,
             ProjectId: projectId,
             ApplicationId: applicationId,
