@@ -44,6 +44,36 @@ public sealed class KafkaTestConsumer<T> : IDisposable
 
         throw new TimeoutException("No Kafka message was consumed.");
     }
+    public T ConsumeUntil(
+    Func<T, bool> predicate,
+    TimeSpan timeout)
+    {
+        var deadline = DateTimeOffset.UtcNow.Add(timeout);
+
+        while (DateTimeOffset.UtcNow < deadline)
+        {
+            var result = _consumer.Consume(TimeSpan.FromMilliseconds(250));
+
+            if (result is null)
+            {
+                continue;
+            }
+
+            var value = JsonSerializer.Deserialize<T>(
+                result.Message.Value,
+                new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                })!;
+
+            if (predicate(value))
+            {
+                return value;
+            }
+        }
+
+        throw new TimeoutException("No matching Kafka message was consumed.");
+    }
 
     public void Dispose()
     {
