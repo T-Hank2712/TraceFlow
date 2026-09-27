@@ -23,7 +23,7 @@ public sealed class KafkaLogProducer : ILogEventPublisher, IDisposable
             Acks = Acks.All,
             MessageSendMaxRetries = _options.MessageSendMaxRetries,
             RetryBackoffMs = _options.RetryBackoffMs,
-            MessageTimeoutMs =  _options.MessageTimeoutMs,
+            MessageTimeoutMs = _options.MessageTimeoutMs,
             QueueBufferingMaxMessages = _options.QueueBufferingMaxMessages,
             QueueBufferingMaxKbytes = _options.QueueBufferingMaxKbytes,
             LingerMs = _options.LingerMs
@@ -33,7 +33,7 @@ public sealed class KafkaLogProducer : ILogEventPublisher, IDisposable
     }
 
     public Task PublishAsync(
-        EnrichedLogEvent logEvent, 
+        EnrichedLogEvent logEvent,
         CancellationToken cancellationToken = default)
     {
         if (cancellationToken.IsCancellationRequested)
@@ -64,8 +64,8 @@ public sealed class KafkaLogProducer : ILogEventPublisher, IDisposable
         catch (ProduceException<string, EnrichedLogEvent> ex)
         {
             _logger.LogError(
-                ex, 
-                "Kafka produce failed (Buffer full/Broker unavailable). EventId: {EventId}", 
+                ex,
+                "Kafka produce failed (Buffer full/Broker unavailable). EventId: {EventId}",
                 eventId);
 
             return Task.FromException(ex);

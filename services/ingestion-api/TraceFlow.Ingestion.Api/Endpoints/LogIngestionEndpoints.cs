@@ -52,7 +52,7 @@ public static class LogIngestionEndpoints
                 return Results.StatusCode(
                     StatusCodes.Status500InternalServerError);
             }
-            
+
             var result = await service.BatchLogAsync(
                 request,
                 authentication,

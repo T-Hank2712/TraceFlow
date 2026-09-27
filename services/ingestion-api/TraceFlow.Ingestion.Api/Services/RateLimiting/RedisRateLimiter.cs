@@ -7,7 +7,8 @@ using TraceFlow.Ingestion.Api.Configuration;
 using TraceFlow.Ingestion.Api.Contracts.RateLimiting;
 
 namespace TraceFlow.Ingestion.Api.Services.RateLimiting;
-public sealed class RedisRateLimiter: IRateLimiter
+
+public sealed class RedisRateLimiter : IRateLimiter
 {
     private readonly IConnectionMultiplexer _redis;
     private readonly RateLimitOptions _options;
@@ -28,7 +29,7 @@ public sealed class RedisRateLimiter: IRateLimiter
         var database = _redis.GetDatabase();
         var windowId = DateTimeOffset.UtcNow.ToUnixTimeSeconds() / _options.WindowSeconds;
         var key = CreateRateLimitKey(apiKey, windowId);
-        
+
         var count = (long)await database.ScriptEvaluateAsync(
             IncrementScript,
             new RedisKey[] { key },
@@ -37,13 +38,13 @@ public sealed class RedisRateLimiter: IRateLimiter
 
         var remaining = Math.Max(0, _options.PermitLimit - (int)count);
 
-        if(count <= _options.PermitLimit)
+        if (count <= _options.PermitLimit)
         {
             return new RateLimitResult(
                 true, _options.PermitLimit, remaining, 0
             );
         }
-        
+
         var ttl = await database.KeyTimeToLiveAsync(key);
 
         var retryAfterSeconds = ttl.HasValue
