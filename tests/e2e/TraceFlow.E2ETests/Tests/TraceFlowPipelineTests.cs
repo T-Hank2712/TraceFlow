@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using TraceFlow.E2ETests.Infrastructure;
 using TraceFlow.Ingestion.Api.Contracts.Authentication;
 using TraceFlow.Ingestion.Api.Contracts.Log;
+using TraceFlow.Ingestion.Api.Contracts.BatchLog;
 
 namespace TraceFlow.E2ETests.Tests;
 
@@ -100,6 +101,128 @@ public sealed class TraceFlowPipelineTests
             indexedEvent.Level.Should().Be((int)LogLevel.Error);
             indexedEvent.TraceId.Should().Be("trace-e2e-1");
             indexedEvent.CorrelationId.Should().Be("corr-e2e-1");
+        }
+        finally
+        {
+            await logProcessorHost.StopAsync();
+        }
+    }
+    [Fact]
+    public async Task TraceFlowPipeline_WhenBatchLogsAreIngested_ShouldIndexAllLogsIntoOpenSearch()
+    {
+        await using var ingestionFactory =
+            new IngestionApiFactory(_kafka, _redis);
+
+        using var logProcessorHost = LogProcessorHostFactory.Create(
+            _kafka,
+            _openSearch,
+            groupId: $"traceflow-e2e-log-processor-batch-{Guid.NewGuid()}");
+
+        var apiKey = "tf_e2e_batch_log_key";
+        var workspaceId = Ulid.NewUlid();
+        var projectId = Ulid.NewUlid();
+        var applicationId = Ulid.NewUlid();
+
+        var firstTimestamp = DateTimeOffset.UtcNow.AddMinutes(-2);
+        var secondTimestamp = DateTimeOffset.UtcNow.AddMinutes(-1);
+
+        ingestionFactory.ApiKeyValidator.Register(
+            apiKey,
+            new ApiKeyValidationResult(
+                true,
+                workspaceId,
+                projectId,
+                applicationId,
+                "Staging"));
+
+        await logProcessorHost.StartAsync();
+
+        try
+        {
+            var client = ingestionFactory.CreateClient();
+
+            client.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue(
+                    "ApiKey",
+                    apiKey);
+
+            var response = await client.PostAsJsonAsync("/batch-logs", new
+            {
+                logs = new object[]
+                {
+                    new
+                    {
+                        timestamp = firstTimestamp,
+                        level = LogLevel.Information,
+                        service = " checkout-api ",
+                        message = " Checkout started ",
+                        traceId = "trace-e2e-batch-1",
+                        correlationId = "corr-e2e-batch-1",
+                        metadata = new Dictionary<string, object?>
+                        {
+                            ["step"] = "start"
+                        }
+                    },
+                    new
+                    {
+                        timestamp = secondTimestamp,
+                        level = LogLevel.Error,
+                        service = " payment-api ",
+                        message = " Payment failed ",
+                        traceId = "trace-e2e-batch-2",
+                        correlationId = "corr-e2e-batch-2",
+                        metadata = new Dictionary<string, object?>
+                        {
+                            ["orderId"] = "order-e2e-batch-456"
+                        }
+                    }
+                }
+            });
+
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+            var body = await response.Content.ReadFromJsonAsync<BatchLogResponse>();
+
+            body.Should().NotBeNull();
+            body!.Total.Should().Be(2);
+            body.Accepted.Should().Be(2);
+            body.Rejected.Should().Be(0);
+            body.Results.Should().HaveCount(2);
+            body.Results.Should().OnlyContain(result => result.Accepted);
+            body.Results.Should().OnlyContain(result => result.EventId.HasValue);
+
+            var firstEventId = body.Results[0].EventId!.Value.ToString();
+            var secondEventId = body.Results[1].EventId!.Value.ToString();
+
+            var firstIndexedEvent = await _openSearch.WaitForLogEventAsync(
+                firstEventId,
+                TimeSpan.FromSeconds(30));
+
+            var secondIndexedEvent = await _openSearch.WaitForLogEventAsync(
+                secondEventId,
+                TimeSpan.FromSeconds(30));
+
+            firstIndexedEvent.EventId.Should().Be(firstEventId);
+            firstIndexedEvent.WorkspaceId.Should().Be(workspaceId.ToString());
+            firstIndexedEvent.ProjectId.Should().Be(projectId.ToString());
+            firstIndexedEvent.ApplicationId.Should().Be(applicationId.ToString());
+            firstIndexedEvent.Environment.Should().Be("staging");
+            firstIndexedEvent.Service.Should().Be("checkout-api");
+            firstIndexedEvent.Message.Should().Be("Checkout started");
+            firstIndexedEvent.Level.Should().Be((int)LogLevel.Information);
+            firstIndexedEvent.TraceId.Should().Be("trace-e2e-batch-1");
+            firstIndexedEvent.CorrelationId.Should().Be("corr-e2e-batch-1");
+
+            secondIndexedEvent.EventId.Should().Be(secondEventId);
+            secondIndexedEvent.WorkspaceId.Should().Be(workspaceId.ToString());
+            secondIndexedEvent.ProjectId.Should().Be(projectId.ToString());
+            secondIndexedEvent.ApplicationId.Should().Be(applicationId.ToString());
+            secondIndexedEvent.Environment.Should().Be("staging");
+            secondIndexedEvent.Service.Should().Be("payment-api");
+            secondIndexedEvent.Message.Should().Be("Payment failed");
+            secondIndexedEvent.Level.Should().Be((int)LogLevel.Error);
+            secondIndexedEvent.TraceId.Should().Be("trace-e2e-batch-2");
+            secondIndexedEvent.CorrelationId.Should().Be("corr-e2e-batch-2");
         }
         finally
         {
