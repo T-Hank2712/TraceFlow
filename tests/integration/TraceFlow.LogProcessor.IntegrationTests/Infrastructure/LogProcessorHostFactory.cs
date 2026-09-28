@@ -20,14 +20,16 @@ public static class LogProcessorHostFactory
         string groupId,
         int batchSize = 1,
         int flushIntervalMs = 200,
+        string topic = "traceflow.logs",
+        string dlqTopic = "traceflow.logs.dlq",
         Action<IServiceCollection>? configureServices = null)
     {
         var config = new Dictionary<string, string?>
         {
             ["Kafka:BootstrapServers"] = kafka.BootstrapServers,
             ["Kafka:GroupId"] = groupId,
-            ["Kafka:Topic"] = "traceflow.logs",
-            ["Kafka:DlqTopic"] = "traceflow.logs.dlq",
+            ["Kafka:Topic"] = topic,
+            ["Kafka:DlqTopic"] = dlqTopic,
             ["Kafka:PollTimeoutMs"] = "100",
 
             ["Processor:MaxRetries"] = "1",

@@ -26,7 +26,7 @@ public sealed class KafkaFixture : IAsyncLifetime
         await _container.DisposeAsync();
     }
 
-    private async Task CreateTopicAsync(string topic)
+    public async Task CreateTopicAsync(string topic)
     {
         using var adminClient = new AdminClientBuilder(
             new AdminClientConfig
