@@ -20,17 +20,24 @@ var options = new PerformanceOptions
         30)
 };
 
+var batchSize = GetIntEnvironmentVariable(
+    "TRACEFLOW_BATCH_SIZE",
+    10);
+
 Console.WriteLine();
 Console.WriteLine("========================================");
-Console.WriteLine("TraceFlow Performance Test");
+Console.WriteLine("TraceFlow Batch Performance Test");
 Console.WriteLine("========================================");
-Console.WriteLine($"Target   : {options.BaseUrl}");
-Console.WriteLine($"Rate     : {options.Rate} req/s");
-Console.WriteLine($"Duration : {options.DurationSeconds}s");
+Console.WriteLine($"Target     : {options.BaseUrl}");
+Console.WriteLine($"Rate       : {options.Rate} req/s");
+Console.WriteLine($"Duration   : {options.DurationSeconds}s");
+Console.WriteLine($"Batch Size : {batchSize}");
 Console.WriteLine("========================================");
 Console.WriteLine();
 
-var scenario = IngestionScenario.Create(options);
+var scenario = BatchIngestionScenario.Create(
+    options,
+    batchSize);
 
 NBomberRunner
     .RegisterScenarios(scenario)
