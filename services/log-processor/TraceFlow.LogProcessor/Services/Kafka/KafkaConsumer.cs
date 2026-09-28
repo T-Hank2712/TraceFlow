@@ -177,6 +177,11 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
 
         _offsetCoordinator.MarkProcessed(
             processResult.ProcessedOffsets);
+
+        if (processResult.ProcessedOffsets.Count > 0)
+        {
+            _offsetCommitSignal.Signal();
+        }
     }
 
     private void CommitAvailableOffsets()
