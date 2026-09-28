@@ -17,7 +17,9 @@ public static class LogProcessorHostFactory
     public static IHost Create(
         KafkaFixture kafka,
         OpenSearchFixture openSearch,
-        string groupId)
+        string groupId,
+        int batchSize = 1,
+        int flushIntervalMs = 200)
     {
         var config = new Dictionary<string, string?>
         {
@@ -29,8 +31,8 @@ public static class LogProcessorHostFactory
 
             ["Processor:MaxRetries"] = "1",
             ["Processor:RetryBackoffMs"] = "50",
-            ["Processor:BatchSize"] = "1",
-            ["Processor:FlushIntervalMs"] = "200",
+            ["Processor:BatchSize"] = batchSize.ToString(),
+            ["Processor:FlushIntervalMs"] = flushIntervalMs.ToString(),
 
             ["OpenSearch:Url"] = openSearch.Url,
             ["OpenSearch:Username"] = openSearch.Username,
