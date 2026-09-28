@@ -19,7 +19,8 @@ public static class LogProcessorHostFactory
         OpenSearchFixture openSearch,
         string groupId,
         int batchSize = 1,
-        int flushIntervalMs = 200)
+        int flushIntervalMs = 200,
+        Action<IServiceCollection>? configureServices = null)
     {
         var config = new Dictionary<string, string?>
         {
@@ -76,6 +77,8 @@ public static class LogProcessorHostFactory
 
         builder.Services.AddHostedService<LogConsumerWorker>();
         builder.Services.AddHostedService<BatchFlushWorker>();
+
+        configureServices?.Invoke(builder.Services);
 
         return builder.Build();
     }
