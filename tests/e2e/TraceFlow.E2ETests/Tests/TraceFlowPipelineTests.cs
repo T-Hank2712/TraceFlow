@@ -229,4 +229,91 @@ public sealed class TraceFlowPipelineTests
             await logProcessorHost.StopAsync();
         }
     }
+    [Fact]
+    public async Task TraceFlowPipeline_WhenLogIsIngested_ShouldPersistApiKeyTenantContextInOpenSearch()
+    {
+        await using var ingestionFactory =
+            new IngestionApiFactory(_kafka, _redis);
+
+        using var logProcessorHost = LogProcessorHostFactory.Create(
+            _kafka,
+            _openSearch,
+            groupId: $"traceflow-e2e-log-processor-enrichment-{Guid.NewGuid()}");
+
+        var apiKey = "tf_e2e_enrichment_key";
+        var workspaceId = Ulid.NewUlid();
+        var projectId = Ulid.NewUlid();
+        var applicationId = Ulid.NewUlid();
+
+        var fakeWorkspaceId = Ulid.NewUlid();
+        var fakeProjectId = Ulid.NewUlid();
+        var fakeApplicationId = Ulid.NewUlid();
+
+        ingestionFactory.ApiKeyValidator.Register(
+            apiKey,
+            new ApiKeyValidationResult(
+                true,
+                workspaceId,
+                projectId,
+                applicationId,
+                "Production"));
+
+        await logProcessorHost.StartAsync();
+
+        try
+        {
+            var client = ingestionFactory.CreateClient();
+
+            client.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue(
+                    "ApiKey",
+                    apiKey);
+
+            var response = await client.PostAsJsonAsync("/logs", new
+            {
+                timestamp = DateTimeOffset.UtcNow,
+                level = LogLevel.Warning,
+                service = "inventory-api",
+                message = "Tenant enrichment check",
+                traceId = "trace-e2e-enrichment-1",
+                correlationId = "corr-e2e-enrichment-1",
+                metadata = new Dictionary<string, object?>
+                {
+                    ["workspaceId"] = fakeWorkspaceId.ToString(),
+                    ["projectId"] = fakeProjectId.ToString(),
+                    ["applicationId"] = fakeApplicationId.ToString(),
+                    ["environment"] = "fake-production"
+                }
+            });
+
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+            var body = await response.Content
+                .ReadFromJsonAsync<IngestLogResponse>();
+
+            body.Should().NotBeNull();
+
+            var indexedEvent = await _openSearch.WaitForLogEventAsync(
+                body!.EventId.ToString(),
+                TimeSpan.FromSeconds(30));
+
+            indexedEvent.WorkspaceId.Should().Be(workspaceId.ToString());
+            indexedEvent.ProjectId.Should().Be(projectId.ToString());
+            indexedEvent.ApplicationId.Should().Be(applicationId.ToString());
+            indexedEvent.Environment.Should().Be("production");
+
+            indexedEvent.WorkspaceId.Should().NotBe(fakeWorkspaceId.ToString());
+            indexedEvent.ProjectId.Should().NotBe(fakeProjectId.ToString());
+            indexedEvent.ApplicationId.Should().NotBe(fakeApplicationId.ToString());
+
+            indexedEvent.Service.Should().Be("inventory-api");
+            indexedEvent.Message.Should().Be("Tenant enrichment check");
+            indexedEvent.TraceId.Should().Be("trace-e2e-enrichment-1");
+            indexedEvent.CorrelationId.Should().Be("corr-e2e-enrichment-1");
+        }
+        finally
+        {
+            await logProcessorHost.StopAsync();
+        }
+    }
 }
