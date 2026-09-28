@@ -20,24 +20,35 @@ var options = new PerformanceOptions
         30)
 };
 
-var batchSize = GetIntEnvironmentVariable(
-    "TRACEFLOW_BATCH_SIZE",
-    10);
+var batchSize = GetOptionalIntEnvironmentVariable(
+    "TRACEFLOW_BATCH_SIZE");
 
 Console.WriteLine();
 Console.WriteLine("========================================");
-Console.WriteLine("TraceFlow Batch Performance Test");
+Console.WriteLine("TraceFlow Performance Test");
 Console.WriteLine("========================================");
-Console.WriteLine($"Target     : {options.BaseUrl}");
-Console.WriteLine($"Rate       : {options.Rate} req/s");
-Console.WriteLine($"Duration   : {options.DurationSeconds}s");
-Console.WriteLine($"Batch Size : {batchSize}");
+Console.WriteLine($"Target   : {options.BaseUrl}");
+Console.WriteLine($"Rate     : {options.Rate} req/s");
+Console.WriteLine($"Duration : {options.DurationSeconds}s");
+
+if (batchSize is > 0)
+{
+    Console.WriteLine($"Mode     : Batch");
+    Console.WriteLine($"Batch    : {batchSize} logs/request");
+}
+else
+{
+    Console.WriteLine("Mode     : Single Log");
+}
+
 Console.WriteLine("========================================");
 Console.WriteLine();
 
-var scenario = BatchIngestionScenario.Create(
-    options,
-    batchSize);
+var scenario = batchSize is > 0
+    ? BatchIngestionScenario.Create(
+        options,
+        batchSize.Value)
+    : IngestionScenario.Create(options);
 
 NBomberRunner
     .RegisterScenarios(scenario)
@@ -74,4 +85,23 @@ static int GetIntEnvironmentVariable(
     return int.TryParse(value, out var result)
         ? result
         : defaultValue;
+}
+
+static int? GetOptionalIntEnvironmentVariable(
+    string name)
+{
+    var value = Environment.GetEnvironmentVariable(name);
+
+    if (string.IsNullOrWhiteSpace(value))
+    {
+        return null;
+    }
+
+    if (!int.TryParse(value, out var result))
+    {
+        throw new InvalidOperationException(
+            $"Environment variable '{name}' must be a valid integer.");
+    }
+
+    return result;
 }

@@ -22,13 +22,52 @@ public static class BatchIngestionScenario
                         .Range(0, batchSize)
                         .Select(_ => new
                         {
-                            service = "traceflow-performance-test",
+                            service = "order-service",
                             level = 3,
                             message =
-                                $"Performance test event {Guid.NewGuid()}",
+                                $"Order request processed successfully. " +
+                                $"EventId={Guid.NewGuid()}",
+
+                            timestamp = DateTime.UtcNow,
+
+                            traceId = Guid.NewGuid().ToString("N"),
+                            correlationId = Guid.NewGuid().ToString("N"),
+
                             metadata = new
                             {
-                                source = "nbomber"
+                                source = "nbomber",
+                                environment = "performance",
+
+                                host = "traceflow-performance-client",
+
+                                http = new
+                                {
+                                    method = "POST",
+                                    route = "/api/orders",
+                                    statusCode = 200,
+                                    durationMs = 42
+                                },
+
+                                request = new
+                                {
+                                    requestId = Guid.NewGuid().ToString("N"),
+                                    userId = "user-10001",
+                                    clientIp = "127.0.0.1"
+                                },
+
+                                application = new
+                                {
+                                    name = "order-service",
+                                    version = "2.4.1",
+                                    instance = "order-service-01"
+                                },
+
+                                business = new
+                                {
+                                    orderId = $"ORD-{Random.Shared.Next(100000, 999999)}",
+                                    amount = 125.50,
+                                    currency = "USD"
+                                }
                             }
                         })
                         .ToArray();
