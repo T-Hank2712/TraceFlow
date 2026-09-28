@@ -316,4 +316,92 @@ public sealed class TraceFlowPipelineTests
             await logProcessorHost.StopAsync();
         }
     }
+    [Fact]
+    public async Task TraceFlowPipeline_WhenLogIsProcessed_ShouldIndexCompleteDocumentInOpenSearch()
+    {
+        await using var ingestionFactory =
+            new IngestionApiFactory(_kafka, _redis);
+
+        using var logProcessorHost = LogProcessorHostFactory.Create(
+            _kafka,
+            _openSearch,
+            groupId: $"traceflow-e2e-log-processor-index-shape-{Guid.NewGuid()}");
+
+        var apiKey = "tf_e2e_index_shape_key";
+        var workspaceId = Ulid.NewUlid();
+        var projectId = Ulid.NewUlid();
+        var applicationId = Ulid.NewUlid();
+        var timestamp = DateTimeOffset.UtcNow.AddMinutes(-3);
+
+        ingestionFactory.ApiKeyValidator.Register(
+            apiKey,
+            new ApiKeyValidationResult(
+                true,
+                workspaceId,
+                projectId,
+                applicationId,
+                "Production"));
+
+        await logProcessorHost.StartAsync();
+
+        try
+        {
+            var client = ingestionFactory.CreateClient();
+
+            client.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue(
+                    "ApiKey",
+                    apiKey);
+
+            var response = await client.PostAsJsonAsync("/logs", new
+            {
+                timestamp,
+                level = LogLevel.Error,
+                service = " billing-api ",
+                message = " Invoice generation failed ",
+                traceId = "trace-e2e-index-1",
+                correlationId = "corr-e2e-index-1",
+                metadata = new Dictionary<string, object?>
+                {
+                    ["invoiceId"] = "invoice-123",
+                    ["attempt"] = 3,
+                    ["retryable"] = true
+                }
+            });
+
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+            var body = await response.Content
+                .ReadFromJsonAsync<IngestLogResponse>();
+
+            body.Should().NotBeNull();
+
+            var indexedEvent = await _openSearch.WaitForLogEventAsync(
+                body!.EventId.ToString(),
+                TimeSpan.FromSeconds(30));
+
+            indexedEvent.EventId.Should().Be(body.EventId.ToString());
+
+            indexedEvent.WorkspaceId.Should().Be(workspaceId.ToString());
+            indexedEvent.ProjectId.Should().Be(projectId.ToString());
+            indexedEvent.ApplicationId.Should().Be(applicationId.ToString());
+            indexedEvent.Environment.Should().Be("production");
+
+            indexedEvent.Timestamp.Should().Be(timestamp.ToUniversalTime());
+            indexedEvent.Level.Should().Be((int)LogLevel.Error);
+            indexedEvent.Service.Should().Be("billing-api");
+            indexedEvent.Message.Should().Be("Invoice generation failed");
+            indexedEvent.TraceId.Should().Be("trace-e2e-index-1");
+            indexedEvent.CorrelationId.Should().Be("corr-e2e-index-1");
+
+            indexedEvent.Metadata.Should().NotBeNull();
+            indexedEvent.Metadata!.Should().ContainKey("invoiceId");
+            indexedEvent.Metadata.Should().ContainKey("attempt");
+            indexedEvent.Metadata.Should().ContainKey("retryable");
+        }
+        finally
+        {
+            await logProcessorHost.StopAsync();
+        }
+    }
 }
