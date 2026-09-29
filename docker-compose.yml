@@ -7,8 +7,6 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    ports:
-      - "${POSTGRES_PORT}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -34,12 +32,13 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: ${KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR}
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: ${KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR}
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: ${KAFKA_TRANSACTION_STATE_LOG_MIN_ISR}
-    ports:
-      - "${KAFKA_PORT}:9092"
+      KAFKA_HEAP_OPTS: ${KAFKA_HEAP_OPTS}
+    volumes:
+      - kafka_data:/var/lib/kafka/data
     networks:
       - traceflow-network
     healthcheck:
-      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 > /dev/null 2>&1"]
+      test: ["CMD-SHELL", "nc -z localhost 9092 || exit 1"]
       interval: 10s
       timeout: 10s
       retries: 10
@@ -54,7 +53,7 @@ services:
     entrypoint: ["/bin/sh", "-c"]
     command: >
       "
-      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic traceflow.logs --partitions 1 --replication-factor 1 &&
+      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic traceflow.logs --partitions 3 --replication-factor 1 &&
       /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic traceflow.logs.dlq --partitions 1 --replication-factor 1
       "
     networks:
@@ -72,8 +71,6 @@ services:
       OPENSEARCH_JAVA_OPTS: ${OPENSEARCH_JAVA_OPTS}
       DISABLE_SECURITY_PLUGIN: ${OPENSEARCH_DISABLE_SECURITY_PLUGIN}
       OPENSEARCH_INITIAL_ADMIN_PASSWORD: ${OPENSEARCH_INITIAL_ADMIN_PASSWORD}
-    ports:
-      - "${OPENSEARCH_PORT}:9200"
     volumes:
       - opensearch_data:/usr/share/opensearch/data
     ulimits:
@@ -93,10 +90,8 @@ services:
     image: redis:7.2-alpine
     container_name: traceflow-redis
     restart: unless-stopped
-    ports:
-      - "${REDIS_PORT}:6379"
     environment:
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
     command: >
       redis-server
       --appendonly yes
@@ -120,7 +115,7 @@ services:
     container_name: traceflow-control-api
     restart: unless-stopped
     environment:
-      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
       ASPNETCORE_URLS: http://+:5075
       ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
       Jwt__Issuer: ${Jwt__Issuer}
@@ -135,8 +130,6 @@ services:
       OpenSearch__Password: ${OpenSearch__Password}
       OpenSearch__Index: ${OpenSearch__Index}
       OpenSearch__SkipTlsVerify: ${OpenSearch__SkipTlsVerify}
-    ports:
-      - "5075:5075"
     depends_on:
       postgres:
         condition: service_healthy
@@ -158,7 +151,7 @@ services:
     container_name: traceflow-ingestion-api
     restart: unless-stopped
     environment:
-      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
       ASPNETCORE_URLS: http://+:5100
       ControlApi__BaseUrl: ${ControlApi__BaseUrl}
       ControlApi__ValidateApiPath: ${ControlApi__ValidateApiPath}
@@ -184,8 +177,6 @@ services:
       Redis__RateLimitKeyPrefix: ${Redis__RateLimitKeyPrefix}
       RateLimiting__PermitLimit: ${RateLimiting__PermitLimit}
       RateLimiting__WindowSeconds: ${RateLimiting__WindowSeconds}
-    ports:
-      - "5100:5100"
     depends_on:
       kafka:
         condition: service_healthy
@@ -235,6 +226,24 @@ services:
     networks:
       - traceflow-network
 
+  nginx:
+    image: nginx:1.26-alpine
+    container_name: traceflow-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deployments/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./deployments/nginx/certs:/etc/nginx/certs:ro
+    depends_on:
+      control-api:
+        condition: service_healthy
+      ingestion-api:
+        condition: service_healthy
+    networks:
+      - traceflow-network
+
 volumes:
     postgres_data:
       name: traceflow-postgres-data
@@ -242,6 +251,8 @@ volumes:
       name: traceflow-opensearch-data
     redis_data:
       name: traceflow-redis-data
+    kafka_data:
+      name: traceflow-kafka
 
 networks:
     traceflow-network:
