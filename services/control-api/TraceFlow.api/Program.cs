@@ -81,7 +81,7 @@ builder.Services.AddMediatR(config =>
 // MVC / Controllers
 builder.Services.AddControllers();
 
-// API Versioning
+// API Versioning + OpenAPI
 builder.Services
     .AddApiVersioning(options =>
     {
@@ -97,69 +97,66 @@ builder.Services
         options.GroupNameFormat = "'v'VVV";
         options.SubstituteApiVersionInUrl = true;
     })
-    .AddOpenApi();
-
-// OpenAPI
-builder.Services.AddOpenApi(options =>
-{
-    options.AddDocumentTransformer(
-        (document, context, cancellationToken) =>
-        {
-            document.Servers =
-            [
-                new OpenApiServer
-                {
-                    Url = "/control"
-                }
-            ];
-
-            document.Components ??=
-                new OpenApiComponents();
-
-            document.Components.SecuritySchemes ??=
-                new Dictionary<
-                    string,
-                    IOpenApiSecurityScheme>();
-
-            document.Components.SecuritySchemes["Bearer"] =
-                new OpenApiSecurityScheme
-                {
-                    Type = SecuritySchemeType.Http,
-                    Scheme = "bearer",
-                    BearerFormat = "JWT",
-                    Name = "Authorization",
-                    In = ParameterLocation.Header,
-                    Description =
-                        "Enter JWT access token only. " +
-                        "Swagger UI will add the Bearer prefix."
-                };
-
-            foreach (var path in document.Paths.Values)
+    .AddOpenApi(options =>
+    {
+        options.Document.AddDocumentTransformer(
+            (document, context, cancellationToken) =>
             {
-                if (path.Operations is null)
+                document.Servers =
+                [
+                    new OpenApiServer
+                    {
+                        Url = "/control"
+                    }
+                ];
+
+                document.Components ??=
+                    new OpenApiComponents();
+
+                document.Components.SecuritySchemes ??=
+                    new Dictionary<
+                        string,
+                        IOpenApiSecurityScheme>();
+
+                document.Components.SecuritySchemes["Bearer"] =
+                    new OpenApiSecurityScheme
+                    {
+                        Type = SecuritySchemeType.Http,
+                        Scheme = "bearer",
+                        BearerFormat = "JWT",
+                        Name = "Authorization",
+                        In = ParameterLocation.Header,
+                        Description =
+                            "Enter JWT access token only. " +
+                            "Swagger UI will add the Bearer prefix."
+                    };
+
+                foreach (var path in document.Paths.Values)
                 {
-                    continue;
+                    if (path.Operations is null)
+                    {
+                        continue;
+                    }
+
+                    foreach (var operation in path.Operations.Values)
+                    {
+                        operation.Security ??= [];
+
+                        operation.Security.Add(
+                            new OpenApiSecurityRequirement
+                            {
+                                [
+                                    new OpenApiSecuritySchemeReference(
+                                        "Bearer",
+                                        document)
+                                ] = []
+                            });
+                    }
                 }
 
-                foreach (var operation in path.Operations.Values)
-                {
-                    operation.Security ??= [];
-
-                    operation.Security.Add(
-                        new OpenApiSecurityRequirement
-                        {
-                            [
-                                new OpenApiSecuritySchemeReference(
-                                    "Bearer",
-                                    document)
-                            ] = []
-                        });
-                }
-            }
-
-            return Task.CompletedTask;
-        });
-});
+                return Task.CompletedTask;
+            });
+    });
 
 // Application services
 builder.Services.AddScoped<PasswordHasher>();

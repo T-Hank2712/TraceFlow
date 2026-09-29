@@ -19,7 +19,6 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
 
 builder.Services
     .AddOptions<ControlApiOptions>()
@@ -99,7 +98,8 @@ builder.Services
     {
         options.GroupNameFormat = "'v'VVV";
         options.SubstituteApiVersionInUrl = true;
-    });
+    })
+    .AddOpenApi();
 
 builder.Services.AddSingleton<ApiKeyHeaderParser>();
 builder.Services.AddSingleton<EnrichedLogEventFactory>();
@@ -122,7 +122,7 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.MapOpenApi().WithDocumentPerVersion();
 }
 
 app.UseHttpsRedirection();
