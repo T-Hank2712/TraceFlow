@@ -4,12 +4,14 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TraceFlow.Api.Domain.Dtos.Users;
 using TraceFlow.Api.Application.Users.Commands.UpdateProfile;
+using Asp.Versioning;
 
 namespace TraceFlow.Api.Controllers;
 
 [ApiController]
+[ApiVersion(1.0)]
 [Authorize]
-[Route("api/users")]
+[Route("api/v{version:apiVersion}/users")]
 public class UsersController : ControllerBase
 {
     private readonly ISender _sender;

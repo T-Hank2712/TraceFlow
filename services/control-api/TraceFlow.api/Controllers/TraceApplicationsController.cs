@@ -8,12 +8,14 @@ using TraceFlow.Api.Application.TraceApplications.Queries.ListTraceApplications;
 using TraceFlow.Api.Application.TraceApplications.Queries.GetApplicationDetail;
 using TraceFlow.Api.Application.TraceApplications.Commands.UpdateApplication;
 using TraceFlow.Api.Application.TraceApplications.Commands.DeleteApplication;
+using Asp.Versioning;
 
 namespace TraceFlow.Api.Controllers;
 
 [ApiController]
+[ApiVersion(1.0)]
 [Authorize]
-[Route("api/workspaces/{workspaceId}/projects/{projectId}/applications")]
+[Route("api/v{version:apiVersion}/workspaces/{workspaceId}/projects/{projectId}/applications")]
 public class TraceApplicationsController : ControllerBase
 {
     private readonly ISender _sender;

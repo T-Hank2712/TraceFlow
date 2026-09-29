@@ -9,12 +9,14 @@ using TraceFlow.Api.Application.Workspaces.Queries.InvitationInbox;
 using TraceFlow.Api.Application.Workspaces.Commands.AcceptWorkspaceInvitation;
 using TraceFlow.Api.Application.Workspaces.Commands.DeclineWorkspaceInvitation;
 using TraceFlow.Api.Application.Workspaces.Commands.CancelInvitation;
+using Asp.Versioning;
 
 namespace TraceFlow.Api.Controllers;
 
 [ApiController]
+[ApiVersion(1.0)]
 [Authorize]
-[Route("api/workspace-invitations")]
+[Route("api/v{version:apiVersion}/workspace-invitations")]
 public class WorkspaceInvitationsController : ControllerBase
 {
     private readonly ISender _sender;

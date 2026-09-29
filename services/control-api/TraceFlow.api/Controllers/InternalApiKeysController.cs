@@ -2,11 +2,13 @@ using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using TraceFlow.Api.Application.ApiKeys.Commands.ValidateApiKey;
 using TraceFlow.Api.Domain.Dtos.ApiKeys;
+using Asp.Versioning;
 
 namespace TraceFlow.Api.Controllers;
 
 [ApiController]
-[Route("internal/api-keys")]
+[ApiVersion(1.0)]
+[Route("internal/v{version:apiVersion}/api-keys")]
 public class InternalApiKeysController : ControllerBase
 {
     private const string InternalSecretHeader = "X-Internal-Secret";

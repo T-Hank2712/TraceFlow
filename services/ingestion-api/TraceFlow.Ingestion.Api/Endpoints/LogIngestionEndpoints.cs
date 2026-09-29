@@ -10,7 +10,7 @@ public static class LogIngestionEndpoints
 {
     public static IEndpointRouteBuilder MapLogIngestionEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapPost("/logs", async (
+        app.MapPost("/v1/logs", async (
             IngestLogRequest request,
             HttpContext httpContext,
             IIngestLogService service,
@@ -39,7 +39,7 @@ public static class LogIngestionEndpoints
     }
     public static IEndpointRouteBuilder MapBatchLogEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapPost("/batch-logs", async (
+        app.MapPost("/v1/batch-logs", async (
             BatchLogRequest request,
             HttpContext httpContext,
             IIngestLogService service,
