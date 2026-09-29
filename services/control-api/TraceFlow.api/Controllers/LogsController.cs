@@ -4,12 +4,14 @@ using Microsoft.AspNetCore.Mvc;
 using TraceFlow.Api.Application.Logs.Queries.SearchLogs;
 using TraceFlow.Api.Domain.Common.Extensions;
 using TraceFlow.Api.Domain.Dtos.Logs;
+using Asp.Versioning;
 
 namespace TraceFlow.Api.Controllers;
 
 [ApiController]
+[ApiVersion(1.0)]
 [Authorize]
-[Route("api/workspaces/{workspaceId}/projects/{projectId}/logs")]
+[Route("api/v{version:apiVersion}/workspaces/{workspaceId}/projects/{projectId}/logs")]
 public sealed class LogsController : ControllerBase
 {
     private readonly ISender _sender;

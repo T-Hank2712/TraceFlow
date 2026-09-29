@@ -14,12 +14,14 @@ using TraceFlow.Api.Application.Workspaces.Commands.DeleteWorkspace;
 using TraceFlow.Api.Application.Workspaces.Commands.RemoveMember;
 using TraceFlow.Api.Application.Workspaces.Commands.LeaveWorkspace;
 using TraceFlow.Api.Application.Workspaces.Commands.TransferOwnership;
+using Asp.Versioning;
 
 namespace TraceFlow.Api.Controllers;
 
 [ApiController]
+[ApiVersion(1.0)]
 [Authorize]
-[Route("api/workspaces")]
+[Route("api/v{version:apiVersion}/workspaces")]
 public class WorkspacesController : ControllerBase
 {
     private readonly ISender _sender;

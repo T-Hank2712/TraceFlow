@@ -6,12 +6,14 @@ using TraceFlow.Api.Domain.Common.Extensions;
 using TraceFlow.Api.Domain.Dtos.ApiKeys;
 using TraceFlow.Api.Application.ApiKeys.Queries.ListApiKeys;
 using TraceFlow.Api.Application.ApiKeys.Commands.RevokeApiKey;
+using Asp.Versioning;
 
 namespace TraceFlow.Api.Controllers;
 
 [ApiController]
+[ApiVersion(1.0)]
 [Authorize]
-[Route("api/workspaces/{workspaceId}/projects/{projectId}/applications/{applicationId}/api-keys")]
+[Route("api/v{version:apiVersion}/workspaces/{workspaceId}/projects/{projectId}/applications/{applicationId}/api-keys")]
 public class ApiKeysController : ControllerBase
 {
     private readonly ISender _sender;
