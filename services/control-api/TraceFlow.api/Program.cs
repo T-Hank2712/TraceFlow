@@ -167,7 +167,9 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
     app.UseSwaggerUI(options =>
     {
-        options.SwaggerEndpoint("/openapi/v1.json", "TraceFlow API v1");
+        options.SwaggerEndpoint(
+            "/api/control/openapi/v1.json",
+            "TraceFlow API v1");
     });
 }
 
