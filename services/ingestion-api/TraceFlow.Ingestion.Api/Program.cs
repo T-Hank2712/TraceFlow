@@ -12,6 +12,7 @@ using TraceFlow.Ingestion.Api.Services.Redis;
 using TraceFlow.Ingestion.Api.Services.RateLimiting;
 using TraceFlow.Ingestion.Api.Extensions;
 using TraceFlow.Ingestion.Api.Middleware;
+using Asp.Versioning;
 
 DotNetEnv.Env.NoClobber().Load();
 var builder = WebApplication.CreateBuilder(args);
@@ -84,6 +85,21 @@ var redisConnectionString =
     builder.Configuration.GetSection(RedisOptions.SectionName)["ConnectionString"]
     ?? throw new InvalidOperationException(
         "Redis connection string is not configured.");
+
+builder.Services
+    .AddApiVersioning(options =>
+    {
+        options.DefaultApiVersion = new ApiVersion(1, 0);
+        options.AssumeDefaultVersionWhenUnspecified = false;
+        options.ReportApiVersions = true;
+        options.ApiVersionReader = new UrlSegmentApiVersionReader();
+    })
+    .AddMvc()
+    .AddApiExplorer(options =>
+    {
+        options.GroupNameFormat = "'v'VVV";
+        options.SubstituteApiVersionInUrl = true;
+    });
 
 builder.Services.AddSingleton<ApiKeyHeaderParser>();
 builder.Services.AddSingleton<EnrichedLogEventFactory>();
