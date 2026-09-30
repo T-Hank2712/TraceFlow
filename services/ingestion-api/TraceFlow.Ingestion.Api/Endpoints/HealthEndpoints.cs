@@ -11,7 +11,7 @@ public static class HealthEndpoints
             service = "traceflow-ingestion-api",
             status = "healthy",
             timestamp = DateTimeOffset.UtcNow
-        }));
+        })).AllowAnonymous();
 
         return app;
     }

@@ -12,12 +12,14 @@ using TraceFlow.Api.Application.Projects.Queries.ListProjectMembers;
 using TraceFlow.Api.Application.Projects.Commands.ChangeProjectMemberRole;
 using TraceFlow.Api.Application.Projects.Commands.RemoveProjectMember;
 using TraceFlow.Api.Application.Projects.Commands.LeaveProject;
+using Asp.Versioning;
 
 namespace TraceFlow.Api.Controllers;
 
 [ApiController]
+[ApiVersion(1.0)]
 [Authorize]
-[Route("api/workspaces/{workspaceId}/projects")]
+[Route("api/v{version:apiVersion}/workspaces/{workspaceId}/projects")]
 public class ProjectsController : ControllerBase
 {
     private readonly ISender _sender;

@@ -1,7 +1,7 @@
 services:
   postgres:
     image: postgres:16
-    container_name: traceflow-postgres
+    container_name: traceflow-performance-postgres
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
@@ -10,16 +10,21 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - traceflow-network
+      - traceflow-performance-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
   
   kafka:
     image: apache/kafka:4.1.2
-    container_name: traceflow-kafka
+    container_name: traceflow-performance-kafka
     restart: unless-stopped
     environment:
       KAFKA_NODE_ID: ${KAFKA_NODE_ID}
@@ -36,17 +41,22 @@ services:
     volumes:
       - kafka_data:/var/lib/kafka/data
     networks:
-      - traceflow-network
+      - traceflow-performance-network
     healthcheck:
       test: ["CMD-SHELL", "nc -z localhost 9092 || exit 1"]
       interval: 10s
       timeout: 10s
       retries: 10
       start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.00"
+          memory: 1536M
 
   kafka-init:
     image: apache/kafka:4.1.2
-    container_name: traceflow-kafka-init
+    container_name: traceflow-performance-kafka-init
     depends_on:
       kafka:
         condition: service_healthy
@@ -57,11 +67,11 @@ services:
       /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic traceflow.logs.dlq --partitions 1 --replication-factor 1
       "
     networks:
-      - traceflow-network
+      - traceflow-performance-network
   
   opensearch:
     image: opensearchproject/opensearch:3
-    container_name: traceflow-opensearch
+    container_name: traceflow-performance-opensearch
     restart: unless-stopped
     environment:
       cluster.name: ${OPENSEARCH_CLUSTER_NAME}
@@ -78,17 +88,22 @@ services:
         soft: -1
         hard: -1
     networks:
-      - traceflow-network
+      - traceflow-performance-network
     healthcheck:
       test: ["CMD-SHELL", "curl -k -u admin:${OPENSEARCH_INITIAL_ADMIN_PASSWORD} https://localhost:9200/_cluster/health > /dev/null 2>&1"]
       interval: 10s
       timeout: 10s
       retries: 12
       start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.50"
+          memory: 2560M
 
   redis:
     image: redis:7.2-alpine
-    container_name: traceflow-redis
+    container_name: traceflow-performance-redis
     restart: unless-stopped
     environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
@@ -99,20 +114,25 @@ services:
       --maxmemory ${REDIS_MAXMEMORY}
       --maxmemory-policy allkeys-lru
     volumes:
-    - redis_data:/data
+      - redis_data:/data
     networks:
-      - traceflow-network
+      - traceflow-performance-network
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 5s
       timeout: 3s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 128M
 
   control-api:
     build: 
-      context: ./services/control-api
+      context: ../services/control-api
       dockerfile: Dockerfile
-    container_name: traceflow-control-api
+    container_name: traceflow-performance-control-api
     restart: unless-stopped
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
@@ -136,19 +156,24 @@ services:
       opensearch:
         condition: service_healthy
     networks:
-      - traceflow-network
+      - traceflow-performance-network
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:5075/health > /dev/null 2>&1"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 256M
 
   ingestion-api:
     build:
-      context: ./services/ingestion-api
+      context: ../services/ingestion-api
       dockerfile: Dockerfile
-    container_name: traceflow-ingestion-api
+    container_name: traceflow-performance-ingestion-api
     restart: unless-stopped
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
@@ -187,19 +212,24 @@ services:
       redis:
         condition: service_healthy
     networks:
-      - traceflow-network
+      - traceflow-performance-network
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:5100/health > /dev/null 2>&1"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 256M
   
   log-processor:
     build: 
-      context: ./services/log-processor
+      context: ../services/log-processor
       dockerfile: Dockerfile
-    container_name: traceflow-log-processor
+    container_name: traceflow-performance-log-processor
     restart: unless-stopped
     environment:
       Kafka__BootstrapServers: ${Kafka__BootstrapServers}
@@ -224,37 +254,50 @@ services:
       opensearch:
         condition: service_healthy
     networks:
-      - traceflow-network
+      - traceflow-performance-network
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
 
   nginx:
     image: nginx:1.26-alpine
-    container_name: traceflow-nginx
+    container_name: traceflow-performance-nginx
     restart: unless-stopped
     ports:
-      - "80:80"
-      - "443:443"
+      - "8080:80"
+      - "8443:443"
     volumes:
-      - ./deployments/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./deployments/nginx/certs:/etc/nginx/certs:ro
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
     depends_on:
       control-api:
         condition: service_healthy
       ingestion-api:
         condition: service_healthy
     networks:
-      - traceflow-network
+      - traceflow-performance-network
+    deploy:
+      resources:
+        limits:
+          cpus: "0.10"
+          memory: 64M
 
 volumes:
-    postgres_data:
-      name: traceflow-postgres-data
-    opensearch_data:
-      name: traceflow-opensearch-data
-    redis_data:
-      name: traceflow-redis-data
-    kafka_data:
-      name: traceflow-kafka
+  postgres_data:
+    name: traceflow-performance-postgres-data
+
+  opensearch_data:
+    name: traceflow-performance-opensearch-data
+
+  redis_data:
+    name: traceflow-performance-redis-data
+
+  kafka_data:
+    name: traceflow-performance-kafka-data
 
 networks:
-    traceflow-network:
-      name: traceflow-network
-      driver: bridge
+  traceflow-performance-network:
+    name: traceflow-performance-network
+    driver: bridge

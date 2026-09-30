@@ -1,25 +1,28 @@
-using FluentValidation;
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Infrastructure.Persistence;
-using TraceFlow.Api.Application.Common.Behaviors;
-using MediatR;
-using TraceFlow.Api.Middleware;
-using TraceFlow.Api.Application.Common.Security;
+using Asp.Versioning;
 using DotNetEnv;
+using FluentValidation;
+using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using System.Text;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
-using TraceFlow.Api.Application.Common.AccessControl;
-using TraceFlow.Api.Application.Common.Users;
 using System.Net.Http.Headers;
+using System.Text;
+using TraceFlow.Api.Application.Common.AccessControl;
+using TraceFlow.Api.Application.Common.Behaviors;
 using TraceFlow.Api.Application.Common.Logs;
+using TraceFlow.Api.Application.Common.Security;
+using TraceFlow.Api.Application.Common.Users;
 using TraceFlow.Api.Infrastructure.OpenSearch;
+using TraceFlow.Api.Infrastructure.Persistence;
+using TraceFlow.Api.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
+
 var envPath = Path.Combine(
     builder.Environment.ContentRootPath,
     ".env");
+
 if (File.Exists(envPath))
 {
     Env.Load(envPath);
@@ -31,76 +34,131 @@ var postgresConnectionString =
     ?? throw new InvalidOperationException(
         "Postgres connection string is not configured.");
 
-var jwtSecret = builder.Configuration["Jwt:Secret"]
-    ?? throw new InvalidOperationException("JWT secret is not configured.");
+var jwtSecret =
+    builder.Configuration["Jwt:Secret"]
+    ?? throw new InvalidOperationException(
+        "JWT secret is not configured.");
 
-var openSearchUrl = builder.Configuration["OpenSearch:Url"]
-    ?? throw new InvalidOperationException("OpenSearch URL is not configured.");
+var openSearchUrl =
+    builder.Configuration["OpenSearch:Url"]
+    ?? throw new InvalidOperationException(
+        "OpenSearch URL is not configured.");
 
-var openSearchUsername = builder.Configuration["OpenSearch:Username"]
-    ?? throw new InvalidOperationException("OpenSearch username is not configured.");
+var openSearchUsername =
+    builder.Configuration["OpenSearch:Username"]
+    ?? throw new InvalidOperationException(
+        "OpenSearch username is not configured.");
 
-var openSearchPassword = builder.Configuration["OpenSearch:Password"]
-    ?? throw new InvalidOperationException("OpenSearch password is not configured.");
+var openSearchPassword =
+    builder.Configuration["OpenSearch:Password"]
+    ?? throw new InvalidOperationException(
+        "OpenSearch password is not configured.");
 
-var openSearchIndex = builder.Configuration["OpenSearch:Index"]
-    ?? throw new InvalidOperationException("OpenSearch index is not configured.");
+var openSearchIndex =
+    builder.Configuration["OpenSearch:Index"]
+    ?? throw new InvalidOperationException(
+        "OpenSearch index is not configured.");
 
 var openSearchSkipTlsVerify =
-    builder.Configuration.GetValue<bool>("OpenSearch:SkipTlsVerify");
+    builder.Configuration.GetValue<bool>(
+        "OpenSearch:SkipTlsVerify");
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi(options =>
-{
-    options.AddDocumentTransformer((document, context, cancellationToken) =>
-    {
-        document.Components ??= new OpenApiComponents();
-        document.Components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
+// Database
+builder.Services.AddDbContext<AppDbContext>(
+    options =>
+        options.UseNpgsql(postgresConnectionString));
 
-        document.Components.SecuritySchemes["Bearer"] = new OpenApiSecurityScheme
-        {
-            Type = SecuritySchemeType.Http,
-            Scheme = "bearer",
-            BearerFormat = "JWT",
-            Name = "Authorization",
-            In = ParameterLocation.Header,
-            Description = "Enter JWT access token only. Swagger UI will add the Bearer prefix."
-        };
-
-        foreach (var path in document.Paths.Values)
-        {
-            if (path.Operations is null)
-            {
-                continue;
-            }
-
-            foreach (var operation in path.Operations.Values)
-            {
-                operation.Security ??= [];
-
-                operation.Security.Add(new OpenApiSecurityRequirement
-                {
-                    [new OpenApiSecuritySchemeReference("Bearer", document)] = []
-                });
-            }
-        }
-
-        return Task.CompletedTask;
-    });
-});
-
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(postgresConnectionString));
-
+// Validation
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
+// MediatR
 builder.Services.AddMediatR(config =>
 {
-    config.RegisterServicesFromAssembly(typeof(Program).Assembly);
+    config.RegisterServicesFromAssembly(
+        typeof(Program).Assembly);
 });
 
+// MVC / Controllers
 builder.Services.AddControllers();
+
+// API Versioning + OpenAPI
+builder.Services
+    .AddApiVersioning(options =>
+    {
+        options.DefaultApiVersion = new ApiVersion(1, 0);
+        options.AssumeDefaultVersionWhenUnspecified = false;
+        options.ReportApiVersions = true;
+        options.ApiVersionReader =
+            new UrlSegmentApiVersionReader();
+    })
+    .AddMvc()
+    .AddApiExplorer(options =>
+    {
+        options.GroupNameFormat = "'v'VVV";
+        options.SubstituteApiVersionInUrl = true;
+    })
+    .AddOpenApi(options =>
+    {
+        options.Document.AddDocumentTransformer(
+            (document, context, cancellationToken) =>
+            {
+                document.Servers =
+                [
+                    new OpenApiServer
+                    {
+                        Url = "/control"
+                    }
+                ];
+
+                document.Components ??=
+                    new OpenApiComponents();
+
+                document.Components.SecuritySchemes ??=
+                    new Dictionary<
+                        string,
+                        IOpenApiSecurityScheme>();
+
+                document.Components.SecuritySchemes["Bearer"] =
+                    new OpenApiSecurityScheme
+                    {
+                        Type = SecuritySchemeType.Http,
+                        Scheme = "bearer",
+                        BearerFormat = "JWT",
+                        Name = "Authorization",
+                        In = ParameterLocation.Header,
+                        Description =
+                            "Enter JWT access token only. " +
+                            "Swagger UI will add the Bearer prefix."
+                    };
+
+                foreach (var path in document.Paths.Values)
+                {
+                    if (path.Operations is null)
+                    {
+                        continue;
+                    }
+
+                    foreach (var operation in path.Operations.Values)
+                    {
+                        operation.Security ??= [];
+
+                        operation.Security.Add(
+                            new OpenApiSecurityRequirement
+                            {
+                                [
+                                    new OpenApiSecuritySchemeReference(
+                                        "Bearer",
+                                        document)
+                                ] = []
+                            });
+                    }
+                }
+
+                return Task.CompletedTask;
+            });
+    });
+
+// Application services
 builder.Services.AddScoped<PasswordHasher>();
 builder.Services.AddScoped<JwtTokenGenerator>();
 builder.Services.AddScoped<RefreshTokenGenerator>();
@@ -112,62 +170,85 @@ builder.Services.AddScoped<ApiKeyHasher>();
 builder.Services.AddScoped<ApiKeyExpirationPolicyResolver>();
 builder.Services.AddScoped<ApiKeyParser>();
 
+// MediatR validation behavior
 builder.Services.AddTransient(
     typeof(IPipelineBehavior<,>),
     typeof(ValidationBehavior<,>));
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-.AddJwtBearer(
-    options =>
+// Authentication
+builder.Services
+    .AddAuthentication(
+        JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
     {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
+        options.TokenValidationParameters =
+            new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
 
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(jwtSecret))
-        };
-    }
-);
+                ValidIssuer =
+                    builder.Configuration["Jwt:Issuer"],
 
+                ValidAudience =
+                    builder.Configuration["Jwt:Audience"],
+
+                IssuerSigningKey =
+                    new SymmetricSecurityKey(
+                        Encoding.UTF8.GetBytes(jwtSecret))
+            };
+    });
+
+// Authorization
 builder.Services.AddAuthorization();
 
-builder.Services.AddHttpClient<ILogSearchReader, OpenSearchLogSearchReader>(client =>
+// OpenSearch
+builder.Services.AddHttpClient<
+    ILogSearchReader,
+    OpenSearchLogSearchReader>(client =>
 {
     client.BaseAddress = new Uri(openSearchUrl);
 
-    var credentials = Convert.ToBase64String(
-        Encoding.UTF8.GetBytes($"{openSearchUsername}:{openSearchPassword}"));
+    var credentials =
+        Convert.ToBase64String(
+            Encoding.UTF8.GetBytes(
+                $"{openSearchUsername}:{openSearchPassword}"));
 
     client.DefaultRequestHeaders.Authorization =
-        new AuthenticationHeaderValue("Basic", credentials);
+        new AuthenticationHeaderValue(
+            "Basic",
+            credentials);
 })
 .ConfigurePrimaryHttpMessageHandler(() =>
 {
     return new HttpClientHandler
     {
-        ServerCertificateCustomValidationCallback = openSearchSkipTlsVerify
-            ? HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
-            : null
+        ServerCertificateCustomValidationCallback =
+            openSearchSkipTlsVerify
+                ? HttpClientHandler
+                    .DangerousAcceptAnyServerCertificateValidator
+                : null
     };
 });
 
 var app = builder.Build();
 
+// Exception handling
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-// Configure the HTTP request pipeline.
+// OpenAPI / Swagger
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.MapOpenApi()
+        .WithDocumentPerVersion();
+
     app.UseSwaggerUI(options =>
     {
-        options.SwaggerEndpoint("/openapi/v1.json", "TraceFlow API v1");
+        options.SwaggerEndpoint(
+            "/control/openapi/v1.json",
+            "TraceFlow Control API v1");
     });
 }
 
@@ -176,77 +257,104 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Versioned Controllers
 app.MapControllers();
 
+// Health
 app.MapGet("/health", () =>
 {
-    return Results.Ok("TraceFlow Control API is running.");
+    return Results.Ok(
+        "TraceFlow Control API is running.");
 })
 .WithName("HealthCheck");
 
-app.MapGet("/health/database", async (AppDbContext dbContext) =>
-{
-    try
+// Database health
+app.MapGet(
+    "/health/database",
+    async (AppDbContext dbContext) =>
     {
-        var connection = dbContext.Database.GetDbConnection();
-
-        await connection.OpenAsync();
-
-        await using var command = connection.CreateCommand();
-        command.CommandText = "select current_database()";
-
-        var databaseName = await command.ExecuteScalarAsync();
-
-        return Results.Ok(new
+        try
         {
-            message = "Database is reachable.",
-            database = databaseName
-        });
-    }
-    catch (Exception ex)
-    {
-        return Results.BadRequest(new
+            var connection =
+                dbContext.Database.GetDbConnection();
+
+            await connection.OpenAsync();
+
+            await using var command =
+                connection.CreateCommand();
+
+            command.CommandText =
+                "select current_database()";
+
+            var databaseName =
+                await command.ExecuteScalarAsync();
+
+            return Results.Ok(new
+            {
+                message = "Database is reachable.",
+                database = databaseName
+            });
+        }
+        catch (Exception ex)
         {
-            message = "Failed to connect to the database.",
-            error = ex.Message
-        });
-    }
-});
+            return Results.BadRequest(new
+            {
+                message =
+                    "Failed to connect to the database.",
+                error = ex.Message
+            });
+        }
+    })
+.WithName("DatabaseHealthCheck");
 
-app.MapGet("/health/database/config", (IConfiguration configuration, IWebHostEnvironment env) =>
-{
-    var connectionString = configuration.GetConnectionString("Postgres");
-
-    if (string.IsNullOrWhiteSpace(connectionString))
+// Database configuration health
+app.MapGet(
+    "/health/database/config",
+    (
+        IConfiguration configuration,
+        IWebHostEnvironment env) =>
     {
+        var connectionString =
+            configuration.GetConnectionString(
+                "Postgres");
+
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            return Results.Ok(new
+            {
+                env.ContentRootPath,
+                connectionString = "empty"
+            });
+        }
+
+        var connectionStringBuilder =
+            new Npgsql.NpgsqlConnectionStringBuilder(
+                connectionString);
+
         return Results.Ok(new
         {
             env.ContentRootPath,
-            connectionString = "empty"
+            connectionStringBuilder.Host,
+            connectionStringBuilder.Port,
+            connectionStringBuilder.Database,
+            connectionStringBuilder.Username
         });
-    }
+    })
+.WithName("DatabaseConfigurationHealthCheck");
 
-    var builder = new Npgsql.NpgsqlConnectionStringBuilder(connectionString);
-
-    return Results.Ok(new
+// OpenSearch configuration health
+app.MapGet(
+    "/health/opensearch/config",
+    () =>
     {
-        env.ContentRootPath,
-        builder.Host,
-        builder.Port,
-        builder.Database,
-        builder.Username
-    });
-});
-
-app.MapGet("/health/opensearch/config", () =>
-{
-    return Results.Ok(new
-    {
-        url = openSearchUrl,
-        username = openSearchUsername,
-        index = openSearchIndex,
-        skipTlsVerify = openSearchSkipTlsVerify
-    });
-});
+        return Results.Ok(new
+        {
+            url = openSearchUrl,
+            username = openSearchUsername,
+            index = openSearchIndex,
+            skipTlsVerify = openSearchSkipTlsVerify
+        });
+    })
+.WithName("OpenSearchConfigurationHealthCheck");
 
 app.Run();

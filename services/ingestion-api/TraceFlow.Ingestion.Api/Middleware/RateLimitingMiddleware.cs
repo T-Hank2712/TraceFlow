@@ -1,3 +1,4 @@
+using TraceFlow.Ingestion.Api.Extensions;
 using TraceFlow.Ingestion.Api.Security;
 using TraceFlow.Ingestion.Api.Services.RateLimiting;
 
@@ -21,6 +22,12 @@ public sealed class RateLimitingMiddleware
 
     public async Task InvokeAsync(HttpContext context)
     {
+        if (context.AllowsAnonymous())
+        {
+            await _next(context);
+            return;
+        }
+
         var authenticationContext =
             AuthenticationContext.Get(context);
 

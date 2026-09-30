@@ -1,3 +1,4 @@
+using TraceFlow.Ingestion.Api.Extensions;
 using TraceFlow.Ingestion.Api.Security;
 
 namespace TraceFlow.Ingestion.Api.Middleware;
@@ -15,6 +16,12 @@ public sealed class AuthenticationMiddleware
         HttpContext context,
         Authenticator authenticator)
     {
+        if (context.AllowsAnonymous())
+        {
+            await _next(context);
+            return;
+        }
+
         var result = await authenticator.AuthenticateAsync(
             context.Request.Headers.Authorization,
             context.RequestAborted);

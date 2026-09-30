@@ -9,11 +9,13 @@ using TraceFlow.Api.Application.Auth.Commands.RefreshSession;
 using TraceFlow.Api.Application.Auth.Commands.ChangePassword;
 using TraceFlow.Api.Domain.Dtos.Auth;
 using TraceFlow.Api.Application.Auth.Commands.Logout;
+using Asp.Versioning;
 
 namespace TraceFlow.Api.Controllers;
 
 [ApiController]
-[Route("api/auth")]
+[ApiVersion(1.0)]
+[Route("api/v{version:apiVersion}/auth")]
 public class AuthController : ControllerBase
 {
     private readonly ISender _sender;
