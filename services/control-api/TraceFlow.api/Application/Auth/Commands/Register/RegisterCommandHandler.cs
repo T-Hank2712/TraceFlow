@@ -30,7 +30,7 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, RegisterR
             throw new ConflictException(
                 "A user with this email already exists.");
         }
-        var normalizedUsername = request.UserName.Trim().ToLowerInvariant();
+        var normalizedUsername = request.Username.Trim().ToLowerInvariant();
 
         var usernameExists = await _dbContext.Users
             .AnyAsync(user => user.NormalizedUsername == normalizedUsername, cancellationToken);
@@ -44,7 +44,7 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, RegisterR
 
         var user = new User(
             request.Email,
-            request.UserName,
+            request.Username,
             request.FirstName,
             request.LastName,
             passwordHash
@@ -57,7 +57,7 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, RegisterR
 
         var reponse = new RegisterResponse(
             request.Email,
-            request.UserName,
+            request.Username,
             request.FirstName,
             request.LastName
         );
