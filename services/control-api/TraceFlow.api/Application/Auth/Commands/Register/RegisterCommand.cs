@@ -4,7 +4,7 @@ namespace TraceFlow.Api.Application.Auth.Commands.Register;
 
 public record RegisterCommand(
     string Email,
-    string UserName,
+    string Username,
     string FirstName,
     string LastName,
     string Password,
