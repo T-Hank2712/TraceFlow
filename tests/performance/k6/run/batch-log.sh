@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../../deployments/performance" && pwd)"
 
 COMPOSE_FILE="${SCRIPT_DIR}/docker-compose.performance.yml"
 NGINX_CONTAINER="traceflow-performance-nginx"
@@ -39,5 +39,5 @@ docker compose \
     run --rm \
     -e "BASE_URL=${BASE_URL}" \
     -e "API_KEY=${API_KEY}" \
-    -e "BATCH_SIZE=${BATCH_SIZE:-10}" \
+    -e "BATCH_SIZE=${BATCH_SIZE}" \
     k6 run "/tests/scenarios/${SCENARIO}.js"
