@@ -130,7 +130,7 @@ services:
 
   control-api:
     build: 
-      context: ../services/control-api
+      context: ../../services/control-api
       dockerfile: Dockerfile
     container_name: traceflow-performance-control-api
     restart: unless-stopped
@@ -171,7 +171,7 @@ services:
 
   ingestion-api:
     build:
-      context: ../services/ingestion-api
+      context: ../../services/ingestion-api
       dockerfile: Dockerfile
     container_name: traceflow-performance-ingestion-api
     restart: unless-stopped
@@ -227,7 +227,7 @@ services:
   
   log-processor:
     build: 
-      context: ../services/log-processor
+      context: ../../services/log-processor
       dockerfile: Dockerfile
     container_name: traceflow-performance-log-processor
     restart: unless-stopped
@@ -269,8 +269,8 @@ services:
       - "8080:80"
       - "8443:443"
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/certs:/etc/nginx/certs:ro
+      - ../nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ../nginx/certs:/etc/nginx/certs:ro
     depends_on:
       control-api:
         condition: service_healthy
@@ -284,6 +284,50 @@ services:
           cpus: "0.10"
           memory: 64M
 
+  network-simulator:
+    build:
+      context: ../network-simulator
+    container_name: traceflow-performance-network-simulator
+    cap_add:
+      - NET_ADMIN
+    sysctls:
+      - net.ipv4.ip_forward=1
+    volumes:
+      - network_metadata:/run/traceflow
+    networks:
+      traceflow-external-network:
+        aliases:
+          - performance-gateway
+      traceflow-performance-network:
+        aliases:
+          - performance-router
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "test -s /run/traceflow/network.env"
+        ]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+    restart: "no"
+
+  load-generator:
+    build:
+      context: ../load-generator
+      dockerfile: Dockerfile
+    container_name: traceflow-performance-load-generator
+    cap_add:
+      - NET_ADMIN
+    volumes:
+      - network_metadata:/run/traceflow:ro
+    depends_on:
+      network-simulator:
+        condition: service_healthy
+    networks:
+      - traceflow-external-network
+    restart: "no"
+
 volumes:
   postgres_data:
     name: traceflow-performance-postgres-data
@@ -296,8 +340,15 @@ volumes:
 
   kafka_data:
     name: traceflow-performance-kafka-data
+  
+  network_metadata:
+    name: traceflow-performance-network-metadata
 
 networks:
   traceflow-performance-network:
     name: traceflow-performance-network
+    driver: bridge
+
+  traceflow-external-network:
+    name: traceflow-external-network
     driver: bridge
