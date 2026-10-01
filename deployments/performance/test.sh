@@ -39,4 +39,5 @@ docker compose \
     run --rm \
     -e "BASE_URL=${BASE_URL}" \
     -e "API_KEY=${API_KEY}" \
+    -e "BATCH_SIZE=${BATCH_SIZE:-10}" \
     k6 run "/tests/scenarios/${SCENARIO}.js"
