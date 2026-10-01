@@ -2,11 +2,18 @@
 
 set -euo pipefail
 
-COMPOSE_FILE="docker-compose.performance.yml"
-ENV_FILE=".env.performance"
-NGINX_CONTAINER="traceflow-performance-nginx"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+COMPOSE_FILE="${SCRIPT_DIR}/docker-compose.performance.yml"
+NGINX_CONTAINER="traceflow-performance-nginx"
 SCENARIO="${1:-smoke}"
+
+API_KEY="${API_KEY:-}"
+
+if [ -z "$API_KEY" ]; then
+    echo "Error: API_KEY is required."
+    exit 1
+fi
 
 echo "Resolving Nginx target..."
 
@@ -27,8 +34,9 @@ echo "Target: ${BASE_URL}"
 echo "Scenario: ${SCENARIO}"
 
 docker compose \
-    --env-file "$ENV_FILE" \
+    --env-file "${SCRIPT_DIR}/.env.performance" \
     -f "$COMPOSE_FILE" \
     run --rm \
     -e "BASE_URL=${BASE_URL}" \
+    -e "API_KEY=${API_KEY}" \
     k6 run "/tests/scenarios/${SCENARIO}.js"
