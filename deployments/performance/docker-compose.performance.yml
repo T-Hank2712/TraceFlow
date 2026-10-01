@@ -292,9 +292,24 @@ services:
       - NET_ADMIN
     sysctls:
       - net.ipv4.ip_forward=1
+    volumes:
+      - network_metadata:/run/traceflow
     networks:
-      - traceflow-external-network
-      - traceflow-performance-network
+      traceflow-external-network:
+        aliases:
+          - performance-gateway
+      traceflow-performance-network:
+        aliases:
+          - performance-router
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "test -s /run/traceflow/network.env"
+        ]
+      interval: 2s
+      timeout: 2s
+      retries: 15
     restart: "no"
 
   load-generator:
@@ -302,6 +317,13 @@ services:
       context: ../load-generator
       dockerfile: Dockerfile
     container_name: traceflow-performance-load-generator
+    cap_add:
+      - NET_ADMIN
+    volumes:
+      - network_metadata:/run/traceflow:ro
+    depends_on:
+      network-simulator:
+        condition: service_healthy
     networks:
       - traceflow-external-network
     restart: "no"
@@ -318,6 +340,9 @@ volumes:
 
   kafka_data:
     name: traceflow-performance-kafka-data
+  
+  network_metadata:
+    name: traceflow-performance-network-metadata
 
 networks:
   traceflow-performance-network:
