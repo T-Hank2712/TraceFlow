@@ -327,6 +327,16 @@ services:
     networks:
       - traceflow-external-network
     restart: "no"
+  k6:
+    image: grafana/k6:latest
+    container_name: traceflow-performance-k6
+    network_mode: "service:load-generator"
+    volumes:
+      - ../../tests/performance/k6:/tests:ro
+    depends_on:
+      load-generator:
+        condition: service_started
+    restart: "no"
 
 volumes:
   postgres_data:
