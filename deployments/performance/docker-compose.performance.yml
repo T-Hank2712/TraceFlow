@@ -298,9 +298,10 @@ services:
     restart: "no"
 
   load-generator:
-    image: alpine:3.22
+    build:
+      context: ../load-generator
+      dockerfile: Dockerfile
     container_name: traceflow-performance-load-generator
-    command: ["sh", "-c", "sleep infinity"]
     networks:
       - traceflow-external-network
     restart: "no"
