@@ -6,7 +6,12 @@ const API_KEY = __ENV.API_KEY;
 
 export const options = {
     vus: 5,
-    duration: '10s',
+    duration: '1m',
+
+    thresholds: {
+        http_req_failed: ['rate<0.01'],
+        http_req_duration: ['p(95)<500'],
+    },
 };
 
 export default function () {
