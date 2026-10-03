@@ -7,6 +7,7 @@ using TraceFlow.Ingestion.Api.Contracts.Authentication;
 using TraceFlow.Ingestion.Api.Errors;
 using TraceFlow.Ingestion.Api.Services.Ingestion;
 using TraceFlow.Ingestion.Api.Services.Redis;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace TraceFlow.Ingestion.Api.Security;
 
@@ -18,6 +19,7 @@ public sealed class Authenticator
     private readonly RedisOptions _redisOptions;
     private readonly TenantContextCacheKey _tenantContextCacheKey;
     private readonly ILogger<Authenticator> _logger;
+    private readonly IMemoryCache _memoryCache;
 
     public Authenticator(
         ApiKeyHeaderParser apiKeyParser,
@@ -25,7 +27,8 @@ public sealed class Authenticator
         IRedisCache redisCache,
         IOptions<RedisOptions> redisOptions,
         TenantContextCacheKey tenantContextCacheKey,
-        ILogger<Authenticator> logger)
+        ILogger<Authenticator> logger,
+        IMemoryCache memoryCache)
     {
         _apiKeyParser = apiKeyParser;
         _apiKeyValidator = apiKeyValidator;
@@ -33,6 +36,7 @@ public sealed class Authenticator
         _redisOptions = redisOptions.Value;
         _tenantContextCacheKey = tenantContextCacheKey;
         _logger = logger;
+        _memoryCache = memoryCache;
     }
 
     public async Task<Result<AuthenticatedContext>> AuthenticateAsync(
@@ -53,6 +57,18 @@ public sealed class Authenticator
         var apiKey = parsedKey.ApiKey;
 
         var cacheKey = _tenantContextCacheKey.Create(apiKey);
+        var memoryCacheKey = $"l1:{cacheKey}";
+
+        if (_memoryCache.TryGetValue<ApiKeyValidationResult>(
+                memoryCacheKey,
+                out var cachedTenant) &&
+            cachedTenant is not null)
+        {
+            return Result<AuthenticatedContext>.Ok(
+                new AuthenticatedContext(
+                    apiKey,
+                    cachedTenant));
+        }
 
         ApiKeyValidationResult? tenant = null;
 
@@ -64,8 +80,11 @@ public sealed class Authenticator
 
             if (tenant is not null)
             {
-                _logger.LogInformation(
-                    "Tenant context cache hit.");
+                _memoryCache.Set(
+                    memoryCacheKey,
+                    tenant,
+                    TimeSpan.FromSeconds(
+                        _redisOptions.TenantContextMemoryCacheTtlSeconds));
             }
         }
         catch (RedisException ex)
@@ -108,6 +127,12 @@ public sealed class Authenticator
                     ex,
                     "Redis cache unavailable while storing tenant context.");
             }
+
+            _memoryCache.Set(
+                memoryCacheKey,
+                tenant,
+                TimeSpan.FromSeconds(
+                    _redisOptions.TenantContextMemoryCacheTtlSeconds));
         }
 
         return Result<AuthenticatedContext>.Ok(
