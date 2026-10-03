@@ -21,44 +21,69 @@ public sealed class BatchProcessor : IBatchProcessor
         _logIndexer = logIndexer;
         _dlqProducer = dlqProducer;
     }
-    public async Task<BatchProcessResult> AddAsync(PendingLogEvent pendingEvent, CancellationToken cancellationToken)
+    public async Task<BatchProcessResult> AddAsync(
+        PendingLogEvent pendingEvent,
+        CancellationToken cancellationToken)
     {
+        List<PendingLogEvent>? batch = null;
+
         await _lock.WaitAsync(cancellationToken);
 
         try
         {
             _buffer.Add(pendingEvent);
 
-            if (_buffer.Count < _options.BatchSize)
+            if (_buffer.Count >= _options.BatchSize)
             {
-                return new BatchProcessResult([]);
+                batch = DrainBuffer();
             }
-            return await FlushInternalAsync(cancellationToken);
         }
         finally
         {
             _lock.Release();
         }
+
+        if (batch is null)
+        {
+            return new BatchProcessResult([]);
+        }
+
+        return await ProcessBatchAsync(
+            batch,
+            cancellationToken);
     }
-    public async Task<BatchProcessResult> FlushAsync(CancellationToken cancellationToken)
+   public async Task<BatchProcessResult> FlushAsync(
+    CancellationToken cancellationToken)
     {
+        List<PendingLogEvent>? batch = null;
+
         await _lock.WaitAsync(cancellationToken);
 
         try
         {
-            if (_buffer.Count == 0) return new BatchProcessResult([]);
-
-            return await FlushInternalAsync(cancellationToken);
+            if (_buffer.Count > 0)
+            {
+                batch = DrainBuffer();
+            }
         }
         finally
         {
             _lock.Release();
         }
-    }
-    private async Task<BatchProcessResult> FlushInternalAsync(CancellationToken cancellationToken)
-    {
-        var batch = _buffer.ToList();
 
+        if (batch is null)
+        {
+            return new BatchProcessResult([]);
+        }
+
+        return await ProcessBatchAsync(
+            batch,
+            cancellationToken);
+    }
+    private async Task<BatchProcessResult> ProcessBatchAsync(
+        IReadOnlyList<PendingLogEvent> batch,
+        CancellationToken cancellationToken)
+    {
         var events = batch
             .Select(x => x.Event)
             .ToList();
@@ -111,10 +136,6 @@ public sealed class BatchProcessor : IBatchProcessor
             .Select(x => x.Offset)
             .ToList();
 
-        _buffer.RemoveRange(
-            0,
-            batch.Count);
-
         _logger.LogInformation(
             "Log batch processed successfully. " +
             "Indexed: {Indexed}, Sent to DLQ: {Dlq}",
@@ -123,5 +144,12 @@ public sealed class BatchProcessor : IBatchProcessor
 
         return new BatchProcessResult(
             processedOffsets);
+    }
+    private List<PendingLogEvent> DrainBuffer()
+    {
+        var batch = _buffer.ToList();
+        _buffer.Clear();
+
+        return batch;
     }
 }
