@@ -10,9 +10,9 @@ public class ApiKey : Entity
     public string SecretHash { get; private set; } = string.Empty;
     public string Status { get; private set; } = ApiKeyStatuses.Active;
 
-    public DateTime? ExpiresAt { get; private set; }
-    public DateTime? RevokedAt { get; private set; }
-    public DateTime? LastUsedAt { get; private set; }
+    public DateTimeOffset ExpiresAt { get; private set; }
+    public DateTimeOffset? RevokedAt { get; private set; }
+    public DateTimeOffset? LastUsedAt { get; private set; }
 
     private ApiKey()
     {
@@ -25,7 +25,9 @@ public class ApiKey : Entity
         string environment,
         string keyPrefix,
         string secretHash,
-        DateTime? expiresAt)
+        DateTimeOffset expiresAt,
+        DateTimeOffset createdAt,
+        DateTimeOffset updatedAt)
     {
         Id = apiKeyId;
         TraceApplicationId = traceApplicationId;
@@ -35,11 +37,11 @@ public class ApiKey : Entity
         SecretHash = secretHash;
         Status = ApiKeyStatuses.Active;
         ExpiresAt = expiresAt;
-        CreatedAt = DateTime.UtcNow;
-        UpdatedAt = DateTime.UtcNow;
+        CreatedAt = createdAt;
+        UpdatedAt = updatedAt;
     }
 
-    public void Revoke()
+    public void Revoke(DateTimeOffset revokedAt)
     {
         if (Status == ApiKeyStatuses.Revoked)
         {
@@ -47,22 +49,22 @@ public class ApiKey : Entity
         }
 
         Status = ApiKeyStatuses.Revoked;
-        RevokedAt = DateTime.UtcNow;
-        UpdatedAt = DateTime.UtcNow;
+        RevokedAt = revokedAt;
+        UpdatedAt = revokedAt;
     }
 
-    public void MarkUsed()
+    public void MarkUsed(DateTimeOffset usedAt)
     {
-        LastUsedAt = DateTime.UtcNow;
-        UpdatedAt = DateTime.UtcNow;
+        LastUsedAt = usedAt;
+        UpdatedAt = usedAt;
     }
 
-    public bool IsExpired(DateTime utcNow)
+    public bool IsExpired(DateTimeOffset utcNow)
     {
-        return ExpiresAt is not null && ExpiresAt <= utcNow;
+        return ExpiresAt <= utcNow;
     }
 
-    public bool IsUsable(DateTime utcNow)
+    public bool IsUsable(DateTimeOffset utcNow)
     {
         return Status == ApiKeyStatuses.Active && !IsExpired(utcNow);
     }

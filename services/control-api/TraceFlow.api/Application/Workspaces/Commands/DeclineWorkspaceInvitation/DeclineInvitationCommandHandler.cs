@@ -1,11 +1,13 @@
 namespace TraceFlow.Api.Application.Workspaces.Commands.DeclineWorkspaceInvitation;
 
-public class DeclineInvitationCommandHandler(AppDbContext dbContext)
+public class DeclineInvitationCommandHandler(
+    AppDbContext dbContext,
+    TimeProvider timeProvider)
     : IRequestHandler<DeclineInvitationCommand, DeclineInvitationResponse>
 {
 
     private readonly AppDbContext _dbContext = dbContext;
-
+    private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<DeclineInvitationResponse> Handle(
         DeclineInvitationCommand request,
@@ -29,7 +31,7 @@ public class DeclineInvitationCommandHandler(AppDbContext dbContext)
             throw new ConflictException("Archived workspace invitation cannot be declined.");
         }
 
-        invitation.Decline();
+        invitation.Decline(_timeProvider.GetUtcNow());
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 

@@ -1,11 +1,14 @@
 namespace TraceFlow.Api.Application.Workspaces.Commands.AcceptWorkspaceInvitation;
 
-public class AcceptInvitationCommandHandler(AppDbContext dbContext)
+public class AcceptInvitationCommandHandler(
+    AppDbContext dbContext,
+    TimeProvider timeProvider
+    )
     : IRequestHandler<AcceptInvitationCommand, AcceptInvitationResponse>
 {
 
     private readonly AppDbContext _dbContext = dbContext;
-
+    private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<AcceptInvitationResponse> Handle(
         AcceptInvitationCommand request,
@@ -42,12 +45,15 @@ public class AcceptInvitationCommandHandler(AppDbContext dbContext)
             throw new ConflictException("User is already a workspace member.");
         }
 
-        invitation.Accept();
+        var utcNow = _timeProvider.GetUtcNow();
+
+        invitation.Accept(utcNow);
 
         var member = new WorkspaceMember(
             invitation.WorkspaceId,
             request.UserId,
-            invitation.Role);
+            invitation.Role,
+            utcNow);
 
         _dbContext.WorkspaceMembers.Add(member);
 

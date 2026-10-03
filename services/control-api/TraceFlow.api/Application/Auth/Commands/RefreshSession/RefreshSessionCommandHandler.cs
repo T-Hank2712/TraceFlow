@@ -4,7 +4,8 @@ public class RefreshSessionCommandHandler(
     AppDbContext dbContext,
     JwtTokenGenerator jwtTokenGenerator,
     RefreshTokenGenerator refreshTokenGenerator,
-    IConfiguration configuration
+    IConfiguration configuration,
+    TimeProvider timeProvider
 ) : IRequestHandler<RefreshSessionCommand, RefreshSessionResponse>
 {
 
@@ -15,6 +16,7 @@ public class RefreshSessionCommandHandler(
     private readonly RefreshTokenGenerator _refreshTokenGenerator = refreshTokenGenerator;
 
     private readonly IConfiguration _configuration = configuration;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<RefreshSessionResponse> Handle(RefreshSessionCommand request, CancellationToken cancellationToken)
     {
@@ -31,8 +33,9 @@ public class RefreshSessionCommandHandler(
             throw new UnauthorizedException("Invalid refresh token.");
         }
 
+        var utcNow = _timeProvider.GetUtcNow();
 
-        if (!existingRefreshToken.IsActive)
+        if (!existingRefreshToken.IsActive(utcNow))
         {
             throw new UnauthorizedException(
                 "Refresh token is no longer active.");
@@ -44,7 +47,7 @@ public class RefreshSessionCommandHandler(
                 "User account is not active.");
         }
 
-        existingRefreshToken.Revoke();
+        existingRefreshToken.Revoke(utcNow);
 
         var accessToken = _jwtTokenGenerator.Generate(existingRefreshToken.User);
         var newRefreshToken = _refreshTokenGenerator.Generate();
@@ -53,7 +56,8 @@ public class RefreshSessionCommandHandler(
         var newRefreshTokenEntity = new RefreshToken(
             existingRefreshToken.UserId,
             newRefreshToken.Hash,
-            DateTime.UtcNow.AddDays(refreshTokenExpirationDays));
+            utcNow.AddDays(refreshTokenExpirationDays),
+            utcNow);
 
         _dbContext.RefreshTokens.Add(newRefreshTokenEntity);
 

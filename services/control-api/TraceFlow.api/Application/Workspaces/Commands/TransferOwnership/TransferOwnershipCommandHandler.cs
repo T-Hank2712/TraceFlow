@@ -1,10 +1,13 @@
 namespace TraceFlow.Api.Application.Workspaces.Commands.TransferOwnership;
 
-public class TransferOwnershipCommandHandler(AppDbContext dbContext)
+public class TransferOwnershipCommandHandler(
+    AppDbContext dbContext,
+    TimeProvider timeProvider)
     : IRequestHandler<TransferOwnershipCommand, TransferOwnershipResponse>
 {
 
     private readonly AppDbContext _dbContext = dbContext;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
 
     public async Task<TransferOwnershipResponse> Handle(
@@ -58,7 +61,7 @@ public class TransferOwnershipCommandHandler(AppDbContext dbContext)
             throw new ConflictException("Target user is already a workspace owner.");
         }
 
-        targetMembership.ChangeRole(WorkspaceMemberRoles.Owner);
+        targetMembership.ChangeRole(WorkspaceMemberRoles.Owner, _timeProvider.GetUtcNow());
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 

@@ -43,7 +43,7 @@ public class ListProjectMembersQueryHandler(
                 member.User.Email,
                 member.Role,
                 member.Status,
-                member.JoinedAt))
+                member.CreatedAt))
             .ToListAsync(cancellationToken);
     }
 }

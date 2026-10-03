@@ -11,5 +11,5 @@ public record ProjectInvitationSentResponse(
     string InvitedByUserName,
     string Role,
     string Status,
-    DateTime ExpiresAt,
-    DateTime CreatedAt);
+    DateTimeOffset ExpiresAt,
+    DateTimeOffset CreatedAt);

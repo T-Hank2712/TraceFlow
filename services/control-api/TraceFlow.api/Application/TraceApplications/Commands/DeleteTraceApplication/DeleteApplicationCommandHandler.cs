@@ -2,13 +2,15 @@ namespace TraceFlow.Api.Application.TraceApplications.Commands.DeleteTraceApplic
 
 public class DeleteApplicationCommandHandler(
         AppDbContext dbContext,
-        ProjectAccessService projectAccess)
+        ProjectAccessService projectAccess,
+        TimeProvider timeProvider)
     : IRequestHandler<DeleteApplicationCommand, DeleteApplicationResponse>
 {
 
     private readonly AppDbContext _dbContext = dbContext;
 
     private readonly ProjectAccessService _projectAccess = projectAccess;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
  public async Task<DeleteApplicationResponse> Handle(
         DeleteApplicationCommand request,
@@ -53,7 +55,7 @@ public class DeleteApplicationCommandHandler(
                 "Trace application permanently deleted.");
         }
 
-        application.Archive();
+        application.Archive(_timeProvider.GetUtcNow());
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 

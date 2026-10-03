@@ -3,7 +3,8 @@ namespace TraceFlow.Api.Application.Workspaces.Commands.InviteWorkspaceMember;
 public class InviteWorkspaceMemberCommandHandler(
         AppDbContext dbContext,
         WorkspaceAccessService workspaceAccess,
-        UserLookupService userLookup)
+        UserLookupService userLookup,
+        TimeProvider timeProvider)
     : IRequestHandler<InviteWorkspaceMemberCommand, InviteWorkspaceMemberResponse>
 {
 
@@ -12,6 +13,7 @@ public class InviteWorkspaceMemberCommandHandler(
     private readonly WorkspaceAccessService _workspaceAccess = workspaceAccess;
 
     private readonly UserLookupService _userLookup = userLookup;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
 public async Task<InviteWorkspaceMemberResponse> Handle(
         InviteWorkspaceMemberCommand request,
@@ -49,13 +51,15 @@ public async Task<InviteWorkspaceMemberResponse> Handle(
             throw new ConflictException("User is already a workspace member.");
         }
 
+        var utcNow = _timeProvider.GetUtcNow();
+
         var alreadyInvited = await _dbContext.WorkspaceInvitations
             .AnyAsync(
                 invitation =>
                     invitation.WorkspaceId == request.WorkspaceId &&
                     invitation.InvitedUserId == invitedUser.Id &&
                     invitation.Status == InvitationStatuses.Pending &&
-                    invitation.ExpiresAt > DateTime.UtcNow,
+                    invitation.ExpiresAt > utcNow,
                 cancellationToken);
 
         if (alreadyInvited)
@@ -68,7 +72,8 @@ public async Task<InviteWorkspaceMemberResponse> Handle(
             invitedUser.Id,
             request.InvitedByUserId,
             request.Role,
-            DateTime.UtcNow.AddDays(InvitationDefaults.ExpiresAfterDays));
+            utcNow.AddDays(InvitationDefaults.ExpiresAfterDays),
+            utcNow);
 
         _dbContext.WorkspaceInvitations.Add(invitation);
 

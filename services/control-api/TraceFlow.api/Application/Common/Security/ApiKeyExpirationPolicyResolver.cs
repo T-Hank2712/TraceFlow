@@ -1,10 +1,12 @@
 namespace TraceFlow.Api.Application.Common.Security;
 
-public class ApiKeyExpirationPolicyResolver
+public class ApiKeyExpirationPolicyResolver(TimeProvider timeProvider)
 {
-    public DateTime? Resolve(int policy)
+    private readonly TimeProvider _timeProvider = timeProvider;
+
+    public DateTimeOffset Resolve(int policy)
     {
-        var now = DateTime.UtcNow;
+        var now = _timeProvider.GetUtcNow();
 
         return policy switch
         {

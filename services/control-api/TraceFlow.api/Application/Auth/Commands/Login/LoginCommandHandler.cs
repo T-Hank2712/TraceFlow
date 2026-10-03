@@ -5,7 +5,8 @@ public class LoginCommandHandler(
     PasswordHasher passwordHasher,
     JwtTokenGenerator jwtTokenGenerator,
     IConfiguration configuration,
-    RefreshTokenGenerator refreshTokenGenerator
+    RefreshTokenGenerator refreshTokenGenerator,
+    TimeProvider timeProvider
 ) : IRequestHandler<LoginCommand, LoginResponse>
 {
 
@@ -18,6 +19,7 @@ public class LoginCommandHandler(
     private readonly IConfiguration _configuration = configuration;
 
     private readonly RefreshTokenGenerator _refreshTokenGenerator = refreshTokenGenerator;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<LoginResponse> Handle(LoginCommand request, CancellationToken cancellationToken)
     {
@@ -53,7 +55,9 @@ public class LoginCommandHandler(
 
         var refreshTokenExpirationDays = int.Parse(_configuration["Jwt:RefreshTokenExpirationDays"] ?? "30");
 
-        var refreshTokenEntity = new RefreshToken(user.Id, refreshToken.Hash, DateTime.UtcNow.AddDays(refreshTokenExpirationDays));
+        var utcNow = _timeProvider.GetUtcNow();
+
+        var refreshTokenEntity = new RefreshToken(user.Id, refreshToken.Hash, utcNow.AddDays(refreshTokenExpirationDays), utcNow);
 
         _dbContext.RefreshTokens.Add(refreshTokenEntity);
 

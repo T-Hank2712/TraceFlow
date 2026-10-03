@@ -3,7 +3,8 @@ namespace TraceFlow.Api.Application.ApiKeys.Commands.ValidateApiKey;
 public class ValidateApiKeyCommandHandler(
     AppDbContext dbContext,
     ApiKeyParser apiKeyParser,
-    ApiKeyHasher apiKeyHasher
+    ApiKeyHasher apiKeyHasher,
+    TimeProvider timeProvider
 )
     : IRequestHandler<ValidateApiKeyCommand, ValidateApiKeyResponse>
 {
@@ -13,6 +14,7 @@ public class ValidateApiKeyCommandHandler(
     private readonly ApiKeyParser _apiKeyParser = apiKeyParser;
 
     private readonly ApiKeyHasher _apiKeyHasher = apiKeyHasher;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<ValidateApiKeyResponse> Handle(
         ValidateApiKeyCommand request,
@@ -43,7 +45,7 @@ public class ValidateApiKeyCommandHandler(
             return Invalid();
         }
 
-        var utcNow = DateTime.UtcNow;
+        var utcNow = _timeProvider.GetUtcNow();
 
         if (!apiKey.IsUsable(utcNow))
         {
@@ -57,7 +59,7 @@ public class ValidateApiKeyCommandHandler(
             return Invalid();
         }
 
-        apiKey.MarkUsed();
+        apiKey.MarkUsed(utcNow);
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 

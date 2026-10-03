@@ -1,10 +1,13 @@
 namespace TraceFlow.Api.Application.Workspaces.Commands.CreateWorkspace;
 
-public class CreateWorkspaceCommandHandler(AppDbContext dbContext)
+public class CreateWorkspaceCommandHandler(
+    AppDbContext dbContext,
+    TimeProvider timeProvider)
     : IRequestHandler<CreateWorkspaceCommand, CreateWorkspaceResponse>
 {
 
     private readonly AppDbContext _dbContext = dbContext;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
 
     public async Task<CreateWorkspaceResponse> Handle(
@@ -27,18 +30,22 @@ public class CreateWorkspaceCommandHandler(AppDbContext dbContext)
                 "Workspace slug is already taken.");
         }
 
+        var utcNow = _timeProvider.GetUtcNow();
+
         var workspace = new Workspace(
             request.UserId,
             request.Name,
             request.Slug,
-            request.Description);
+            request.Description,
+            utcNow);
 
         _dbContext.Workspaces.Add(workspace);
 
         var ownerMember = new WorkspaceMember(
             workspace.Id,
             request.UserId,
-            WorkspaceMemberRoles.Owner);
+            WorkspaceMemberRoles.Owner,
+            utcNow);
 
         _dbContext.WorkspaceMembers.Add(ownerMember);
 

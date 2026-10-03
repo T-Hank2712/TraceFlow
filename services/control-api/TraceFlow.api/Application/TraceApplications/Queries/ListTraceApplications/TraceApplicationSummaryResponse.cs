@@ -7,4 +7,4 @@ public record TraceApplicationSummaryResponse(
     string Slug,
     string? Description,
     string Status,
-    DateTime CreatedAt);
+    DateTimeOffset CreatedAt);

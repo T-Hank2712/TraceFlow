@@ -151,6 +151,8 @@ builder.Services.AddScoped<ApiKeyHasher>();
 builder.Services.AddScoped<ApiKeyExpirationPolicyResolver>();
 builder.Services.AddScoped<ApiKeyParser>();
 
+builder.Services.AddSingleton(TimeProvider.System);
+
 // MediatR validation behavior
 builder.Services.AddTransient(
     typeof(IPipelineBehavior<,>),

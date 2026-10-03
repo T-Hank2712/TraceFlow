@@ -2,13 +2,14 @@ namespace TraceFlow.Api.Application.Projects.Commands.DeleteProject;
 
 public class DeleteProjectCommandHandler(
         AppDbContext dbContext,
-        ProjectAccessService projectAccess)
+        ProjectAccessService projectAccess,
+        TimeProvider timeProvider)
     : IRequestHandler<DeleteProjectCommand, DeleteProjectResponse>
 {
 
     private readonly AppDbContext _dbContext = dbContext;
-
     private readonly ProjectAccessService _projectAccess = projectAccess;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
  public async Task<DeleteProjectResponse> Handle(
         DeleteProjectCommand request,
@@ -42,7 +43,7 @@ public class DeleteProjectCommandHandler(
                 "Project permanently deleted.");
         }
 
-        project.Archive();
+        project.Archive(_timeProvider.GetUtcNow());
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 

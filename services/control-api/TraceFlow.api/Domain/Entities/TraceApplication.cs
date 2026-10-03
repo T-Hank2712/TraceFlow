@@ -21,7 +21,8 @@ public class TraceApplication : Entity
         Ulid createdByUserId,
         string name,
         string slug,
-        string? description)
+        string? description,
+        DateTimeOffset createdAt)
     {
         Id = Ulid.NewUlid();
         ProjectId = projectId;
@@ -32,10 +33,14 @@ public class TraceApplication : Entity
             ? null
             : description.Trim();
         Status = ResourceStatuses.Active;
-        CreatedAt = DateTime.UtcNow;
-        UpdatedAt = DateTime.UtcNow;
+        CreatedAt = createdAt;
+        UpdatedAt = createdAt;
     }
-    public void Update(string? name, string? slug, string? description)
+    public void Update(
+        string? name,
+        string? slug,
+        string? description,
+        DateTimeOffset updatedAt)
     {
         if (!string.IsNullOrWhiteSpace(name))
         {
@@ -54,9 +59,9 @@ public class TraceApplication : Entity
                 : description.Trim();
         }
 
-        UpdatedAt = DateTime.UtcNow;
+        UpdatedAt = updatedAt;
     }
-    public void Archive()
+    public void Archive(DateTimeOffset archivedAt)
     {
         if (Status == ResourceStatuses.Archived)
         {
@@ -64,6 +69,6 @@ public class TraceApplication : Entity
         }
 
         Status = ResourceStatuses.Archived;
-        UpdatedAt = DateTime.UtcNow;
+        UpdatedAt = archivedAt;
     }
 }

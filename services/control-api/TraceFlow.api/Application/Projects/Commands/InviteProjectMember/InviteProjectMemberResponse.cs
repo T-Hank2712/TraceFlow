@@ -9,4 +9,4 @@ public record InviteProjectMemberResponse(
     string InvitedUserEmail,
     string Role,
     string Status,
-    DateTime ExpiresAt);
+    DateTimeOffset ExpiresAt);

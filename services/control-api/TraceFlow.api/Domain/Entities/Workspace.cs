@@ -11,46 +11,55 @@ public class Workspace : Entity
     public ICollection<WorkspaceMember> Members = new List<WorkspaceMember>();
     public ICollection<Project> Projects { get; private set; } = new List<Project>();
     private Workspace() { }
-    public Workspace(Ulid OwnerUserId, string Name, string Slug, string? Description)
+    public Workspace(
+        Ulid ownerUserId,
+        string name,
+        string slug,
+        string? description,
+        DateTimeOffset createdAt)
     {
-        this.Id = Ulid.NewUlid();
-        this.OwnerUserId = OwnerUserId;
-        this.Name = Name.Trim();
-        this.Slug = Slug.Trim().ToLower();
-        this.Description = string.IsNullOrWhiteSpace(Description)
+        Id = Ulid.NewUlid();
+        OwnerUserId = ownerUserId;
+        Name = name.Trim();
+        Slug = slug.Trim().ToLower();
+        Description = string.IsNullOrWhiteSpace(description)
             ? null
-            : Description.Trim();
+            : description.Trim();
         Status = ResourceStatuses.Active;
-        CreatedAt = DateTime.UtcNow;
-        UpdatedAt = DateTime.UtcNow;
+        CreatedAt = createdAt;
+        UpdatedAt = createdAt;
     }
-    public void UpdateWorkspace(string? Name, string? Slug, string? Description)
+    public void UpdateWorkspace(
+        string? name,
+        string? slug,
+        string? description,
+        DateTimeOffset updatedAt)
     {
-        if (!string.IsNullOrWhiteSpace(Name))
+        if (!string.IsNullOrWhiteSpace(name))
         {
-            this.Name = Name.Trim();
+            Name = name.Trim();
         }
-        if (!string.IsNullOrWhiteSpace(Slug))
+        if (!string.IsNullOrWhiteSpace(slug))
         {
-            this.Slug = Slug.Trim().ToLowerInvariant();
+            Slug = slug.Trim().ToLowerInvariant();
         }
-        if (Description is not null)
+        if (description is not null)
         {
-            this.Description = string.IsNullOrWhiteSpace(Description)
+            Description = string.IsNullOrWhiteSpace(description)
                 ? null
-                : Description.Trim();
+                : description.Trim();
         }
-        UpdatedAt = DateTime.UtcNow;
+        UpdatedAt = updatedAt;
     }
-    public void Archive()
+    public void Archive(DateTimeOffset archivedAt)
     {
         Status = ResourceStatuses.Archived;
-        UpdatedAt = DateTime.UtcNow;
+        UpdatedAt = archivedAt;
     }
 
-    public void Activate()
+    public void Activate(DateTimeOffset activatedAt)
     {
         Status = ResourceStatuses.Active;
-        UpdatedAt = DateTime.UtcNow;
+        UpdatedAt = activatedAt;
     }
 }

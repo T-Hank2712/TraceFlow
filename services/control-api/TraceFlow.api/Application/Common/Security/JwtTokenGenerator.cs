@@ -1,19 +1,22 @@
 namespace TraceFlow.Api.Application.Common.Security;
 
-public class JwtTokenGenerator(IConfiguration configuration)
+public class JwtTokenGenerator(
+    IConfiguration configuration,
+    TimeProvider timeProvider)
 {
 
     private readonly IConfiguration _configuration = configuration;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
 
-    public (string Token, DateTime ExpiresAt) Generate(User user)
+    public (string Token, DateTimeOffset ExpiresAt) Generate(User user)
     {
         var issuer = _configuration["Jwt:Issuer"];
         var audience = _configuration["Jwt:Audience"]!;
         var secret = _configuration["Jwt:Secret"]!;
 
         var minutes = int.Parse(_configuration["Jwt:AccessTokenExpirationMinutes"] ?? "15");
-        var expiresAt = DateTime.UtcNow.AddMinutes(minutes);
+        var expiresAt = _timeProvider.GetUtcNow().AddMinutes(minutes);
 
         var claims = new List<Claim>
         {
@@ -35,7 +38,7 @@ public class JwtTokenGenerator(IConfiguration configuration)
             issuer,
             audience,
             claims,
-            expires: expiresAt,
+            expires: expiresAt.UtcDateTime,
             signingCredentials: credentials);
 
         return (

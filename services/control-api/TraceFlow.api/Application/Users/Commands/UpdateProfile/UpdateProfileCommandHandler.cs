@@ -1,9 +1,12 @@
 namespace TraceFlow.Api.Application.Users.Commands.UpdateProfile;
 
-public class UpdateProfileCommandHandler(AppDbContext dbContext) : IRequestHandler<UpdateProfileCommand, UpdateProfileResponse>
+public class UpdateProfileCommandHandler(
+    AppDbContext dbContext,
+    TimeProvider timeProvider) : IRequestHandler<UpdateProfileCommand, UpdateProfileResponse>
 {
 
     private readonly AppDbContext _dbContext = dbContext;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
 
     public async Task<UpdateProfileResponse> Handle(UpdateProfileCommand request, CancellationToken cancellationToken)
@@ -41,7 +44,8 @@ public class UpdateProfileCommandHandler(AppDbContext dbContext) : IRequestHandl
         user.UpdateProfile(
             request.UserName,
             request.FirstName,
-            request.LastName
+            request.LastName,
+            _timeProvider.GetUtcNow()
         );
 
         await _dbContext.SaveChangesAsync(cancellationToken);

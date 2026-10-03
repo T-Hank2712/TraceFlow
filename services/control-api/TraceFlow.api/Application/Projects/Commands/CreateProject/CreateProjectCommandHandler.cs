@@ -2,13 +2,14 @@ namespace TraceFlow.Api.Application.Projects.Commands.CreateProject;
 
 public class CreateProjectCommandHandler(
         AppDbContext dbContext,
-        WorkspaceAccessService workspaceAccess)
+        WorkspaceAccessService workspaceAccess,
+        TimeProvider timeProvider)
     : IRequestHandler<CreateProjectCommand, CreateProjectResponse>
 {
 
     private readonly AppDbContext _dbContext = dbContext;
-
     private readonly WorkspaceAccessService _workspaceAccess = workspaceAccess;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
  public async Task<CreateProjectResponse> Handle(
         CreateProjectCommand request,
@@ -43,12 +44,15 @@ public class CreateProjectCommandHandler(
             throw new ConflictException("Project slug is already taken.");
         }
 
+        var utcNow = _timeProvider.GetUtcNow();
+
         var project = new Project(
             request.WorkspaceId,
             request.UserId,
             request.Name,
             request.Slug,
-            request.Description);
+            request.Description,
+            utcNow);
 
         _dbContext.Projects.Add(project);
 
@@ -67,7 +71,8 @@ public class CreateProjectCommandHandler(
             .Select(userId => new ProjectMember(
                 project.Id,
                 userId,
-                ProjectMemberRoles.Manager))
+                ProjectMemberRoles.Manager,
+                utcNow))
             .ToList();
 
         _dbContext.ProjectMembers.AddRange(projectMembers);

@@ -2,13 +2,15 @@ namespace TraceFlow.Api.Application.Workspaces.Commands.UpdateWorkspace;
 
 public class UpdateWorkspaceCommandHandler(
         AppDbContext dbContext,
-        WorkspaceAccessService workspaceAccess)
+        WorkspaceAccessService workspaceAccess,
+        TimeProvider timeProvider)
     : IRequestHandler<UpdateWorkspaceCommand, UpdateWorkspaceResponse>
 {
 
     private readonly AppDbContext _dbContext = dbContext;
 
     private readonly WorkspaceAccessService _workspaceAccess = workspaceAccess;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
  public async Task<UpdateWorkspaceResponse> Handle(
         UpdateWorkspaceCommand request,
@@ -50,7 +52,8 @@ public class UpdateWorkspaceCommandHandler(
         membership.Workspace.UpdateWorkspace(
             request.Name,
             request.Slug,
-            request.Description);
+            request.Description,
+            _timeProvider.GetUtcNow());
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 

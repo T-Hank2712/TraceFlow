@@ -2,13 +2,15 @@ namespace TraceFlow.Api.Application.Workspaces.Commands.DeleteWorkspace;
 
 public class DeleteWorkspaceCommandHandler(
         AppDbContext dbContext,
-        WorkspaceAccessService workspaceAccess)
+        WorkspaceAccessService workspaceAccess,
+        TimeProvider timeProvider)
     : IRequestHandler<DeleteWorkspaceCommand, DeleteWorkspaceResponse>
 {
 
     private readonly AppDbContext _dbContext = dbContext;
 
     private readonly WorkspaceAccessService _workspaceAccess = workspaceAccess;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
  public async Task<DeleteWorkspaceResponse> Handle(
         DeleteWorkspaceCommand request,
@@ -56,7 +58,7 @@ public class DeleteWorkspaceCommandHandler(
                 "Workspace permanently deleted.");
         }
 
-        workspace.Archive();
+        workspace.Archive(_timeProvider.GetUtcNow());
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 

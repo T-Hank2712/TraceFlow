@@ -1,14 +1,17 @@
 namespace TraceFlow.Api.Application.Projects.Commands.CancelProjectInvitation;
 
 public class CancelProjectInvitationCommandHandler(
-        AppDbContext dbContext,
-        ProjectAccessService projectAccess)
+    AppDbContext dbContext,
+    ProjectAccessService projectAccess,
+    TimeProvider timeProvider
+)
     : IRequestHandler<CancelProjectInvitationCommand, CancelProjectInvitationResponse>
 {
 
     private readonly AppDbContext _dbContext = dbContext;
 
     private readonly ProjectAccessService _projectAccess = projectAccess;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
  public async Task<CancelProjectInvitationResponse> Handle(
         CancelProjectInvitationCommand request,
@@ -43,7 +46,7 @@ public class CancelProjectInvitationCommandHandler(
             throw new ConflictException("Only pending invitation can be cancelled.");
         }
 
-        invitation.Cancel();
+        invitation.Cancel(_timeProvider.GetUtcNow());
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 

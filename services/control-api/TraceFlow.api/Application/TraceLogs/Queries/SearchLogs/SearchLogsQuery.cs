@@ -10,8 +10,8 @@ public sealed record SearchLogsQuery(
     string? Service,
     string? TraceId,
     string? CorrelationId,
-    DateTime? From,
-    DateTime? To,
+    DateTimeOffset? From,
+    DateTimeOffset? To,
     int Page,
     int PageSize
 ) : IRequest<SearchLogsResponse>;

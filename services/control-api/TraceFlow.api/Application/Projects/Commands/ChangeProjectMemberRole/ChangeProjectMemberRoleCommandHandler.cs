@@ -2,13 +2,15 @@ namespace TraceFlow.Api.Application.Projects.Commands.ChangeProjectMemberRole;
 
 public class ChangeProjectMemberRoleCommandHandler(
         AppDbContext dbContext,
-        ProjectAccessService projectAccess)
+        ProjectAccessService projectAccess,
+        TimeProvider timeProvider)
     : IRequestHandler<ChangeProjectMemberRoleCommand, ChangeProjectMemberRoleResponse>
 {
 
     private readonly AppDbContext _dbContext = dbContext;
 
     private readonly ProjectAccessService _projectAccess = projectAccess;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
  public async Task<ChangeProjectMemberRoleResponse> Handle(
         ChangeProjectMemberRoleCommand request,
@@ -62,7 +64,7 @@ public class ChangeProjectMemberRoleCommandHandler(
             }
         }
 
-        targetMember.ChangeRole(newRole);
+        targetMember.ChangeRole(newRole, _timeProvider.GetUtcNow());
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 

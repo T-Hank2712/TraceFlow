@@ -2,13 +2,14 @@ namespace TraceFlow.Api.Application.Projects.Commands.UpdateProject;
 
 public class UpdateProjectCommandHandler(
         AppDbContext dbContext,
-        ProjectAccessService projectAccess)
+        ProjectAccessService projectAccess,
+        TimeProvider timeProvider
+        )
     : IRequestHandler<UpdateProjectCommand, UpdateProjectResponse>
 {
-
     private readonly AppDbContext _dbContext = dbContext;
-
     private readonly ProjectAccessService _projectAccess = projectAccess;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
  public async Task<UpdateProjectResponse> Handle(
         UpdateProjectCommand request,
@@ -49,7 +50,8 @@ public class UpdateProjectCommandHandler(
         project.UpdateProject(
             request.Name,
             request.Slug,
-            request.Description);
+            request.Description,
+            _timeProvider.GetUtcNow());
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 

@@ -21,7 +21,8 @@ public class Project : Entity
     Ulid CreatedByUserId,
     string Name,
     string Slug,
-    string? Description)
+    string? Description,
+    DateTimeOffset createdAt)
     {
         Id = Ulid.NewUlid();
         this.WorkspaceId = WorkspaceId;
@@ -32,10 +33,10 @@ public class Project : Entity
             ? null
             : Description.Trim();
         Status = ResourceStatuses.Active;
-        CreatedAt = DateTime.UtcNow;
-        UpdatedAt = DateTime.UtcNow;
+        CreatedAt = createdAt;
+        UpdatedAt = createdAt;
     }
-    public void UpdateProject(string? Name, string? Slug, string? Description)
+    public void UpdateProject(string? Name, string? Slug, string? Description, DateTimeOffset updatedAt)
     {
         if (!string.IsNullOrWhiteSpace(Name))
         {
@@ -54,17 +55,17 @@ public class Project : Entity
                 : Description.Trim();
         }
 
-        UpdatedAt = DateTime.UtcNow;
+        UpdatedAt = updatedAt;
     }
-    public void Archive()
+    public void Archive(DateTimeOffset archived)
     {
         Status = ResourceStatuses.Archived;
-        UpdatedAt = DateTime.UtcNow;
+        UpdatedAt = archived;
     }
 
-    public void Activate()
+    public void Activate(DateTimeOffset actived)
     {
         Status = ResourceStatuses.Active;
-        UpdatedAt = DateTime.UtcNow;
+        UpdatedAt = actived;
     }
 }

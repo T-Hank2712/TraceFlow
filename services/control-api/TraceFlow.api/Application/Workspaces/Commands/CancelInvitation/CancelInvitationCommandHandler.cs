@@ -2,13 +2,16 @@ namespace TraceFlow.Api.Application.Workspaces.Commands.CancelInvitation;
 
 public class CancelInvitationCommandHandler(
         AppDbContext dbContext,
-        WorkspaceAccessService workspaceAccess)
+        WorkspaceAccessService workspaceAccess,
+        TimeProvider timeProvider
+        )
     : IRequestHandler<CancelInvitationCommand, CancelInvitationResponse>
 {
 
     private readonly AppDbContext _dbContext = dbContext;
 
     private readonly WorkspaceAccessService _workspaceAccess = workspaceAccess;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
  public async Task<CancelInvitationResponse> Handle(
         CancelInvitationCommand request,
@@ -45,7 +48,7 @@ public class CancelInvitationCommandHandler(
             throw new ConflictException("Only pending invitation can be cancelled.");
         }
 
-        invitation.Cancel();
+        invitation.Cancel(_timeProvider.GetUtcNow());
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 

@@ -2,13 +2,15 @@ namespace TraceFlow.Api.Application.TraceApplications.Commands.CreateTraceApplic
 
 public class CreateTraceApplicationCommandHandler(
         AppDbContext dbContext,
-        ProjectAccessService projectAccess)
+        ProjectAccessService projectAccess,
+        TimeProvider timeProvider)
     : IRequestHandler<CreateTraceApplicationCommand, CreateTraceApplicationResponse>
 {
 
     private readonly AppDbContext _dbContext = dbContext;
 
     private readonly ProjectAccessService _projectAccess = projectAccess;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
  public async Task<CreateTraceApplicationResponse> Handle(
         CreateTraceApplicationCommand request,
@@ -45,7 +47,8 @@ public class CreateTraceApplicationCommandHandler(
             request.UserId,
             request.Name,
             request.Slug,
-            request.Description);
+            request.Description,
+            _timeProvider.GetUtcNow());
 
         _dbContext.TraceApplications.Add(traceApplication);
 

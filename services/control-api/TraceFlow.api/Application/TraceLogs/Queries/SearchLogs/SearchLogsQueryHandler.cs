@@ -3,7 +3,8 @@ namespace TraceFlow.Api.Application.TraceLogs.Queries.SearchLogs;
 public sealed class SearchLogsQueryHandler(
         AppDbContext dbContext,
         ProjectAccessService projectAccess,
-        ILogSearchReader logSearchReader)
+        ILogSearchReader logSearchReader,
+        TimeProvider timeProvider)
     : IRequestHandler<SearchLogsQuery, SearchLogsResponse>
 {
 
@@ -12,6 +13,7 @@ public sealed class SearchLogsQueryHandler(
     private readonly ProjectAccessService _projectAccess = projectAccess;
 
     private readonly ILogSearchReader _logSearchReader = logSearchReader;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
 public async Task<SearchLogsResponse> Handle(
         SearchLogsQuery request,
@@ -46,15 +48,15 @@ public async Task<SearchLogsResponse> Handle(
             }
         }
 
-        var normalizedQuery = NormalizeTimeRange(request);
+        var normalizedQuery = NormalizeTimeRange(request, _timeProvider.GetUtcNow());
 
         return await _logSearchReader.SearchAsync(
             normalizedQuery,
             cancellationToken);
     }
-    private static SearchLogsQuery NormalizeTimeRange(SearchLogsQuery query)
+    private static SearchLogsQuery NormalizeTimeRange(SearchLogsQuery query, DateTimeOffset utcNow)
     {
-        var to = query.To?.ToUniversalTime() ?? DateTime.UtcNow;
+        var to = query.To?.ToUniversalTime() ?? utcNow;
         var from = query.From?.ToUniversalTime() ?? to.AddHours(-24);
 
         return query with

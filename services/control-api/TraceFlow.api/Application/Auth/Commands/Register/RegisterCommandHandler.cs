@@ -2,13 +2,15 @@ namespace TraceFlow.Api.Application.Auth.Commands.Register;
 
 public class RegisterCommandHandler(
     AppDbContext dbContext, 
-    PasswordHasher passwordHasher
+    PasswordHasher passwordHasher,
+    TimeProvider timeProvider
 ) : IRequestHandler<RegisterCommand, RegisterResponse>
 {
 
     private readonly AppDbContext _dbContext = dbContext;
 
     private readonly PasswordHasher _passwordHasher = passwordHasher;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<RegisterResponse> Handle(
         RegisterCommand request,
@@ -41,7 +43,8 @@ public class RegisterCommandHandler(
             request.Username,
             request.FirstName,
             request.LastName,
-            passwordHash
+            passwordHash,
+            _timeProvider.GetUtcNow()
             );
 
         _dbContext.Users.Add(user);

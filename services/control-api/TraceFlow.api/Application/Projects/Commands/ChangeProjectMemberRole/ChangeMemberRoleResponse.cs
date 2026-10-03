@@ -6,4 +6,4 @@ public record ChangeProjectMemberRoleResponse(
     Ulid UserId,
     string Role,
     string Status,
-    DateTime UpdatedAt);
+    DateTimeOffset UpdatedAt);

@@ -1,11 +1,13 @@
 namespace TraceFlow.Api.Application.Workspaces.Queries.InvitationInbox;
 
-public class InvitationInboxQueryHandler(AppDbContext dbContext)
+public class InvitationInboxQueryHandler(
+    AppDbContext dbContext,
+    TimeProvider timeProvider)
     : IRequestHandler<InvitationInboxQuery, IReadOnlyList<InvitationInboxResponse>>
 {
 
     private readonly AppDbContext _dbContext = dbContext;
-
+    private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<IReadOnlyList<InvitationInboxResponse>> Handle(
         InvitationInboxQuery request,
@@ -16,7 +18,7 @@ public class InvitationInboxQueryHandler(AppDbContext dbContext)
             .Where(invitation =>
                 invitation.InvitedUserId == request.UserId &&
                 invitation.Status == InvitationStatuses.Pending &&
-                invitation.ExpiresAt > DateTime.UtcNow)
+                invitation.ExpiresAt > _timeProvider.GetUtcNow())
             .OrderByDescending(invitation => invitation.CreatedAt)
             .Select(invitation => new InvitationInboxResponse(
                 invitation.Id,

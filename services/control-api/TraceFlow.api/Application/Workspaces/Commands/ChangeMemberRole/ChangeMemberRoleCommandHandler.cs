@@ -2,13 +2,15 @@ namespace TraceFlow.Api.Application.Workspaces.Commands.ChangeMemberRole;
 
 public class ChangeMemberRoleCommandHandler(
         AppDbContext dbContext,
-        WorkspaceAccessService workspaceAccess)
+        WorkspaceAccessService workspaceAccess,
+        TimeProvider timeProvider)
     : IRequestHandler<ChangeMemberRoleCommand, ChangeMemberRoleResponse>
 {
 
     private readonly AppDbContext _dbContext = dbContext;
 
     private readonly WorkspaceAccessService _workspaceAccess = workspaceAccess;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
  public async Task<ChangeMemberRoleResponse> Handle(
         ChangeMemberRoleCommand request,
@@ -69,7 +71,9 @@ public class ChangeMemberRoleCommandHandler(
             throw new ConflictException("Member already has this role.");
         }
 
-        targetMember.ChangeRole(newRole);
+        var utcNow = _timeProvider.GetUtcNow();
+
+        targetMember.ChangeRole(newRole, utcNow);
 
         if (newRole == WorkspaceMemberRoles.Admin)
         {
@@ -91,8 +95,8 @@ public class ChangeMemberRoleCommandHandler(
 
             foreach (var existingProjectMember in existingProjectMembers)
             {
-                existingProjectMember.ChangeRole(ProjectMemberRoles.Manager);
-                existingProjectMember.Activate();
+                existingProjectMember.ChangeRole(ProjectMemberRoles.Manager,utcNow);
+                existingProjectMember.Activate(utcNow);
             }
 
             var existingProjectIds = existingProjectMembers
@@ -104,7 +108,8 @@ public class ChangeMemberRoleCommandHandler(
                 .Select(project => new ProjectMember(
                     project.Id,
                     targetMember.UserId,
-                    ProjectMemberRoles.Manager))
+                    ProjectMemberRoles.Manager,
+                    utcNow))
                 .ToList();
 
             _dbContext.ProjectMembers.AddRange(missingProjectMembers);

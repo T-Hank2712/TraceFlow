@@ -6,4 +6,4 @@ public record ChangeMemberRoleResponse(
     Ulid WorkspaceId,
     string Role,
     string Status,
-    DateTime UpdatedAt);
+    DateTimeOffset UpdatedAt);

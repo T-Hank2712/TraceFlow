@@ -5,7 +5,8 @@ public class CreateApiKeyCommandHandler(
     ProjectAccessService projectAccess,
     ApiKeyGenerator apiKeyGenerator,
     ApiKeyHasher apiKeyHasher,
-    ApiKeyExpirationPolicyResolver expirationPolicyResolver
+    ApiKeyExpirationPolicyResolver expirationPolicyResolver,
+    TimeProvider timeProvider
 )
     : IRequestHandler<CreateApiKeyCommand, CreateApiKeyResponse>
 {
@@ -19,6 +20,7 @@ public class CreateApiKeyCommandHandler(
     private readonly ApiKeyHasher _apiKeyHasher = apiKeyHasher;
 
     private readonly ApiKeyExpirationPolicyResolver _expirationPolicyResolver = expirationPolicyResolver;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<CreateApiKeyResponse> Handle(
         CreateApiKeyCommand request,
@@ -56,6 +58,8 @@ public class CreateApiKeyCommandHandler(
         var secretHash = _apiKeyHasher.Hash(generatedKey.Secret);
         var expiresAt = _expirationPolicyResolver.Resolve(expirationPolicy);
 
+        var utcNow = _timeProvider.GetUtcNow();
+
         var apiKey = new ApiKey(
             apiKeyId,
             request.ApplicationId,
@@ -63,7 +67,9 @@ public class CreateApiKeyCommandHandler(
             environment,
             generatedKey.KeyPrefix,
             secretHash,
-            expiresAt);
+            expiresAt,
+            utcNow,
+            utcNow);
 
         _dbContext.ApiKeys.Add(apiKey);
 
