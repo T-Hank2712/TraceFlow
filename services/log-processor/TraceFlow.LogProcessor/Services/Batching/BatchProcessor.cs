@@ -136,12 +136,6 @@ public sealed class BatchProcessor : IBatchProcessor
             .Select(x => x.Offset)
             .ToList();
 
-        _logger.LogInformation(
-            "Log batch processed successfully. " +
-            "Indexed: {Indexed}, Sent to DLQ: {Dlq}",
-            succeededEventIds.Count,
-            dlqSucceededEventIds.Count);
-
         return new BatchProcessResult(
             processedOffsets);
     }

@@ -7,6 +7,7 @@ using TraceFlow.LogProcessor.Processing;
 using TraceFlow.LogProcessor.Services.OpenSearch;
 using OpenSearch.Client;
 using TraceFlow.LogProcessor.Services.Offsets;
+using TraceFlow.LogProcessor.Services.Queue;
 
 Env.Load();
 var builder = Host.CreateApplicationBuilder(args);
@@ -56,9 +57,11 @@ builder.Services.AddSingleton<IOpenSearchClient>(new OpenSearchClient(settings))
 builder.Services.AddSingleton<IDlqProducer, DlqProducer>();
 builder.Services.AddSingleton<IOffsetCoordinator, OffsetCoordinator>();
 builder.Services.AddSingleton<IOffsetCommitSignal, OffsetCommitSignal>();
+builder.Services.AddSingleton<IPendingLogEventQueue, PendingLogEventQueue>();
 
 builder.Services.AddHostedService<LogConsumerWorker>();
 builder.Services.AddHostedService<BatchFlushWorker>();
+builder.Services.AddHostedService<QueuedBatchWorker>();
 
 var host = builder.Build();
 host.Run();
