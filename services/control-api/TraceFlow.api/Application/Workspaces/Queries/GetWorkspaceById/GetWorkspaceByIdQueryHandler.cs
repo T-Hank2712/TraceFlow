@@ -1,6 +1,3 @@
-using MediatR;
-using TraceFlow.Api.Application.Common.AccessControl;
-
 namespace TraceFlow.Api.Application.Workspaces.Queries.GetWorkspaceById;
 
 public class GetWorkspaceByIdQueryHandler

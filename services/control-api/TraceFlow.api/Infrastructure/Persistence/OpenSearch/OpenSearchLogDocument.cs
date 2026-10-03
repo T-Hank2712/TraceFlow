@@ -1,5 +1,3 @@
-using System.Text.Json.Serialization;
-
 namespace TraceFlow.Api.Infrastructure.OpenSearch;
 
 public sealed class OpenSearchLogDocument

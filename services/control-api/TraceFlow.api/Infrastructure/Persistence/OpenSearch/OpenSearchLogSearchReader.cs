@@ -1,10 +1,3 @@
-using System.Text;
-using System.Text.Json;
-using TraceFlow.Api.Application.Common.Logs;
-using TraceFlow.Api.Domain.Dtos.Logs;
-using TraceFlow.Api.Application.Logs.Queries.SearchLogs;
-using TraceFlow.Api.Application.Common.Exceptions;
-
 namespace TraceFlow.Api.Infrastructure.OpenSearch;
 
 public sealed class OpenSearchLogSearchReader : ILogSearchReader

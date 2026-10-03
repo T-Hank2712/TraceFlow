@@ -1,5 +1,3 @@
-using TraceFlow.Api.Domain.Common;
-
 namespace TraceFlow.Api.Domain.Entities;
 
 public class RefreshToken : Entity

@@ -1,5 +1,3 @@
-using MediatR;
-
 namespace TraceFlow.Api.Application.Auth.Commands.ChangePassword;
 
 public record ChangePasswordCommand(

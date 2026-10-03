@@ -1,9 +1,6 @@
-using TraceFlow.Api.Domain.Common;
-using TraceFlow.Api.Domain.Constants;
+namespace TraceFlow.Api.Domain.Entities;
 
-namespace TraceFlow.Api.Domain.Entities
-{
-    public class User : Entity
+public class User : Entity
     {
         public string Email { get; private set; } = string.Empty;
         public string UserName { get; private set; } = string.Empty;
@@ -63,4 +60,3 @@ namespace TraceFlow.Api.Domain.Entities
             return username.Trim().ToLowerInvariant();
         }
     }
-}

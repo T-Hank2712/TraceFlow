@@ -1,8 +1,3 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Infrastructure.Persistence;
-using TraceFlow.Api.Domain.Constants;
-
 namespace TraceFlow.Api.Application.Workspaces.Queries.GetWorkspaces;
 
 public class GetMyWorkspacesQueryHandler

@@ -1,9 +1,3 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
-using Microsoft.IdentityModel.Tokens;
-using TraceFlow.Api.Domain.Entities;
-
 namespace TraceFlow.Api.Application.Common.Security;
 
 public class JwtTokenGenerator

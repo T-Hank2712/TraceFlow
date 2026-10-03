@@ -1,11 +1,3 @@
-using MediatR;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using TraceFlow.Api.Application.Logs.Queries.SearchLogs;
-using TraceFlow.Api.Domain.Common.Extensions;
-using TraceFlow.Api.Domain.Dtos.Logs;
-using Asp.Versioning;
-
 namespace TraceFlow.Api.Controllers;
 
 [ApiController]

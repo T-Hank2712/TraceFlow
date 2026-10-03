@@ -1,6 +1,3 @@
-using TraceFlow.Api.Domain.Common;
-using TraceFlow.Api.Domain.Constants;
-
 namespace TraceFlow.Api.Domain.Entities;
 
 public class TraceApplication : Entity

@@ -1,5 +1,3 @@
-using TraceFlow.Api.Application.Logs.Queries.SearchLogs;
-
 namespace TraceFlow.Api.Application.Common.Logs;
 
 public interface ILogSearchReader

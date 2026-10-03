@@ -1,6 +1,3 @@
-using FluentValidation;
-using MediatR;
-
 namespace TraceFlow.Api.Application.Common.Behaviors;
 
 public class ValidationBehavior<TRequest, TResponse>

@@ -1,5 +1,3 @@
-using Microsoft.AspNetCore.Identity;
-
 namespace TraceFlow.Api.Application.Common.Security;
 
 public class PasswordHasher

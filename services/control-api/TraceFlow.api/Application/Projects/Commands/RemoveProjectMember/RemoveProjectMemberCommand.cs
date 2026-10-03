@@ -1,5 +1,3 @@
-using MediatR;
-
 namespace TraceFlow.Api.Application.Projects.Commands.RemoveProjectMember;
 
 public record RemoveProjectMemberCommand(

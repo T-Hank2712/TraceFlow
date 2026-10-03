@@ -1,19 +1,3 @@
-using MediatR;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using TraceFlow.Api.Application.Projects.Commands.CreateProject;
-using TraceFlow.Api.Domain.Common.Extensions;
-using TraceFlow.Api.Domain.Dtos.Projects;
-using TraceFlow.Api.Application.Projects.Queries.ListProjects;
-using TraceFlow.Api.Application.Projects.Queries.GetProjectById;
-using TraceFlow.Api.Application.Projects.Commands.UpdateProject;
-using TraceFlow.Api.Application.Projects.Commands.DeleteProject;
-using TraceFlow.Api.Application.Projects.Queries.ListProjectMembers;
-using TraceFlow.Api.Application.Projects.Commands.ChangeProjectMemberRole;
-using TraceFlow.Api.Application.Projects.Commands.RemoveProjectMember;
-using TraceFlow.Api.Application.Projects.Commands.LeaveProject;
-using Asp.Versioning;
-
 namespace TraceFlow.Api.Controllers;
 
 [ApiController]

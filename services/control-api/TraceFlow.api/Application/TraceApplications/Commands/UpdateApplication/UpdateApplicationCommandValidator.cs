@@ -1,5 +1,3 @@
-using FluentValidation;
-
 namespace TraceFlow.Api.Application.TraceApplications.Commands.UpdateApplication;
 
 public class UpdateApplicationCommandValidator : AbstractValidator<UpdateApplicationCommand>

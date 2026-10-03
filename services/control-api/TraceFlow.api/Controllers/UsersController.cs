@@ -1,11 +1,3 @@
-using System.Security.Claims;
-using MediatR;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using TraceFlow.Api.Domain.Dtos.Users;
-using TraceFlow.Api.Application.Users.Commands.UpdateProfile;
-using Asp.Versioning;
-
 namespace TraceFlow.Api.Controllers;
 
 [ApiController]

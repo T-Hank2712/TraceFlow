@@ -1,11 +1,4 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Application.Common.Exceptions;
-using TraceFlow.Api.Infrastructure.Persistence;
-
 namespace TraceFlow.Api.Application.Users.Commands.UpdateProfile;
-
-using TraceFlow.Api.Domain.Constants;
 
 public class UpdateProfileCommandHandler : IRequestHandler<UpdateProfileCommand, UpdateProfileResponse>
 {

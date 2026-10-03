@@ -1,12 +1,4 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Application.Common.AccessControl;
-using TraceFlow.Api.Application.Common.Exceptions;
-using TraceFlow.Api.Application.Common.Logs;
-using TraceFlow.Api.Domain.Constants;
-using TraceFlow.Api.Infrastructure.Persistence;
-
-namespace TraceFlow.Api.Application.Logs.Queries.SearchLogs;
+namespace TraceFlow.Api.Application.TraceLogs.Queries.SearchLogs;
 
 public sealed class SearchLogsQueryHandler
     : IRequestHandler<SearchLogsQuery, SearchLogsResponse>

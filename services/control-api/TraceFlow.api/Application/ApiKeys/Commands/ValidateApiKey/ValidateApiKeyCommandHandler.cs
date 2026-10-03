@@ -1,9 +1,3 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Application.Common.Security;
-using TraceFlow.Api.Domain.Constants;
-using TraceFlow.Api.Infrastructure.Persistence;
-
 namespace TraceFlow.Api.Application.ApiKeys.Commands.ValidateApiKey;
 
 public class ValidateApiKeyCommandHandler

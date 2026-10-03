@@ -1,9 +1,3 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Application.Common.Security;
-using TraceFlow.Api.Infrastructure.Persistence;
-using TraceFlow.Api.Application.Common.Exceptions;
-
 namespace TraceFlow.Api.Application.Auth.Commands.Logout;
 
 public class LogoutCommandHandler

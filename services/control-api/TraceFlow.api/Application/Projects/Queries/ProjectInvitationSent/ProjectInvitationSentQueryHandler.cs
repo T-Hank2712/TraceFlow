@@ -1,9 +1,3 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Application.Common.AccessControl;
-using TraceFlow.Api.Application.Common.Exceptions;
-using TraceFlow.Api.Infrastructure.Persistence;
-
 namespace TraceFlow.Api.Application.Projects.Queries.ProjectInvitationSent;
 
 public class ProjectInvitationSentQueryHandler

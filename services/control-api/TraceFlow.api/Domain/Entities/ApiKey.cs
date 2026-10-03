@@ -1,8 +1,4 @@
-using TraceFlow.Api.Domain.Common;
-using TraceFlow.Api.Domain.Constants;
-
 namespace TraceFlow.Api.Domain.Entities;
-
 public class ApiKey : Entity
 {
     public Ulid TraceApplicationId { get; private set; }

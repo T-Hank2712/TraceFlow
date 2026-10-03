@@ -1,5 +1,3 @@
-using FluentValidation;
-
 namespace TraceFlow.Api.Application.Projects.Commands.CreateProject;
 
 public class CreateProjectCommandValidator : AbstractValidator<CreateProjectCommand>

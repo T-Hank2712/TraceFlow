@@ -1,5 +1,3 @@
-using FluentValidation;
-
 namespace TraceFlow.Api.Application.TraceApplications.Commands.CreateTraceApplication;
 
 public class CreateTraceApplicationCommandValidator

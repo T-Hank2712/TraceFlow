@@ -1,5 +1,3 @@
-using MediatR;
-
 namespace TraceFlow.Api.Application.ApiKeys.Queries.ListApiKeys;
 
 public sealed record ListApiKeysQuery(

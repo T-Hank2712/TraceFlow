@@ -1,8 +1,3 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Application.Common.Exceptions;
-using TraceFlow.Api.Infrastructure.Persistence;
-
 namespace TraceFlow.Api.Application.Auth.Queries.GetCurrentUser;
 
 public class GetCurrentUserQueryHandler : IRequestHandler<GetCurrentUserQuery, CurrentUserResponse>

@@ -1,22 +1,3 @@
-using Asp.Versioning;
-using DotNetEnv;
-using FluentValidation;
-using MediatR;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi;
-using System.Net.Http.Headers;
-using System.Text;
-using TraceFlow.Api.Application.Common.AccessControl;
-using TraceFlow.Api.Application.Common.Behaviors;
-using TraceFlow.Api.Application.Common.Logs;
-using TraceFlow.Api.Application.Common.Security;
-using TraceFlow.Api.Application.Common.Users;
-using TraceFlow.Api.Infrastructure.OpenSearch;
-using TraceFlow.Api.Infrastructure.Persistence;
-using TraceFlow.Api.Middleware;
-
 var builder = WebApplication.CreateBuilder(args);
 
 var envPath = Path.Combine(

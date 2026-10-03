@@ -1,6 +1,3 @@
-using System.Security.Cryptography;
-using Microsoft.AspNetCore.WebUtilities;
-
 namespace TraceFlow.Api.Application.Common.Security;
 
 public class ApiKeyGenerator

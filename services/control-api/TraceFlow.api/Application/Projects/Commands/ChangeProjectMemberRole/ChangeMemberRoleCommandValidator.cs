@@ -1,6 +1,3 @@
-using FluentValidation;
-using TraceFlow.Api.Domain.Constants;
-
 namespace TraceFlow.Api.Application.Projects.Commands.ChangeProjectMemberRole;
 
 public class ChangeProjectMemberRoleCommandValidator

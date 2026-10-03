@@ -1,16 +1,3 @@
-using MediatR;
-using Microsoft.AspNetCore.Mvc;
-using TraceFlow.Api.Application.Auth.Commands.Register;
-using TraceFlow.Api.Application.Auth.Commands.Login;
-using System.Security.Claims;
-using Microsoft.AspNetCore.Authorization;
-using TraceFlow.Api.Application.Auth.Queries.GetCurrentUser;
-using TraceFlow.Api.Application.Auth.Commands.RefreshSession;
-using TraceFlow.Api.Application.Auth.Commands.ChangePassword;
-using TraceFlow.Api.Domain.Dtos.Auth;
-using TraceFlow.Api.Application.Auth.Commands.Logout;
-using Asp.Versioning;
-
 namespace TraceFlow.Api.Controllers;
 
 [ApiController]

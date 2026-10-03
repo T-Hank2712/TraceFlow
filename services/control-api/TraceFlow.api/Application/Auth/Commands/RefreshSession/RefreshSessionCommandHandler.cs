@@ -1,11 +1,3 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Application.Common.Security;
-using TraceFlow.Api.Domain.Entities;
-using TraceFlow.Api.Infrastructure.Persistence;
-using TraceFlow.Api.Application.Common.Exceptions;
-using TraceFlow.Api.Domain.Constants;
-
 namespace TraceFlow.Api.Application.Auth.Commands.RefreshSession;
 
 public class RefreshSessionCommandHandler : IRequestHandler<RefreshSessionCommand, RefreshSessionResponse>

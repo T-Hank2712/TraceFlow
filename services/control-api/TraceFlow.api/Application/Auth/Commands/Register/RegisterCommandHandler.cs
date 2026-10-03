@@ -1,10 +1,3 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Domain.Entities;
-using TraceFlow.Api.Infrastructure.Persistence;
-using TraceFlow.Api.Application.Common.Security;
-using TraceFlow.Api.Application.Common.Exceptions;
-
 namespace TraceFlow.Api.Application.Auth.Commands.Register;
 
 public class RegisterCommandHandler : IRequestHandler<RegisterCommand, RegisterResponse>

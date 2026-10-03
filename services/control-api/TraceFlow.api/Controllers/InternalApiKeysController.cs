@@ -1,9 +1,3 @@
-using MediatR;
-using Microsoft.AspNetCore.Mvc;
-using TraceFlow.Api.Application.ApiKeys.Commands.ValidateApiKey;
-using TraceFlow.Api.Domain.Dtos.ApiKeys;
-using Asp.Versioning;
-
 namespace TraceFlow.Api.Controllers;
 
 [ApiController]
