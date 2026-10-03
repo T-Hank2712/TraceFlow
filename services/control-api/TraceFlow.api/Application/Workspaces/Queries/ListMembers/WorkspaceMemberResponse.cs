@@ -7,4 +7,4 @@ public record WorkspaceMemberResponse(
     string Email,
     string Role,
     string Status,
-    DateTimeOffset JoinedAt);
+    DateTimeOffset CreatedAt);

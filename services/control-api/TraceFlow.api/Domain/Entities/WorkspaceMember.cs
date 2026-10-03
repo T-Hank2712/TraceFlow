@@ -8,22 +8,20 @@ public class WorkspaceMember : Entity
     public Workspace Workspace { get; private set; } = null!;
     public string Role { get; private set; } = WorkspaceMemberRoles.Member;
     public string Status { get; private set; } = MembershipStatuses.Active;
-    public DateTimeOffset JoinedAt { get; private set; }
     private WorkspaceMember() { }
     public WorkspaceMember(
         Ulid workspaceId,
         Ulid userId,
         string role,
-        DateTimeOffset joinedAt)
+        DateTimeOffset createdAt)
     {
         Id = Ulid.NewUlid();
         WorkspaceId = workspaceId;
         UserId = userId;
         Role = role.Trim().ToLower();
         Status = MembershipStatuses.Active;
-        JoinedAt = joinedAt;
-        CreatedAt = joinedAt;
-        UpdatedAt = joinedAt;
+        CreatedAt = createdAt;
+        UpdatedAt = createdAt;
     }
     public void ChangeRole(string role, DateTimeOffset updatedAt)
     {

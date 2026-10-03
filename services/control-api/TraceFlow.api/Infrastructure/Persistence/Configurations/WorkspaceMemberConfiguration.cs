@@ -53,9 +53,6 @@ public class WorkspaceMemberConfiguration
             .IsRequired()
             .HasMaxLength(20);
 
-        builder.Property(member => member.JoinedAt)
-            .IsRequired();
-
         builder.Property(member => member.CreatedAt)
             .IsRequired();
 

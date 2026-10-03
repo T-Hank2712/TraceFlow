@@ -35,7 +35,7 @@ public class ListMembersQueryHandler(
                 member.User.Email,
                 member.Role,
                 member.Status,
-                member.JoinedAt))
+                member.CreatedAt))
             .ToListAsync(cancellationToken);
     }
 }
