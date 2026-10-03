@@ -40,8 +40,8 @@ public sealed class Authenticator
     }
 
     public async Task<Result<AuthenticatedContext>> AuthenticateAsync(
-        string? authorizationHeader,
-        CancellationToken cancellationToken)
+    string? authorizationHeader,
+    CancellationToken cancellationToken)
     {
         var parsedKey = _apiKeyParser.Parse(authorizationHeader);
 
@@ -55,9 +55,7 @@ public sealed class Authenticator
         }
 
         var apiKey = parsedKey.ApiKey;
-
-        var cacheKey = _tenantContextCacheKey.Create(apiKey);
-        var memoryCacheKey = $"l1:{cacheKey}";
+        var memoryCacheKey = CreateMemoryCacheKey(apiKey);
 
         if (_memoryCache.TryGetValue<ApiKeyValidationResult>(
                 memoryCacheKey,
@@ -69,6 +67,8 @@ public sealed class Authenticator
                     apiKey,
                     cachedTenant));
         }
+
+        var cacheKey = _tenantContextCacheKey.Create(apiKey);
 
         ApiKeyValidationResult? tenant = null;
 
@@ -139,5 +139,9 @@ public sealed class Authenticator
             new AuthenticatedContext(
                 apiKey,
                 tenant));
+    }
+    private static string CreateMemoryCacheKey(string apiKey)
+    {
+        return $"tenant-context:l1:{apiKey}";
     }
 }
