@@ -116,6 +116,7 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Conn
 builder.Services.AddSingleton<IRedisCache, RedisCache>();
 builder.Services.AddSingleton<IRateLimiter, RedisRateLimiter>();
 builder.Services.AddSingleton<TenantContextCacheKey>();
+builder.Services.AddMemoryCache();
 
 var app = builder.Build();
 
