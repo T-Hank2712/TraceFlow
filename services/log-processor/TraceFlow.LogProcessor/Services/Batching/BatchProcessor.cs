@@ -52,8 +52,8 @@ public sealed class BatchProcessor : IBatchProcessor
             batch,
             cancellationToken);
     }
-   public async Task<BatchProcessResult> FlushAsync(
-    CancellationToken cancellationToken)
+    public async Task<BatchProcessResult> FlushAsync(
+     CancellationToken cancellationToken)
     {
         List<PendingLogEvent>? batch = null;
 
