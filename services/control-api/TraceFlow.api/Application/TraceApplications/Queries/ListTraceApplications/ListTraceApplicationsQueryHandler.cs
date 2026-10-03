@@ -1,20 +1,16 @@
 namespace TraceFlow.Api.Application.TraceApplications.Queries.ListTraceApplications;
 
-public class ListTraceApplicationsQueryHandler
-    : IRequestHandler<ListTraceApplicationsQuery, IReadOnlyList<TraceApplicationSummaryResponse>>
-{
-    private readonly AppDbContext _dbContext;
-    private readonly ProjectAccessService _projectAccess;
-
-    public ListTraceApplicationsQueryHandler(
+public class ListTraceApplicationsQueryHandler(
         AppDbContext dbContext,
         ProjectAccessService projectAccess)
-    {
-        _dbContext = dbContext;
-        _projectAccess = projectAccess;
-    }
+    : IRequestHandler<ListTraceApplicationsQuery, IReadOnlyList<TraceApplicationSummaryResponse>>
+{
 
-    public async Task<IReadOnlyList<TraceApplicationSummaryResponse>> Handle(
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly ProjectAccessService _projectAccess = projectAccess;
+
+ public async Task<IReadOnlyList<TraceApplicationSummaryResponse>> Handle(
         ListTraceApplicationsQuery request,
         CancellationToken cancellationToken)
     {

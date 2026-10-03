@@ -1,14 +1,11 @@
 namespace TraceFlow.Api.Application.Projects.Commands.AcceptProjectInvitation;
 
-public class AcceptProjectInvitationCommandHandler
+public class AcceptProjectInvitationCommandHandler(
+    AppDbContext dbContext
+)
     : IRequestHandler<AcceptProjectInvitationCommand, AcceptProjectInvitationResponse>
 {
-    private readonly AppDbContext _dbContext;
-
-    public AcceptProjectInvitationCommandHandler(AppDbContext dbContext)
-    {
-        _dbContext = dbContext;
-    }
+    private readonly AppDbContext _dbContext = dbContext;
 
     public async Task<AcceptProjectInvitationResponse> Handle(
         AcceptProjectInvitationCommand request,

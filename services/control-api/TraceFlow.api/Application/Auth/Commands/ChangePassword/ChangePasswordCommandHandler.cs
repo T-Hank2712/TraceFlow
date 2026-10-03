@@ -1,14 +1,15 @@
 namespace TraceFlow.Api.Application.Auth.Commands.ChangePassword;
 
-public class ChangePasswordCommandHandler : IRequestHandler<ChangePasswordCommand, ChangePasswordResponse>
+public class ChangePasswordCommandHandler(
+    AppDbContext dbContext,
+    PasswordHasher passwordHasher
+) : IRequestHandler<ChangePasswordCommand, ChangePasswordResponse>
 {
-    private readonly AppDbContext _dbContext;
-    private readonly PasswordHasher _passwordHasher;
-    public ChangePasswordCommandHandler(AppDbContext dbContext, PasswordHasher passwordHasher)
-    {
-        _dbContext = dbContext;
-        _passwordHasher = passwordHasher;
-    }
+
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly PasswordHasher _passwordHasher = passwordHasher;
+
     public async Task<ChangePasswordResponse> Handle(ChangePasswordCommand request, CancellationToken cancellationToken)
     {
         var user = await _dbContext.Users

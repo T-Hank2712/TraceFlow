@@ -1,20 +1,16 @@
 namespace TraceFlow.Api.Application.Projects.Queries.ProjectInvitationSent;
 
-public class ProjectInvitationSentQueryHandler
-    : IRequestHandler<ProjectInvitationSentQuery, IReadOnlyList<ProjectInvitationSentResponse>>
-{
-    private readonly AppDbContext _dbContext;
-    private readonly ProjectAccessService _projectAccess;
-
-    public ProjectInvitationSentQueryHandler(
+public class ProjectInvitationSentQueryHandler(
         AppDbContext dbContext,
         ProjectAccessService projectAccess)
-    {
-        _dbContext = dbContext;
-        _projectAccess = projectAccess;
-    }
+    : IRequestHandler<ProjectInvitationSentQuery, IReadOnlyList<ProjectInvitationSentResponse>>
+{
 
-    public async Task<IReadOnlyList<ProjectInvitationSentResponse>> Handle(
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly ProjectAccessService _projectAccess = projectAccess;
+
+ public async Task<IReadOnlyList<ProjectInvitationSentResponse>> Handle(
         ProjectInvitationSentQuery request,
         CancellationToken cancellationToken)
     {

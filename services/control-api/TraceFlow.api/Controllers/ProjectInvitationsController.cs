@@ -3,14 +3,11 @@ namespace TraceFlow.Api.Controllers;
 [ApiController]
 [ApiVersion(1.0)]
 [Authorize]
-public class ProjectInvitationsController : ControllerBase
+public class ProjectInvitationsController(ISender sender) : ControllerBase
 {
-    private readonly ISender _sender;
+    private readonly ISender _sender = sender;
 
-    public ProjectInvitationsController(ISender sender)
-    {
-        _sender = sender;
-    }
+
     [HttpPost("api/v{version:apiVersion}/workspaces/{workspaceId}/projects/{projectId}/invitations")]
     public async Task<IActionResult> InviteProjectMember(
         Ulid workspaceId,

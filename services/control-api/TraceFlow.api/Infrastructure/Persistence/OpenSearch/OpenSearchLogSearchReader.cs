@@ -1,22 +1,18 @@
 namespace TraceFlow.Api.Infrastructure.OpenSearch;
 
-public sealed class OpenSearchLogSearchReader : ILogSearchReader
-{
-    private readonly HttpClient _httpClient;
-    private readonly IConfiguration _configuration;
-    private readonly ILogger<OpenSearchLogSearchReader> _logger;
-
-    public OpenSearchLogSearchReader(
+public sealed class OpenSearchLogSearchReader(
         HttpClient httpClient,
         IConfiguration configuration,
-        ILogger<OpenSearchLogSearchReader> logger)
-    {
-        _httpClient = httpClient;
-        _configuration = configuration;
-        _logger = logger;
-    }
+        ILogger<OpenSearchLogSearchReader> logger) : ILogSearchReader
+{
 
-    public async Task<SearchLogsResponse> SearchAsync(
+    private readonly HttpClient _httpClient = httpClient;
+
+    private readonly IConfiguration _configuration = configuration;
+
+    private readonly ILogger<OpenSearchLogSearchReader> _logger = logger;
+
+public async Task<SearchLogsResponse> SearchAsync(
         SearchLogsQuery query,
         CancellationToken cancellationToken)
     {

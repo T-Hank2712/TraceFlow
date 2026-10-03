@@ -4,14 +4,10 @@ namespace TraceFlow.Api.Controllers;
 [ApiVersion(1.0)]
 [Authorize]
 [Route("api/v{version:apiVersion}/workspaces/{workspaceId}/projects/{projectId}/applications/{applicationId}/api-keys")]
-public class ApiKeysController : ControllerBase
+public class ApiKeysController(ISender sender) : ControllerBase
 {
-    private readonly ISender _sender;
+    private readonly ISender _sender = sender;
 
-    public ApiKeysController(ISender sender)
-    {
-        _sender = sender;
-    }
 
     [HttpPost]
     public async Task<IActionResult> CreateApiKey(

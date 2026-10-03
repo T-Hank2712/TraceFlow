@@ -4,14 +4,10 @@ namespace TraceFlow.Api.Controllers;
 [ApiVersion(1.0)]
 [Authorize]
 [Route("api/v{version:apiVersion}/workspaces/{workspaceId}/projects/{projectId}/applications")]
-public class TraceApplicationsController : ControllerBase
+public class TraceApplicationsController(ISender sender) : ControllerBase
 {
-    private readonly ISender _sender;
+    private readonly ISender _sender = sender;
 
-    public TraceApplicationsController(ISender sender)
-    {
-        _sender = sender;
-    }
 
     [HttpPost]
     public async Task<IActionResult> CreateTraceApplication(

@@ -1,20 +1,16 @@
 namespace TraceFlow.Api.Application.Projects.Commands.RemoveProjectMember;
 
-public class RemoveProjectMemberCommandHandler
-    : IRequestHandler<RemoveProjectMemberCommand, RemoveProjectMemberResponse>
-{
-    private readonly AppDbContext _dbContext;
-    private readonly ProjectAccessService _projectAccess;
-
-    public RemoveProjectMemberCommandHandler(
+public class RemoveProjectMemberCommandHandler(
         AppDbContext dbContext,
         ProjectAccessService projectAccess)
-    {
-        _dbContext = dbContext;
-        _projectAccess = projectAccess;
-    }
+    : IRequestHandler<RemoveProjectMemberCommand, RemoveProjectMemberResponse>
+{
 
-    public async Task<RemoveProjectMemberResponse> Handle(
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly ProjectAccessService _projectAccess = projectAccess;
+
+ public async Task<RemoveProjectMemberResponse> Handle(
         RemoveProjectMemberCommand request,
         CancellationToken cancellationToken)
     {

@@ -1,20 +1,16 @@
 namespace TraceFlow.Api.Application.Projects.Commands.CancelProjectInvitation;
 
-public class CancelProjectInvitationCommandHandler
-    : IRequestHandler<CancelProjectInvitationCommand, CancelProjectInvitationResponse>
-{
-    private readonly AppDbContext _dbContext;
-    private readonly ProjectAccessService _projectAccess;
-
-    public CancelProjectInvitationCommandHandler(
+public class CancelProjectInvitationCommandHandler(
         AppDbContext dbContext,
         ProjectAccessService projectAccess)
-    {
-        _dbContext = dbContext;
-        _projectAccess = projectAccess;
-    }
+    : IRequestHandler<CancelProjectInvitationCommand, CancelProjectInvitationResponse>
+{
 
-    public async Task<CancelProjectInvitationResponse> Handle(
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly ProjectAccessService _projectAccess = projectAccess;
+
+ public async Task<CancelProjectInvitationResponse> Handle(
         CancelProjectInvitationCommand request,
         CancellationToken cancellationToken)
     {

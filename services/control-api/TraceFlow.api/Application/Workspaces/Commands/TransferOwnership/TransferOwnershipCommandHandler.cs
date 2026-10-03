@@ -1,14 +1,11 @@
 namespace TraceFlow.Api.Application.Workspaces.Commands.TransferOwnership;
 
-public class TransferOwnershipCommandHandler
+public class TransferOwnershipCommandHandler(AppDbContext dbContext)
     : IRequestHandler<TransferOwnershipCommand, TransferOwnershipResponse>
 {
-    private readonly AppDbContext _dbContext;
 
-    public TransferOwnershipCommandHandler(AppDbContext dbContext)
-    {
-        _dbContext = dbContext;
-    }
+    private readonly AppDbContext _dbContext = dbContext;
+
 
     public async Task<TransferOwnershipResponse> Handle(
         TransferOwnershipCommand request,

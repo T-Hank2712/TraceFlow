@@ -1,20 +1,16 @@
 namespace TraceFlow.Api.Application.Workspaces.Queries.ListMembers;
 
-public class ListMembersQueryHandler
-    : IRequestHandler<ListMembersQuery, IReadOnlyList<WorkspaceMemberResponse>>
-{
-    private readonly AppDbContext _dbContext;
-    private readonly WorkspaceAccessService _workspaceAccess;
-
-    public ListMembersQueryHandler(
+public class ListMembersQueryHandler(
         AppDbContext dbContext,
         WorkspaceAccessService workspaceAccess)
-    {
-        _dbContext = dbContext;
-        _workspaceAccess = workspaceAccess;
-    }
+    : IRequestHandler<ListMembersQuery, IReadOnlyList<WorkspaceMemberResponse>>
+{
 
-    public async Task<IReadOnlyList<WorkspaceMemberResponse>> Handle(
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly WorkspaceAccessService _workspaceAccess = workspaceAccess;
+
+ public async Task<IReadOnlyList<WorkspaceMemberResponse>> Handle(
         ListMembersQuery request,
         CancellationToken cancellationToken)
     {

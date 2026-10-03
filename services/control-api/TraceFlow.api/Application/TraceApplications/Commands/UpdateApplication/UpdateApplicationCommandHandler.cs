@@ -1,20 +1,16 @@
 namespace TraceFlow.Api.Application.TraceApplications.Commands.UpdateApplication;
 
-public class UpdateApplicationCommandHandler
-    : IRequestHandler<UpdateApplicationCommand, UpdateApplicationResponse>
-{
-    private readonly AppDbContext _dbContext;
-    private readonly ProjectAccessService _projectAccess;
-
-    public UpdateApplicationCommandHandler(
+public class UpdateApplicationCommandHandler(
         AppDbContext dbContext,
         ProjectAccessService projectAccess)
-    {
-        _dbContext = dbContext;
-        _projectAccess = projectAccess;
-    }
+    : IRequestHandler<UpdateApplicationCommand, UpdateApplicationResponse>
+{
 
-    public async Task<UpdateApplicationResponse> Handle(
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly ProjectAccessService _projectAccess = projectAccess;
+
+ public async Task<UpdateApplicationResponse> Handle(
         UpdateApplicationCommand request,
         CancellationToken cancellationToken)
     {

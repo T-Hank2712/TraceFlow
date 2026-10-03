@@ -1,20 +1,16 @@
 namespace TraceFlow.Api.Application.Workspaces.Commands.DeleteWorkspace;
 
-public class DeleteWorkspaceCommandHandler
-    : IRequestHandler<DeleteWorkspaceCommand, DeleteWorkspaceResponse>
-{
-    private readonly AppDbContext _dbContext;
-    private readonly WorkspaceAccessService _workspaceAccess;
-
-    public DeleteWorkspaceCommandHandler(
+public class DeleteWorkspaceCommandHandler(
         AppDbContext dbContext,
         WorkspaceAccessService workspaceAccess)
-    {
-        _dbContext = dbContext;
-        _workspaceAccess = workspaceAccess;
-    }
+    : IRequestHandler<DeleteWorkspaceCommand, DeleteWorkspaceResponse>
+{
 
-    public async Task<DeleteWorkspaceResponse> Handle(
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly WorkspaceAccessService _workspaceAccess = workspaceAccess;
+
+ public async Task<DeleteWorkspaceResponse> Handle(
         DeleteWorkspaceCommand request,
         CancellationToken cancellationToken)
     {

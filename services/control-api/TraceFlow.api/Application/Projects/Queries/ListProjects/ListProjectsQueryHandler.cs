@@ -1,20 +1,16 @@
 namespace TraceFlow.Api.Application.Projects.Queries.ListProjects;
 
-public class ListProjectsQueryHandler
-    : IRequestHandler<ListProjectsQuery, IReadOnlyList<ProjectSummaryResponse>>
-{
-    private readonly AppDbContext _dbContext;
-    private readonly WorkspaceAccessService _workspaceAccess;
-
-    public ListProjectsQueryHandler(
+public class ListProjectsQueryHandler(
         AppDbContext dbContext,
         WorkspaceAccessService workspaceAccess)
-    {
-        _dbContext = dbContext;
-        _workspaceAccess = workspaceAccess;
-    }
+    : IRequestHandler<ListProjectsQuery, IReadOnlyList<ProjectSummaryResponse>>
+{
 
-    public async Task<IReadOnlyList<ProjectSummaryResponse>> Handle(
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly WorkspaceAccessService _workspaceAccess = workspaceAccess;
+
+ public async Task<IReadOnlyList<ProjectSummaryResponse>> Handle(
         ListProjectsQuery request,
         CancellationToken cancellationToken)
     {

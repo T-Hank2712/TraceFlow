@@ -1,20 +1,16 @@
 namespace TraceFlow.Api.Application.Workspaces.Queries.InvitationSent;
 
-public class InvitationSentQueryHandler
-    : IRequestHandler<InvitationSentQuery, IReadOnlyList<InvitationSentResponse>>
-{
-    private readonly AppDbContext _dbContext;
-    private readonly WorkspaceAccessService _workspaceAccess;
-
-    public InvitationSentQueryHandler(
+public class InvitationSentQueryHandler(
         AppDbContext dbContext,
         WorkspaceAccessService workspaceAccess)
-    {
-        _dbContext = dbContext;
-        _workspaceAccess = workspaceAccess;
-    }
+    : IRequestHandler<InvitationSentQuery, IReadOnlyList<InvitationSentResponse>>
+{
 
-    public async Task<IReadOnlyList<InvitationSentResponse>> Handle(
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly WorkspaceAccessService _workspaceAccess = workspaceAccess;
+
+ public async Task<IReadOnlyList<InvitationSentResponse>> Handle(
         InvitationSentQuery request,
         CancellationToken cancellationToken)
     {

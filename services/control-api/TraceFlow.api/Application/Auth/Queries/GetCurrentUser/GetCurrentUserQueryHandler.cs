@@ -1,12 +1,11 @@
 namespace TraceFlow.Api.Application.Auth.Queries.GetCurrentUser;
 
-public class GetCurrentUserQueryHandler : IRequestHandler<GetCurrentUserQuery, CurrentUserResponse>
+public class GetCurrentUserQueryHandler(
+    AppDbContext dbContext
+) : IRequestHandler<GetCurrentUserQuery, CurrentUserResponse>
 {
-    private readonly AppDbContext _dbContext;
-    public GetCurrentUserQueryHandler(AppDbContext dbContext)
-    {
-        _dbContext = dbContext;
-    }
+
+    private readonly AppDbContext _dbContext = dbContext;
 
     public async Task<CurrentUserResponse> Handle(
         GetCurrentUserQuery request,

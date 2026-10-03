@@ -1,19 +1,16 @@
 namespace TraceFlow.Api.Application.TraceApplications.Commands.DeleteTraceApplication;
 
-public class DeleteApplicationCommandHandler
-    : IRequestHandler<DeleteApplicationCommand, DeleteApplicationResponse>
-{
-    private readonly AppDbContext _dbContext;
-    private readonly ProjectAccessService _projectAccess;
-
-    public DeleteApplicationCommandHandler(
+public class DeleteApplicationCommandHandler(
         AppDbContext dbContext,
         ProjectAccessService projectAccess)
-    {
-        _dbContext = dbContext;
-        _projectAccess = projectAccess;
-    }
-    public async Task<DeleteApplicationResponse> Handle(
+    : IRequestHandler<DeleteApplicationCommand, DeleteApplicationResponse>
+{
+
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly ProjectAccessService _projectAccess = projectAccess;
+
+ public async Task<DeleteApplicationResponse> Handle(
         DeleteApplicationCommand request,
         CancellationToken cancellationToken)
     {

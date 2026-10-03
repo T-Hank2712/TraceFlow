@@ -3,19 +3,13 @@ namespace TraceFlow.Api.Controllers;
 [ApiController]
 [ApiVersion(1.0)]
 [Route("internal/v{version:apiVersion}/api-keys")]
-public class InternalApiKeysController : ControllerBase
+public class InternalApiKeysController(ISender sender, IConfiguration configuration) : ControllerBase
 {
+    private readonly ISender _sender = sender;
+    private readonly IConfiguration _configuration = configuration;
+
     private const string InternalSecretHeader = "X-Internal-Secret";
-    private readonly ISender _sender;
-    private readonly IConfiguration _configuration;
-
-    public InternalApiKeysController(ISender sender, IConfiguration configuration)
-    {
-        _sender = sender;
-        _configuration = configuration;
-    }
-
-    [HttpPost("validate")]
+ [HttpPost("validate")]
     public async Task<IActionResult> ValidateApiKey(
         ValidateApiKeyRequest request,
         CancellationToken cancellationToken)

@@ -1,14 +1,11 @@
 namespace TraceFlow.Api.Application.Workspaces.Queries.GetWorkspaces;
 
-public class GetMyWorkspacesQueryHandler
+public class GetMyWorkspacesQueryHandler(AppDbContext dbContext)
     : IRequestHandler<GetWorkspacesQuery, IReadOnlyList<WorkspaceSummaryResponse>>
 {
-    private readonly AppDbContext _dbContext;
 
-    public GetMyWorkspacesQueryHandler(AppDbContext dbContext)
-    {
-        _dbContext = dbContext;
-    }
+    private readonly AppDbContext _dbContext = dbContext;
+
 
     public async Task<IReadOnlyList<WorkspaceSummaryResponse>> Handle(
         GetWorkspacesQuery request,

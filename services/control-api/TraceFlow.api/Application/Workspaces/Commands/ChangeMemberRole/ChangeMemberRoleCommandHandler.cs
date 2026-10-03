@@ -1,20 +1,16 @@
 namespace TraceFlow.Api.Application.Workspaces.Commands.ChangeMemberRole;
 
-public class ChangeMemberRoleCommandHandler
-    : IRequestHandler<ChangeMemberRoleCommand, ChangeMemberRoleResponse>
-{
-    private readonly AppDbContext _dbContext;
-    private readonly WorkspaceAccessService _workspaceAccess;
-
-    public ChangeMemberRoleCommandHandler(
+public class ChangeMemberRoleCommandHandler(
         AppDbContext dbContext,
         WorkspaceAccessService workspaceAccess)
-    {
-        _dbContext = dbContext;
-        _workspaceAccess = workspaceAccess;
-    }
+    : IRequestHandler<ChangeMemberRoleCommand, ChangeMemberRoleResponse>
+{
 
-    public async Task<ChangeMemberRoleResponse> Handle(
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly WorkspaceAccessService _workspaceAccess = workspaceAccess;
+
+ public async Task<ChangeMemberRoleResponse> Handle(
         ChangeMemberRoleCommand request,
         CancellationToken cancellationToken)
     {

@@ -4,14 +4,10 @@ namespace TraceFlow.Api.Controllers;
 [ApiVersion(1.0)]
 [Authorize]
 [Route("api/v{version:apiVersion}/workspaces/{workspaceId}/projects/{projectId}/logs")]
-public sealed class LogsController : ControllerBase
+public sealed class LogsController(ISender sender) : ControllerBase
 {
-    private readonly ISender _sender;
+    private readonly ISender _sender = sender;
 
-    public LogsController(ISender sender)
-    {
-        _sender = sender;
-    }
 
     [HttpGet]
     public async Task<IActionResult> SearchLogs(

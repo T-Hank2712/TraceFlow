@@ -1,20 +1,16 @@
 namespace TraceFlow.Api.Application.Workspaces.Commands.RemoveMember;
 
-public class RemoveMemberCommandHandler
-    : IRequestHandler<RemoveMemberCommand, RemoveMemberResponse>
-{
-    private readonly AppDbContext _dbContext;
-    private readonly WorkspaceAccessService _workspaceAccess;
-
-    public RemoveMemberCommandHandler(
+public class RemoveMemberCommandHandler(
         AppDbContext dbContext,
         WorkspaceAccessService workspaceAccess)
-    {
-        _dbContext = dbContext;
-        _workspaceAccess = workspaceAccess;
-    }
+    : IRequestHandler<RemoveMemberCommand, RemoveMemberResponse>
+{
 
-    public async Task<RemoveMemberResponse> Handle(
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly WorkspaceAccessService _workspaceAccess = workspaceAccess;
+
+ public async Task<RemoveMemberResponse> Handle(
         RemoveMemberCommand request,
         CancellationToken cancellationToken)
     {

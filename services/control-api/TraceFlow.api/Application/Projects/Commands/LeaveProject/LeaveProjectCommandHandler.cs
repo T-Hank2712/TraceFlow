@@ -1,20 +1,16 @@
 namespace TraceFlow.Api.Application.Projects.Commands.LeaveProject;
 
-public class LeaveProjectCommandHandler
-    : IRequestHandler<LeaveProjectCommand, LeaveProjectResponse>
-{
-    private readonly AppDbContext _dbContext;
-    private readonly ProjectAccessService _projectAccess;
-
-    public LeaveProjectCommandHandler(
+public class LeaveProjectCommandHandler(
         AppDbContext dbContext,
         ProjectAccessService projectAccess)
-    {
-        _dbContext = dbContext;
-        _projectAccess = projectAccess;
-    }
+    : IRequestHandler<LeaveProjectCommand, LeaveProjectResponse>
+{
 
-    public async Task<LeaveProjectResponse> Handle(
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly ProjectAccessService _projectAccess = projectAccess;
+
+ public async Task<LeaveProjectResponse> Handle(
         LeaveProjectCommand request,
         CancellationToken cancellationToken)
     {

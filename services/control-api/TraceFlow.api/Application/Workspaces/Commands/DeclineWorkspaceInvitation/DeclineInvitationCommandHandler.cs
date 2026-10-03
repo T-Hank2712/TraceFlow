@@ -1,14 +1,11 @@
 namespace TraceFlow.Api.Application.Workspaces.Commands.DeclineWorkspaceInvitation;
 
-public class DeclineInvitationCommandHandler
+public class DeclineInvitationCommandHandler(AppDbContext dbContext)
     : IRequestHandler<DeclineInvitationCommand, DeclineInvitationResponse>
 {
-    private readonly AppDbContext _dbContext;
 
-    public DeclineInvitationCommandHandler(AppDbContext dbContext)
-    {
-        _dbContext = dbContext;
-    }
+    private readonly AppDbContext _dbContext = dbContext;
+
 
     public async Task<DeclineInvitationResponse> Handle(
         DeclineInvitationCommand request,

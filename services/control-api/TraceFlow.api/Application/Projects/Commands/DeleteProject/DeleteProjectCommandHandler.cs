@@ -1,20 +1,16 @@
 namespace TraceFlow.Api.Application.Projects.Commands.DeleteProject;
 
-public class DeleteProjectCommandHandler
-    : IRequestHandler<DeleteProjectCommand, DeleteProjectResponse>
-{
-    private readonly AppDbContext _dbContext;
-    private readonly ProjectAccessService _projectAccess;
-
-    public DeleteProjectCommandHandler(
+public class DeleteProjectCommandHandler(
         AppDbContext dbContext,
         ProjectAccessService projectAccess)
-    {
-        _dbContext = dbContext;
-        _projectAccess = projectAccess;
-    }
+    : IRequestHandler<DeleteProjectCommand, DeleteProjectResponse>
+{
 
-    public async Task<DeleteProjectResponse> Handle(
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly ProjectAccessService _projectAccess = projectAccess;
+
+ public async Task<DeleteProjectResponse> Handle(
         DeleteProjectCommand request,
         CancellationToken cancellationToken)
     {

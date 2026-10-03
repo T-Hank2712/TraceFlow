@@ -1,20 +1,24 @@
 namespace TraceFlow.Api.Application.Auth.Commands.Login;
 
-public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResponse>
+public class LoginCommandHandler(
+    AppDbContext dbContext,
+    PasswordHasher passwordHasher,
+    JwtTokenGenerator jwtTokenGenerator,
+    IConfiguration configuration,
+    RefreshTokenGenerator refreshTokenGenerator
+) : IRequestHandler<LoginCommand, LoginResponse>
 {
-    private readonly AppDbContext _dbContext;
-    private readonly PasswordHasher _passwordHasher;
-    private readonly JwtTokenGenerator _jwtTokenGenerator;
-    private readonly IConfiguration _configuration;
-    private readonly RefreshTokenGenerator _refreshTokenGenerator;
-    public LoginCommandHandler(AppDbContext dbContext, PasswordHasher hasher, JwtTokenGenerator tokenGenerator, IConfiguration configuration, RefreshTokenGenerator refreshTokenGenerator)
-    {
-        _dbContext = dbContext;
-        _passwordHasher = hasher;
-        _jwtTokenGenerator = tokenGenerator;
-        _configuration = configuration;
-        _refreshTokenGenerator = refreshTokenGenerator;
-    }
+
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly PasswordHasher _passwordHasher = passwordHasher;
+
+    private readonly JwtTokenGenerator _jwtTokenGenerator = jwtTokenGenerator;
+
+    private readonly IConfiguration _configuration = configuration;
+
+    private readonly RefreshTokenGenerator _refreshTokenGenerator = refreshTokenGenerator;
+
     public async Task<LoginResponse> Handle(LoginCommand request, CancellationToken cancellationToken)
     {
         var identifier = request.Identifier.Trim().ToLowerInvariant();

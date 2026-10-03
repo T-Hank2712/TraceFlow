@@ -1,23 +1,19 @@
 namespace TraceFlow.Api.Application.Projects.Commands.InviteProjectMember;
 
-public class InviteProjectMemberCommandHandler
-    : IRequestHandler<InviteProjectMemberCommand, InviteProjectMemberResponse>
-{
-    private readonly AppDbContext _dbContext;
-    private readonly ProjectAccessService _projectAccess;
-    private readonly UserLookupService _userLookup;
-
-    public InviteProjectMemberCommandHandler(
+public class InviteProjectMemberCommandHandler(
         AppDbContext dbContext,
         ProjectAccessService projectAccess,
         UserLookupService userLookup)
-    {
-        _dbContext = dbContext;
-        _projectAccess = projectAccess;
-        _userLookup = userLookup;
-    }
+    : IRequestHandler<InviteProjectMemberCommand, InviteProjectMemberResponse>
+{
 
-    public async Task<InviteProjectMemberResponse> Handle(
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly ProjectAccessService _projectAccess = projectAccess;
+
+    private readonly UserLookupService _userLookup = userLookup;
+
+public async Task<InviteProjectMemberResponse> Handle(
         InviteProjectMemberCommand request,
         CancellationToken cancellationToken)
     {

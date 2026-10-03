@@ -3,14 +3,10 @@ namespace TraceFlow.Api.Controllers;
 [ApiController]
 [ApiVersion(1.0)]
 [Route("api/v{version:apiVersion}/auth")]
-public class AuthController : ControllerBase
+public class AuthController(ISender sender) : ControllerBase
 {
-    private readonly ISender _sender;
+    private readonly ISender _sender = sender;
 
-    public AuthController(ISender sender)
-    {
-        _sender = sender;
-    }
 
     [HttpPost("register")]
     public async Task<IActionResult> Register(

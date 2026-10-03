@@ -1,12 +1,11 @@
 namespace TraceFlow.Api.Application.Users.Commands.UpdateProfile;
 
-public class UpdateProfileCommandHandler : IRequestHandler<UpdateProfileCommand, UpdateProfileResponse>
+public class UpdateProfileCommandHandler(AppDbContext dbContext) : IRequestHandler<UpdateProfileCommand, UpdateProfileResponse>
 {
-    private readonly AppDbContext _dbContext;
-    public UpdateProfileCommandHandler(AppDbContext dbContext)
-    {
-        _dbContext = dbContext;
-    }
+
+    private readonly AppDbContext _dbContext = dbContext;
+
+
     public async Task<UpdateProfileResponse> Handle(UpdateProfileCommand request, CancellationToken cancellationToken)
     {
         var user = await _dbContext.Users.FirstOrDefaultAsync(

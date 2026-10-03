@@ -1,13 +1,11 @@
 namespace TraceFlow.Api.Application.Common.AccessControl;
 
-public class WorkspaceAccessService
+public class WorkspaceAccessService(
+    AppDbContext dbContext
+)
 {
-    private readonly AppDbContext _dbContext;
 
-    public WorkspaceAccessService(AppDbContext dbContext)
-    {
-        _dbContext = dbContext;
-    }
+    private readonly AppDbContext _dbContext = dbContext;
 
     public async Task<WorkspaceMember> GetActiveMembershipAsync(
         Ulid workspaceId,

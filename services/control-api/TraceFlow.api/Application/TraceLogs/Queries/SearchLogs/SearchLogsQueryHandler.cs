@@ -1,23 +1,19 @@
 namespace TraceFlow.Api.Application.TraceLogs.Queries.SearchLogs;
 
-public sealed class SearchLogsQueryHandler
-    : IRequestHandler<SearchLogsQuery, SearchLogsResponse>
-{
-    private readonly AppDbContext _dbContext;
-    private readonly ProjectAccessService _projectAccess;
-    private readonly ILogSearchReader _logSearchReader;
-
-    public SearchLogsQueryHandler(
+public sealed class SearchLogsQueryHandler(
         AppDbContext dbContext,
         ProjectAccessService projectAccess,
         ILogSearchReader logSearchReader)
-    {
-        _dbContext = dbContext;
-        _projectAccess = projectAccess;
-        _logSearchReader = logSearchReader;
-    }
+    : IRequestHandler<SearchLogsQuery, SearchLogsResponse>
+{
 
-    public async Task<SearchLogsResponse> Handle(
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly ProjectAccessService _projectAccess = projectAccess;
+
+    private readonly ILogSearchReader _logSearchReader = logSearchReader;
+
+public async Task<SearchLogsResponse> Handle(
         SearchLogsQuery request,
         CancellationToken cancellationToken)
     {

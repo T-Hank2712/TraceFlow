@@ -1,20 +1,16 @@
 namespace TraceFlow.Api.Application.Projects.Commands.CreateProject;
 
-public class CreateProjectCommandHandler
-    : IRequestHandler<CreateProjectCommand, CreateProjectResponse>
-{
-    private readonly AppDbContext _dbContext;
-    private readonly WorkspaceAccessService _workspaceAccess;
-
-    public CreateProjectCommandHandler(
+public class CreateProjectCommandHandler(
         AppDbContext dbContext,
         WorkspaceAccessService workspaceAccess)
-    {
-        _dbContext = dbContext;
-        _workspaceAccess = workspaceAccess;
-    }
+    : IRequestHandler<CreateProjectCommand, CreateProjectResponse>
+{
 
-    public async Task<CreateProjectResponse> Handle(
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly WorkspaceAccessService _workspaceAccess = workspaceAccess;
+
+ public async Task<CreateProjectResponse> Handle(
         CreateProjectCommand request,
         CancellationToken cancellationToken)
     {

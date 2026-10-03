@@ -1,20 +1,16 @@
 namespace TraceFlow.Api.Application.TraceApplications.Commands.CreateTraceApplication;
 
-public class CreateTraceApplicationCommandHandler
-    : IRequestHandler<CreateTraceApplicationCommand, CreateTraceApplicationResponse>
-{
-    private readonly AppDbContext _dbContext;
-    private readonly ProjectAccessService _projectAccess;
-
-    public CreateTraceApplicationCommandHandler(
+public class CreateTraceApplicationCommandHandler(
         AppDbContext dbContext,
         ProjectAccessService projectAccess)
-    {
-        _dbContext = dbContext;
-        _projectAccess = projectAccess;
-    }
+    : IRequestHandler<CreateTraceApplicationCommand, CreateTraceApplicationResponse>
+{
 
-    public async Task<CreateTraceApplicationResponse> Handle(
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly ProjectAccessService _projectAccess = projectAccess;
+
+ public async Task<CreateTraceApplicationResponse> Handle(
         CreateTraceApplicationCommand request,
         CancellationToken cancellationToken)
     {

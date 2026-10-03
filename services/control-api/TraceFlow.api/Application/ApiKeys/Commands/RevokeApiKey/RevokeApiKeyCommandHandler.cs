@@ -1,18 +1,15 @@
 namespace TraceFlow.Api.Application.ApiKeys.Commands.RevokeApiKey;
 
-public class RevokeApiKeyCommandHandler
+public class RevokeApiKeyCommandHandler(
+    AppDbContext dbContext,
+    ProjectAccessService projectAccess
+)
     : IRequestHandler<RevokeApiKeyCommand, RevokeApiKeyResponse>
 {
-    private readonly AppDbContext _dbContext;
-    private readonly ProjectAccessService _projectAccess;
 
-    public RevokeApiKeyCommandHandler(
-        AppDbContext dbContext,
-        ProjectAccessService projectAccess)
-    {
-        _dbContext = dbContext;
-        _projectAccess = projectAccess;
-    }
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly ProjectAccessService _projectAccess = projectAccess;
 
     public async Task<RevokeApiKeyResponse> Handle(
         RevokeApiKeyCommand request,

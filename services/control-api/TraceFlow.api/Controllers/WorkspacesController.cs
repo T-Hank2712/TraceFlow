@@ -4,14 +4,10 @@ namespace TraceFlow.Api.Controllers;
 [ApiVersion(1.0)]
 [Authorize]
 [Route("api/v{version:apiVersion}/workspaces")]
-public class WorkspacesController : ControllerBase
+public class WorkspacesController(ISender sender) : ControllerBase
 {
-    private readonly ISender _sender;
+    private readonly ISender _sender = sender;
 
-    public WorkspacesController(ISender sender)
-    {
-        _sender = sender;
-    }
 
     [HttpPost]
     public async Task<IActionResult> CreateWorkspace(

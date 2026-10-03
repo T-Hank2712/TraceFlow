@@ -4,14 +4,10 @@ namespace TraceFlow.Api.Controllers;
 [ApiVersion(1.0)]
 [Authorize]
 [Route("api/v{version:apiVersion}/users")]
-public class UsersController : ControllerBase
+public class UsersController(ISender sender) : ControllerBase
 {
-    private readonly ISender _sender;
+    private readonly ISender _sender = sender;
 
-    public UsersController(ISender sender)
-    {
-        _sender = sender;
-    }
 
     [HttpPatch("me/profile")]
     public async Task<IActionResult> UpdateMyProfile(

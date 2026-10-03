@@ -1,20 +1,16 @@
 namespace TraceFlow.Api.Application.Workspaces.Commands.LeaveWorkspace;
 
-public class LeaveWorkspaceCommandHandler
-    : IRequestHandler<LeaveWorkspaceCommand, LeaveWorkspaceResponse>
-{
-    private readonly AppDbContext _dbContext;
-    private readonly WorkspaceAccessService _workspaceAccess;
-
-    public LeaveWorkspaceCommandHandler(
+public class LeaveWorkspaceCommandHandler(
         AppDbContext dbContext,
         WorkspaceAccessService workspaceAccess)
-    {
-        _dbContext = dbContext;
-        _workspaceAccess = workspaceAccess;
-    }
+    : IRequestHandler<LeaveWorkspaceCommand, LeaveWorkspaceResponse>
+{
 
-    public async Task<LeaveWorkspaceResponse> Handle(
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly WorkspaceAccessService _workspaceAccess = workspaceAccess;
+
+ public async Task<LeaveWorkspaceResponse> Handle(
         LeaveWorkspaceCommand request,
         CancellationToken cancellationToken)
     {

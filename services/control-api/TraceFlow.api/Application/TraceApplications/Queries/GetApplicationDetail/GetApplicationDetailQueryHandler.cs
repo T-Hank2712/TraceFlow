@@ -1,20 +1,16 @@
 namespace TraceFlow.Api.Application.TraceApplications.Queries.GetApplicationDetail;
 
-public class GetApplicationDetailQueryHandler
-    : IRequestHandler<GetApplicationDetailQuery, ApplicationDetailResponse>
-{
-    private readonly AppDbContext _dbContext;
-    private readonly ProjectAccessService _projectAccess;
-
-    public GetApplicationDetailQueryHandler(
+public class GetApplicationDetailQueryHandler(
         AppDbContext dbContext,
         ProjectAccessService projectAccess)
-    {
-        _dbContext = dbContext;
-        _projectAccess = projectAccess;
-    }
+    : IRequestHandler<GetApplicationDetailQuery, ApplicationDetailResponse>
+{
 
-    public async Task<ApplicationDetailResponse> Handle(
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly ProjectAccessService _projectAccess = projectAccess;
+
+ public async Task<ApplicationDetailResponse> Handle(
         GetApplicationDetailQuery request,
         CancellationToken cancellationToken)
     {

@@ -1,14 +1,11 @@
 namespace TraceFlow.Api.Application.Workspaces.Commands.CreateWorkspace;
 
-public class CreateWorkspaceCommandHandler
+public class CreateWorkspaceCommandHandler(AppDbContext dbContext)
     : IRequestHandler<CreateWorkspaceCommand, CreateWorkspaceResponse>
 {
-    private readonly AppDbContext _dbContext;
 
-    public CreateWorkspaceCommandHandler(AppDbContext dbContext)
-    {
-        _dbContext = dbContext;
-    }
+    private readonly AppDbContext _dbContext = dbContext;
+
 
     public async Task<CreateWorkspaceResponse> Handle(
         CreateWorkspaceCommand request,

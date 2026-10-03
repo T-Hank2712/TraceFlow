@@ -1,13 +1,10 @@
 namespace TraceFlow.Api.Application.Common.Security;
 
-public class ApiKeyHasher
+public class ApiKeyHasher(IConfiguration configuration)
 {
-    private readonly IConfiguration _configuration;
 
-    public ApiKeyHasher(IConfiguration configuration)
-    {
-        _configuration = configuration;
-    }
+    private readonly IConfiguration _configuration = configuration;
+
 
     public string Hash(string secret)
     {

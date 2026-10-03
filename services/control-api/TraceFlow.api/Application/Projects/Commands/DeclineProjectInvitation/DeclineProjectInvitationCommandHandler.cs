@@ -1,14 +1,11 @@
 namespace TraceFlow.Api.Application.Projects.Commands.DeclineProjectInvitation;
 
-public class DeclineProjectInvitationCommandHandler
+public class DeclineProjectInvitationCommandHandler(AppDbContext dbContext)
     : IRequestHandler<DeclineProjectInvitationCommand, DeclineProjectInvitationResponse>
 {
-    private readonly AppDbContext _dbContext;
 
-    public DeclineProjectInvitationCommandHandler(AppDbContext dbContext)
-    {
-        _dbContext = dbContext;
-    }
+    private readonly AppDbContext _dbContext = dbContext;
+
 
     public async Task<DeclineProjectInvitationResponse> Handle(
         DeclineProjectInvitationCommand request,

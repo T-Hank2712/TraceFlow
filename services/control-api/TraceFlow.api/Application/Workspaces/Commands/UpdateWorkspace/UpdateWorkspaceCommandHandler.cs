@@ -1,20 +1,16 @@
 namespace TraceFlow.Api.Application.Workspaces.Commands.UpdateWorkspace;
 
-public class UpdateWorkspaceCommandHandler
-    : IRequestHandler<UpdateWorkspaceCommand, UpdateWorkspaceResponse>
-{
-    private readonly AppDbContext _dbContext;
-    private readonly WorkspaceAccessService _workspaceAccess;
-
-    public UpdateWorkspaceCommandHandler(
+public class UpdateWorkspaceCommandHandler(
         AppDbContext dbContext,
         WorkspaceAccessService workspaceAccess)
-    {
-        _dbContext = dbContext;
-        _workspaceAccess = workspaceAccess;
-    }
+    : IRequestHandler<UpdateWorkspaceCommand, UpdateWorkspaceResponse>
+{
 
-    public async Task<UpdateWorkspaceResponse> Handle(
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly WorkspaceAccessService _workspaceAccess = workspaceAccess;
+
+ public async Task<UpdateWorkspaceResponse> Handle(
         UpdateWorkspaceCommand request,
         CancellationToken cancellationToken)
     {

@@ -1,20 +1,16 @@
 namespace TraceFlow.Api.Application.Workspaces.Commands.CancelInvitation;
 
-public class CancelInvitationCommandHandler
-    : IRequestHandler<CancelInvitationCommand, CancelInvitationResponse>
-{
-    private readonly AppDbContext _dbContext;
-    private readonly WorkspaceAccessService _workspaceAccess;
-
-    public CancelInvitationCommandHandler(
+public class CancelInvitationCommandHandler(
         AppDbContext dbContext,
         WorkspaceAccessService workspaceAccess)
-    {
-        _dbContext = dbContext;
-        _workspaceAccess = workspaceAccess;
-    }
+    : IRequestHandler<CancelInvitationCommand, CancelInvitationResponse>
+{
 
-    public async Task<CancelInvitationResponse> Handle(
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly WorkspaceAccessService _workspaceAccess = workspaceAccess;
+
+ public async Task<CancelInvitationResponse> Handle(
         CancelInvitationCommand request,
         CancellationToken cancellationToken)
     {

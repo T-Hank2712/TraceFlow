@@ -1,20 +1,16 @@
 namespace TraceFlow.Api.Application.Projects.Queries.ListProjectMembers;
 
-public class ListProjectMembersQueryHandler
-    : IRequestHandler<ListProjectMembersQuery, IReadOnlyList<ProjectMemberResponse>>
-{
-    private readonly AppDbContext _dbContext;
-    private readonly ProjectAccessService _projectAccess;
-
-    public ListProjectMembersQueryHandler(
+public class ListProjectMembersQueryHandler(
         AppDbContext dbContext,
         ProjectAccessService projectAccess)
-    {
-        _dbContext = dbContext;
-        _projectAccess = projectAccess;
-    }
+    : IRequestHandler<ListProjectMembersQuery, IReadOnlyList<ProjectMemberResponse>>
+{
 
-    public async Task<IReadOnlyList<ProjectMemberResponse>> Handle(
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly ProjectAccessService _projectAccess = projectAccess;
+
+ public async Task<IReadOnlyList<ProjectMemberResponse>> Handle(
         ListProjectMembersQuery request,
         CancellationToken cancellationToken)
     {

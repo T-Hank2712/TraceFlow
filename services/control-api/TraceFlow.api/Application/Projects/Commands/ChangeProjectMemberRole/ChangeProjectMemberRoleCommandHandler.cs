@@ -1,20 +1,16 @@
 namespace TraceFlow.Api.Application.Projects.Commands.ChangeProjectMemberRole;
 
-public class ChangeProjectMemberRoleCommandHandler
-    : IRequestHandler<ChangeProjectMemberRoleCommand, ChangeProjectMemberRoleResponse>
-{
-    private readonly AppDbContext _dbContext;
-    private readonly ProjectAccessService _projectAccess;
-
-    public ChangeProjectMemberRoleCommandHandler(
+public class ChangeProjectMemberRoleCommandHandler(
         AppDbContext dbContext,
         ProjectAccessService projectAccess)
-    {
-        _dbContext = dbContext;
-        _projectAccess = projectAccess;
-    }
+    : IRequestHandler<ChangeProjectMemberRoleCommand, ChangeProjectMemberRoleResponse>
+{
 
-    public async Task<ChangeProjectMemberRoleResponse> Handle(
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly ProjectAccessService _projectAccess = projectAccess;
+
+ public async Task<ChangeProjectMemberRoleResponse> Handle(
         ChangeProjectMemberRoleCommand request,
         CancellationToken cancellationToken)
     {

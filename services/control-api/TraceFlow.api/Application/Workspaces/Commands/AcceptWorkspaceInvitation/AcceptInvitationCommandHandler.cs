@@ -1,14 +1,11 @@
 namespace TraceFlow.Api.Application.Workspaces.Commands.AcceptWorkspaceInvitation;
 
-public class AcceptInvitationCommandHandler
+public class AcceptInvitationCommandHandler(AppDbContext dbContext)
     : IRequestHandler<AcceptInvitationCommand, AcceptInvitationResponse>
 {
-    private readonly AppDbContext _dbContext;
 
-    public AcceptInvitationCommandHandler(AppDbContext dbContext)
-    {
-        _dbContext = dbContext;
-    }
+    private readonly AppDbContext _dbContext = dbContext;
+
 
     public async Task<AcceptInvitationResponse> Handle(
         AcceptInvitationCommand request,

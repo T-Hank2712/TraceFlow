@@ -1,17 +1,11 @@
 namespace TraceFlow.Api.Application.Common.Behaviors;
 
-public class ValidationBehavior<TRequest, TResponse>
+public class ValidationBehavior<TRequest, TResponse>(
+    IEnumerable<IValidator<TRequest>> _validators
+)
     : IPipelineBehavior<TRequest, TResponse>
     where TRequest : notnull
 {
-    private readonly IEnumerable<IValidator<TRequest>> _validators;
-
-    public ValidationBehavior(
-        IEnumerable<IValidator<TRequest>> validators)
-    {
-        _validators = validators;
-    }
-
     public async Task<TResponse> Handle(
         TRequest request,
         RequestHandlerDelegate<TResponse> next,

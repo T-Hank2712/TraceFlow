@@ -4,14 +4,10 @@ namespace TraceFlow.Api.Controllers;
 [ApiVersion(1.0)]
 [Authorize]
 [Route("api/v{version:apiVersion}/workspace-invitations")]
-public class WorkspaceInvitationsController : ControllerBase
+public class WorkspaceInvitationsController(ISender sender) : ControllerBase
 {
-    private readonly ISender _sender;
+    private readonly ISender _sender = sender;
 
-    public WorkspaceInvitationsController(ISender sender)
-    {
-        _sender = sender;
-    }
 
     [HttpPost("{workspaceId}/invitations")]
     public async Task<IActionResult> InviteWorkspaceMember(

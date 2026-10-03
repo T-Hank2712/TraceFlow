@@ -1,14 +1,11 @@
 namespace TraceFlow.Api.Application.Projects.Queries.ProjectInvitationInbox;
 
-public class ProjectInvitationInboxQueryHandler
+public class ProjectInvitationInboxQueryHandler(AppDbContext dbContext)
     : IRequestHandler<ProjectInvitationInboxQuery, IReadOnlyList<ProjectInvitationInboxResponse>>
 {
-    private readonly AppDbContext _dbContext;
 
-    public ProjectInvitationInboxQueryHandler(AppDbContext dbContext)
-    {
-        _dbContext = dbContext;
-    }
+    private readonly AppDbContext _dbContext = dbContext;
+
 
     public async Task<IReadOnlyList<ProjectInvitationInboxResponse>> Handle(
         ProjectInvitationInboxQuery request,

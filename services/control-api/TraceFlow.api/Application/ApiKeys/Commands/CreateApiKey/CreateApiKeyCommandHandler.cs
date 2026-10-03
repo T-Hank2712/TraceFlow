@@ -1,27 +1,24 @@
 namespace TraceFlow.Api.Application.ApiKeys.Commands.CreateApiKey;
 
-public class CreateApiKeyCommandHandler
+public class CreateApiKeyCommandHandler(
+    AppDbContext dbContext,
+    ProjectAccessService projectAccess,
+    ApiKeyGenerator apiKeyGenerator,
+    ApiKeyHasher apiKeyHasher,
+    ApiKeyExpirationPolicyResolver expirationPolicyResolver
+)
     : IRequestHandler<CreateApiKeyCommand, CreateApiKeyResponse>
 {
-    private readonly AppDbContext _dbContext;
-    private readonly ProjectAccessService _projectAccess;
-    private readonly ApiKeyGenerator _apiKeyGenerator;
-    private readonly ApiKeyHasher _apiKeyHasher;
-    private readonly ApiKeyExpirationPolicyResolver _expirationPolicyResolver;
 
-    public CreateApiKeyCommandHandler(
-        AppDbContext dbContext,
-        ProjectAccessService projectAccess,
-        ApiKeyGenerator apiKeyGenerator,
-        ApiKeyHasher apiKeyHasher,
-        ApiKeyExpirationPolicyResolver expirationPolicyResolver)
-    {
-        _dbContext = dbContext;
-        _projectAccess = projectAccess;
-        _apiKeyGenerator = apiKeyGenerator;
-        _apiKeyHasher = apiKeyHasher;
-        _expirationPolicyResolver = expirationPolicyResolver;
-    }
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly ProjectAccessService _projectAccess = projectAccess;
+
+    private readonly ApiKeyGenerator _apiKeyGenerator = apiKeyGenerator;
+
+    private readonly ApiKeyHasher _apiKeyHasher = apiKeyHasher;
+
+    private readonly ApiKeyExpirationPolicyResolver _expirationPolicyResolver = expirationPolicyResolver;
 
     public async Task<CreateApiKeyResponse> Handle(
         CreateApiKeyCommand request,

@@ -1,23 +1,19 @@
 namespace TraceFlow.Api.Application.Workspaces.Commands.InviteWorkspaceMember;
 
-public class InviteWorkspaceMemberCommandHandler
-    : IRequestHandler<InviteWorkspaceMemberCommand, InviteWorkspaceMemberResponse>
-{
-    private readonly AppDbContext _dbContext;
-    private readonly WorkspaceAccessService _workspaceAccess;
-    private readonly UserLookupService _userLookup;
-
-    public InviteWorkspaceMemberCommandHandler(
+public class InviteWorkspaceMemberCommandHandler(
         AppDbContext dbContext,
         WorkspaceAccessService workspaceAccess,
         UserLookupService userLookup)
-    {
-        _dbContext = dbContext;
-        _workspaceAccess = workspaceAccess;
-        _userLookup = userLookup;
-    }
+    : IRequestHandler<InviteWorkspaceMemberCommand, InviteWorkspaceMemberResponse>
+{
 
-    public async Task<InviteWorkspaceMemberResponse> Handle(
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly WorkspaceAccessService _workspaceAccess = workspaceAccess;
+
+    private readonly UserLookupService _userLookup = userLookup;
+
+public async Task<InviteWorkspaceMemberResponse> Handle(
         InviteWorkspaceMemberCommand request,
         CancellationToken cancellationToken)
     {

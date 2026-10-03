@@ -1,18 +1,21 @@
 namespace TraceFlow.Api.Application.Auth.Commands.RefreshSession;
 
-public class RefreshSessionCommandHandler : IRequestHandler<RefreshSessionCommand, RefreshSessionResponse>
+public class RefreshSessionCommandHandler(
+    AppDbContext dbContext,
+    JwtTokenGenerator jwtTokenGenerator,
+    RefreshTokenGenerator refreshTokenGenerator,
+    IConfiguration configuration
+) : IRequestHandler<RefreshSessionCommand, RefreshSessionResponse>
 {
-    private readonly AppDbContext _dbContext;
-    private readonly JwtTokenGenerator _jwtTokenGenerator;
-    private readonly RefreshTokenGenerator _refreshTokenGenerator;
-    private readonly IConfiguration _configuration;
-    public RefreshSessionCommandHandler(AppDbContext dbContext, JwtTokenGenerator jwtTokenGenerator, RefreshTokenGenerator refreshTokenGenerator, IConfiguration configuration)
-    {
-        _dbContext = dbContext;
-        _jwtTokenGenerator = jwtTokenGenerator;
-        _refreshTokenGenerator = refreshTokenGenerator;
-        _configuration = configuration;
-    }
+
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly JwtTokenGenerator _jwtTokenGenerator = jwtTokenGenerator;
+
+    private readonly RefreshTokenGenerator _refreshTokenGenerator = refreshTokenGenerator;
+
+    private readonly IConfiguration _configuration = configuration;
+
     public async Task<RefreshSessionResponse> Handle(RefreshSessionCommand request, CancellationToken cancellationToken)
     {
         var refreshTokenHash = RefreshTokenGenerator.Hash(request.RefreshToken);

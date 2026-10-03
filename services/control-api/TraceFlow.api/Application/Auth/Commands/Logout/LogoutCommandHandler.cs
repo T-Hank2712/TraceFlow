@@ -1,18 +1,12 @@
 namespace TraceFlow.Api.Application.Auth.Commands.Logout;
 
-public class LogoutCommandHandler
+public class LogoutCommandHandler(
+    AppDbContext dbContext
+)
     : IRequestHandler<LogoutCommand, LogoutResponse>
 {
-    private readonly AppDbContext _dbContext;
-    private readonly RefreshTokenGenerator _refreshTokenGenerator;
 
-    public LogoutCommandHandler(
-        AppDbContext dbContext,
-        RefreshTokenGenerator refreshTokenGenerator)
-    {
-        _dbContext = dbContext;
-        _refreshTokenGenerator = refreshTokenGenerator;
-    }
+    private readonly AppDbContext _dbContext = dbContext;
 
     public async Task<LogoutResponse> Handle(
         LogoutCommand request,

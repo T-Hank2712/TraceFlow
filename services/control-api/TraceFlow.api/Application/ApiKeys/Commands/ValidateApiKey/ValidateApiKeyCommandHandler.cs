@@ -1,21 +1,18 @@
 namespace TraceFlow.Api.Application.ApiKeys.Commands.ValidateApiKey;
 
-public class ValidateApiKeyCommandHandler
+public class ValidateApiKeyCommandHandler(
+    AppDbContext dbContext,
+    ApiKeyParser apiKeyParser,
+    ApiKeyHasher apiKeyHasher
+)
     : IRequestHandler<ValidateApiKeyCommand, ValidateApiKeyResponse>
 {
-    private readonly AppDbContext _dbContext;
-    private readonly ApiKeyParser _apiKeyParser;
-    private readonly ApiKeyHasher _apiKeyHasher;
 
-    public ValidateApiKeyCommandHandler(
-        AppDbContext dbContext,
-        ApiKeyParser apiKeyParser,
-        ApiKeyHasher apiKeyHasher)
-    {
-        _dbContext = dbContext;
-        _apiKeyParser = apiKeyParser;
-        _apiKeyHasher = apiKeyHasher;
-    }
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly ApiKeyParser _apiKeyParser = apiKeyParser;
+
+    private readonly ApiKeyHasher _apiKeyHasher = apiKeyHasher;
 
     public async Task<ValidateApiKeyResponse> Handle(
         ValidateApiKeyCommand request,
