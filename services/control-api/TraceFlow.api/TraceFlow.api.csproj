@@ -6,6 +6,7 @@
     <AssemblyName>TraceFlow.Api</AssemblyName>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <NuGetAudit>false</NuGetAudit>
     <UserSecretsId>0dc5c02b-c21e-440c-851b-c27df567f1f2</UserSecretsId>
   </PropertyGroup>
 
