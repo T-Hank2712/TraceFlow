@@ -9,7 +9,7 @@ public class InternalApiKeysController(ISender sender, IOptions<InternalServiceO
     private readonly InternalServiceOptions _options = options.Value;
 
     private const string InternalSecretHeader = "X-Internal-Secret";
- [HttpPost("validate")]
+    [HttpPost("validate")]
     public async Task<IActionResult> ValidateApiKey(
         ValidateApiKeyRequest request,
         CancellationToken cancellationToken)
@@ -17,7 +17,9 @@ public class InternalApiKeysController(ISender sender, IOptions<InternalServiceO
         var expectedSecret = _options.Secret;
         var providedSecret = Request.Headers[InternalSecretHeader].ToString();
 
-        if (string.IsNullOrWhiteSpace(expectedSecret) || string.IsNullOrWhiteSpace(providedSecret) || providedSecret != expectedSecret)
+        if (string.IsNullOrWhiteSpace(expectedSecret) ||
+            string.IsNullOrWhiteSpace(providedSecret) ||
+            !SecretEquals(providedSecret, expectedSecret))
         {
             return Unauthorized();
         }
@@ -27,5 +29,13 @@ public class InternalApiKeysController(ISender sender, IOptions<InternalServiceO
             cancellationToken);
 
         return Ok(result);
+    }
+    private static bool SecretEquals(string providedSecret, string expectedSecret)
+    {
+        var providedBytes = Encoding.UTF8.GetBytes(providedSecret);
+        var expectedBytes = Encoding.UTF8.GetBytes(expectedSecret);
+
+        return providedBytes.Length == expectedBytes.Length &&
+            CryptographicOperations.FixedTimeEquals(providedBytes, expectedBytes);
     }
 }
