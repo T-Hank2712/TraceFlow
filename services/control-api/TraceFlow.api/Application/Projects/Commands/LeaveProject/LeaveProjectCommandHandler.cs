@@ -1,29 +1,18 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Application.Common.AccessControl;
-using TraceFlow.Api.Application.Common.Exceptions;
-using TraceFlow.Api.Domain.Constants;
-using TraceFlow.Api.Infrastructure.Persistence;
-
 namespace TraceFlow.Api.Application.Projects.Commands.LeaveProject;
 
-public class LeaveProjectCommandHandler
-    : IRequestHandler<LeaveProjectCommand, LeaveProjectResponse>
-{
-    private readonly AppDbContext _dbContext;
-    private readonly ProjectAccessService _projectAccess;
-
-    public LeaveProjectCommandHandler(
+public class LeaveProjectCommandHandler(
         AppDbContext dbContext,
         ProjectAccessService projectAccess)
-    {
-        _dbContext = dbContext;
-        _projectAccess = projectAccess;
-    }
+    : IRequestHandler<LeaveProjectCommand, LeaveProjectResponse>
+{
+
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly ProjectAccessService _projectAccess = projectAccess;
 
     public async Task<LeaveProjectResponse> Handle(
-        LeaveProjectCommand request,
-        CancellationToken cancellationToken)
+           LeaveProjectCommand request,
+           CancellationToken cancellationToken)
     {
         await _projectAccess.GetProjectAccessAsync(
             request.WorkspaceId,

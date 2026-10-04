@@ -1,24 +1,14 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Application.Common.Security;
-using TraceFlow.Api.Infrastructure.Persistence;
-using TraceFlow.Api.Application.Common.Exceptions;
-
 namespace TraceFlow.Api.Application.Auth.Commands.Logout;
 
-public class LogoutCommandHandler
+public class LogoutCommandHandler(
+    AppDbContext dbContext,
+    TimeProvider timeProvider
+)
     : IRequestHandler<LogoutCommand, LogoutResponse>
 {
-    private readonly AppDbContext _dbContext;
-    private readonly RefreshTokenGenerator _refreshTokenGenerator;
 
-    public LogoutCommandHandler(
-        AppDbContext dbContext,
-        RefreshTokenGenerator refreshTokenGenerator)
-    {
-        _dbContext = dbContext;
-        _refreshTokenGenerator = refreshTokenGenerator;
-    }
+    private readonly AppDbContext _dbContext = dbContext;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<LogoutResponse> Handle(
         LogoutCommand request,
@@ -39,9 +29,11 @@ public class LogoutCommandHandler
                 "Invalid refresh token.");
         }
 
-        if (refreshToken.IsActive)
+        var utcNow = _timeProvider.GetUtcNow();
+
+        if (refreshToken.IsActive(utcNow))
         {
-            refreshToken.Revoke();
+            refreshToken.Revoke(utcNow);
             await _dbContext.SaveChangesAsync(cancellationToken);
         }
 

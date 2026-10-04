@@ -1,29 +1,21 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Application.Common.AccessControl;
-using TraceFlow.Api.Application.Common.Exceptions;
-using TraceFlow.Api.Domain.Constants;
-using TraceFlow.Api.Infrastructure.Persistence;
-
 namespace TraceFlow.Api.Application.Workspaces.Commands.CancelInvitation;
 
-public class CancelInvitationCommandHandler
+public class CancelInvitationCommandHandler(
+        AppDbContext dbContext,
+        WorkspaceAccessService workspaceAccess,
+        TimeProvider timeProvider
+        )
     : IRequestHandler<CancelInvitationCommand, CancelInvitationResponse>
 {
-    private readonly AppDbContext _dbContext;
-    private readonly WorkspaceAccessService _workspaceAccess;
 
-    public CancelInvitationCommandHandler(
-        AppDbContext dbContext,
-        WorkspaceAccessService workspaceAccess)
-    {
-        _dbContext = dbContext;
-        _workspaceAccess = workspaceAccess;
-    }
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly WorkspaceAccessService _workspaceAccess = workspaceAccess;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<CancelInvitationResponse> Handle(
-        CancelInvitationCommand request,
-        CancellationToken cancellationToken)
+           CancelInvitationCommand request,
+           CancellationToken cancellationToken)
     {
         var actorMembership = await _workspaceAccess.GetActiveMembershipAsync(
             request.WorkspaceId,
@@ -56,7 +48,7 @@ public class CancelInvitationCommandHandler
             throw new ConflictException("Only pending invitation can be cancelled.");
         }
 
-        invitation.Cancel();
+        invitation.Cancel(_timeProvider.GetUtcNow());
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 

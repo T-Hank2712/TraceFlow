@@ -1,34 +1,22 @@
-using System.Text;
-using System.Text.Json;
-using TraceFlow.Api.Application.Common.Logs;
-using TraceFlow.Api.Domain.Dtos.Logs;
-using TraceFlow.Api.Application.Logs.Queries.SearchLogs;
-using TraceFlow.Api.Application.Common.Exceptions;
+namespace TraceFlow.Api.Infrastructure.Persistence.OpenSearch;
 
-namespace TraceFlow.Api.Infrastructure.OpenSearch;
-
-public sealed class OpenSearchLogSearchReader : ILogSearchReader
-{
-    private readonly HttpClient _httpClient;
-    private readonly IConfiguration _configuration;
-    private readonly ILogger<OpenSearchLogSearchReader> _logger;
-
-    public OpenSearchLogSearchReader(
+public sealed class OpenSearchLogSearchReader(
         HttpClient httpClient,
-        IConfiguration configuration,
-        ILogger<OpenSearchLogSearchReader> logger)
-    {
-        _httpClient = httpClient;
-        _configuration = configuration;
-        _logger = logger;
-    }
+        IOptions<OpenSearchOptions> options,
+        ILogger<OpenSearchLogSearchReader> logger) : ILogSearchReader
+{
+
+    private readonly HttpClient _httpClient = httpClient;
+
+    private readonly OpenSearchOptions _options = options.Value;
+
+    private readonly ILogger<OpenSearchLogSearchReader> _logger = logger;
 
     public async Task<SearchLogsResponse> SearchAsync(
-        SearchLogsQuery query,
-        CancellationToken cancellationToken)
+            SearchLogsQuery query,
+            CancellationToken cancellationToken)
     {
-        var index = _configuration["OpenSearch:Index"]
-            ?? throw new InvalidOperationException("OpenSearch index is not configured.");
+        var index = _options.Index;
 
         var filters = BuildFilters(query);
 

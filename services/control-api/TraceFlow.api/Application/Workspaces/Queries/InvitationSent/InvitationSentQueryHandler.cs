@@ -1,27 +1,19 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Application.Common.AccessControl;
-using TraceFlow.Api.Infrastructure.Persistence;
-
 namespace TraceFlow.Api.Application.Workspaces.Queries.InvitationSent;
 
-public class InvitationSentQueryHandler
+public class InvitationSentQueryHandler(
+        AppDbContext dbContext,
+        WorkspaceAccessService workspaceAccess,
+        InvitationExpirationService invitationExpiration)
     : IRequestHandler<InvitationSentQuery, IReadOnlyList<InvitationSentResponse>>
 {
-    private readonly AppDbContext _dbContext;
-    private readonly WorkspaceAccessService _workspaceAccess;
 
-    public InvitationSentQueryHandler(
-        AppDbContext dbContext,
-        WorkspaceAccessService workspaceAccess)
-    {
-        _dbContext = dbContext;
-        _workspaceAccess = workspaceAccess;
-    }
+    private readonly AppDbContext _dbContext = dbContext;
+    private readonly WorkspaceAccessService _workspaceAccess = workspaceAccess;
+    private readonly InvitationExpirationService _invitationExpiration = invitationExpiration;
 
     public async Task<IReadOnlyList<InvitationSentResponse>> Handle(
-        InvitationSentQuery request,
-        CancellationToken cancellationToken)
+           InvitationSentQuery request,
+           CancellationToken cancellationToken)
     {
         var membership = await _workspaceAccess.GetActiveMembershipAsync(
             request.WorkspaceId,
@@ -36,6 +28,10 @@ public class InvitationSentQueryHandler
         _workspaceAccess.EnsureWorkspaceManager(
             membership,
             "You do not have permission to view workspace invitations.");
+
+        await _invitationExpiration.ExpireWorkspaceInvitationsAsync(
+            request.WorkspaceId,
+            cancellationToken);
 
         return await _dbContext.WorkspaceInvitations
             .AsNoTracking()

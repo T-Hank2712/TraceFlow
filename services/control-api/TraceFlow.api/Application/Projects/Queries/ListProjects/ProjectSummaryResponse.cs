@@ -7,5 +7,5 @@ public record ProjectSummaryResponse(
     string Slug,
     string? Description,
     string Status,
-    DateTime CreatedAt
+    DateTimeOffset CreatedAt
 );

@@ -1,29 +1,18 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Application.Common.AccessControl;
-using TraceFlow.Api.Application.Common.Exceptions;
-using TraceFlow.Api.Domain.Constants;
-using TraceFlow.Api.Infrastructure.Persistence;
-
 namespace TraceFlow.Api.Application.Workspaces.Commands.LeaveWorkspace;
 
-public class LeaveWorkspaceCommandHandler
-    : IRequestHandler<LeaveWorkspaceCommand, LeaveWorkspaceResponse>
-{
-    private readonly AppDbContext _dbContext;
-    private readonly WorkspaceAccessService _workspaceAccess;
-
-    public LeaveWorkspaceCommandHandler(
+public class LeaveWorkspaceCommandHandler(
         AppDbContext dbContext,
         WorkspaceAccessService workspaceAccess)
-    {
-        _dbContext = dbContext;
-        _workspaceAccess = workspaceAccess;
-    }
+    : IRequestHandler<LeaveWorkspaceCommand, LeaveWorkspaceResponse>
+{
+
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly WorkspaceAccessService _workspaceAccess = workspaceAccess;
 
     public async Task<LeaveWorkspaceResponse> Handle(
-        LeaveWorkspaceCommand request,
-        CancellationToken cancellationToken)
+           LeaveWorkspaceCommand request,
+           CancellationToken cancellationToken)
     {
         var membership = await _workspaceAccess.GetActiveMembershipAsync(
             request.WorkspaceId,
@@ -51,13 +40,11 @@ public class LeaveWorkspaceCommandHandler
             }
         }
 
-        var projectMembers = await _dbContext.ProjectMembers
+        await _dbContext.ProjectMembers
             .Where(projectMember =>
                 projectMember.UserId == request.UserId &&
                 projectMember.Project.WorkspaceId == request.WorkspaceId)
-            .ToListAsync(cancellationToken);
-
-        _dbContext.ProjectMembers.RemoveRange(projectMembers);
+            .ExecuteDeleteAsync(cancellationToken);
 
         _dbContext.WorkspaceMembers.Remove(membership);
 

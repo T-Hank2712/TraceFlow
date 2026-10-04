@@ -1,28 +1,18 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Application.Common.AccessControl;
-using TraceFlow.Api.Infrastructure.Persistence;
-using TraceFlow.Api.Domain.Constants;
-
 namespace TraceFlow.Api.Application.Workspaces.Queries.ListMembers;
 
-public class ListMembersQueryHandler
-    : IRequestHandler<ListMembersQuery, IReadOnlyList<WorkspaceMemberResponse>>
-{
-    private readonly AppDbContext _dbContext;
-    private readonly WorkspaceAccessService _workspaceAccess;
-
-    public ListMembersQueryHandler(
+public class ListMembersQueryHandler(
         AppDbContext dbContext,
         WorkspaceAccessService workspaceAccess)
-    {
-        _dbContext = dbContext;
-        _workspaceAccess = workspaceAccess;
-    }
+    : IRequestHandler<ListMembersQuery, IReadOnlyList<WorkspaceMemberResponse>>
+{
+
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly WorkspaceAccessService _workspaceAccess = workspaceAccess;
 
     public async Task<IReadOnlyList<WorkspaceMemberResponse>> Handle(
-        ListMembersQuery request,
-        CancellationToken cancellationToken)
+           ListMembersQuery request,
+           CancellationToken cancellationToken)
     {
         await _workspaceAccess.GetActiveMembershipAsync(
             request.WorkspaceId,
@@ -45,7 +35,7 @@ public class ListMembersQueryHandler
                 member.User.Email,
                 member.Role,
                 member.Status,
-                member.JoinedAt))
+                member.CreatedAt))
             .ToListAsync(cancellationToken);
     }
 }

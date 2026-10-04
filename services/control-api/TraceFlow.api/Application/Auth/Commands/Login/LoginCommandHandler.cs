@@ -1,35 +1,33 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Application.Common.Security;
-using TraceFlow.Api.Infrastructure.Persistence;
-using TraceFlow.Api.Domain.Entities;
-using TraceFlow.Api.Application.Common.Exceptions;
-using TraceFlow.Api.Domain.Constants;
-
 namespace TraceFlow.Api.Application.Auth.Commands.Login;
 
-public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResponse>
+public class LoginCommandHandler(
+    AppDbContext dbContext,
+    PasswordHasher passwordHasher,
+    JwtTokenGenerator jwtTokenGenerator,
+    IOptions<JwtOptions> options,
+    RefreshTokenGenerator refreshTokenGenerator,
+    TimeProvider timeProvider
+) : IRequestHandler<LoginCommand, LoginResponse>
 {
-    private readonly AppDbContext _dbContext;
-    private readonly PasswordHasher _passwordHasher;
-    private readonly JwtTokenGenerator _jwtTokenGenerator;
-    private readonly IConfiguration _configuration;
-    private readonly RefreshTokenGenerator _refreshTokenGenerator;
-    public LoginCommandHandler(AppDbContext dbContext, PasswordHasher hasher, JwtTokenGenerator tokenGenerator, IConfiguration configuration, RefreshTokenGenerator refreshTokenGenerator)
-    {
-        _dbContext = dbContext;
-        _passwordHasher = hasher;
-        _jwtTokenGenerator = tokenGenerator;
-        _configuration = configuration;
-        _refreshTokenGenerator = refreshTokenGenerator;
-    }
+
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly PasswordHasher _passwordHasher = passwordHasher;
+
+    private readonly JwtTokenGenerator _jwtTokenGenerator = jwtTokenGenerator;
+
+    private readonly JwtOptions _options = options.Value;
+
+    private readonly RefreshTokenGenerator _refreshTokenGenerator = refreshTokenGenerator;
+    private readonly TimeProvider _timeProvider = timeProvider;
+
     public async Task<LoginResponse> Handle(LoginCommand request, CancellationToken cancellationToken)
     {
         var identifier = request.Identifier.Trim().ToLowerInvariant();
 
         var user = await _dbContext.Users
             .FirstOrDefaultAsync(
-                user => user.Email.ToLower() == identifier ||
+                user => user.Email == identifier ||
                         user.NormalizedUsername == identifier,
                 cancellationToken);
 
@@ -55,9 +53,11 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResponse>
         var accessToken = _jwtTokenGenerator.Generate(user);
         var refreshToken = _refreshTokenGenerator.Generate();
 
-        var refreshTokenExpirationDays = int.Parse(_configuration["Jwt:RefreshTokenExpirationDays"] ?? "30");
+        var refreshTokenExpirationDays = _options.RefreshTokenExpirationDays;
 
-        var refreshTokenEntity = new RefreshToken(user.Id, refreshToken.Hash, DateTime.UtcNow.AddDays(refreshTokenExpirationDays));
+        var utcNow = _timeProvider.GetUtcNow();
+
+        var refreshTokenEntity = new RefreshToken(user.Id, refreshToken.Hash, utcNow.AddDays(refreshTokenExpirationDays), utcNow);
 
         _dbContext.RefreshTokens.Add(refreshTokenEntity);
 

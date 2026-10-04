@@ -1,25 +1,17 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Application.Common.AccessControl;
-using TraceFlow.Api.Application.Common.Exceptions;
-using TraceFlow.Api.Domain.Constants;
-using TraceFlow.Api.Infrastructure.Persistence;
-
 namespace TraceFlow.Api.Application.ApiKeys.Commands.RevokeApiKey;
 
-public class RevokeApiKeyCommandHandler
+public class RevokeApiKeyCommandHandler(
+    AppDbContext dbContext,
+    ProjectAccessService projectAccess,
+    TimeProvider timeProvider
+)
     : IRequestHandler<RevokeApiKeyCommand, RevokeApiKeyResponse>
 {
-    private readonly AppDbContext _dbContext;
-    private readonly ProjectAccessService _projectAccess;
 
-    public RevokeApiKeyCommandHandler(
-        AppDbContext dbContext,
-        ProjectAccessService projectAccess)
-    {
-        _dbContext = dbContext;
-        _projectAccess = projectAccess;
-    }
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly ProjectAccessService _projectAccess = projectAccess;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<RevokeApiKeyResponse> Handle(
         RevokeApiKeyCommand request,
@@ -62,7 +54,9 @@ public class RevokeApiKeyCommandHandler
             throw new NotFoundException("API key not found.");
         }
 
-        apiKey.Revoke();
+        var utcNow = _timeProvider.GetUtcNow();
+
+        apiKey.Revoke(utcNow);
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 
@@ -72,7 +66,7 @@ public class RevokeApiKeyCommandHandler
             apiKey.Environment,
             apiKey.KeyPrefix,
             apiKey.Status,
-            apiKey.RevokedAt,
-            apiKey.UpdatedAt);
+            utcNow,
+            utcNow);
     }
 }

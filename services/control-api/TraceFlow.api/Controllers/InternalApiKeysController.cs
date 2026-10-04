@@ -1,35 +1,27 @@
-using MediatR;
-using Microsoft.AspNetCore.Mvc;
-using TraceFlow.Api.Application.ApiKeys.Commands.ValidateApiKey;
-using TraceFlow.Api.Domain.Dtos.ApiKeys;
-using Asp.Versioning;
-
 namespace TraceFlow.Api.Controllers;
 
 [ApiController]
 [ApiVersion(1.0)]
 [Route("internal/v{version:apiVersion}/api-keys")]
-public class InternalApiKeysController : ControllerBase
+public class InternalApiKeysController(ISender sender, IOptions<InternalServiceOptions> options) : ControllerBase
 {
+    private readonly ISender _sender = sender;
+    private readonly InternalServiceOptions _options = options.Value;
+
     private const string InternalSecretHeader = "X-Internal-Secret";
-    private readonly ISender _sender;
-    private readonly IConfiguration _configuration;
 
-    public InternalApiKeysController(ISender sender, IConfiguration configuration)
-    {
-        _sender = sender;
-        _configuration = configuration;
-    }
-
+    [EnableRateLimiting(RateLimitPolicies.Internal)]
     [HttpPost("validate")]
     public async Task<IActionResult> ValidateApiKey(
         ValidateApiKeyRequest request,
         CancellationToken cancellationToken)
     {
-        var expectedSecret = _configuration["INTERNAL_SERVICE_SECRET"];
+        var expectedSecret = _options.Secret;
         var providedSecret = Request.Headers[InternalSecretHeader].ToString();
 
-        if (string.IsNullOrWhiteSpace(expectedSecret) || string.IsNullOrWhiteSpace(providedSecret) || providedSecret != expectedSecret)
+        if (string.IsNullOrWhiteSpace(expectedSecret) ||
+            string.IsNullOrWhiteSpace(providedSecret) ||
+            !SecretEquals(providedSecret, expectedSecret))
         {
             return Unauthorized();
         }
@@ -39,5 +31,13 @@ public class InternalApiKeysController : ControllerBase
             cancellationToken);
 
         return Ok(result);
+    }
+    private static bool SecretEquals(string providedSecret, string expectedSecret)
+    {
+        var providedBytes = Encoding.UTF8.GetBytes(providedSecret);
+        var expectedBytes = Encoding.UTF8.GetBytes(expectedSecret);
+
+        return providedBytes.Length == expectedBytes.Length &&
+            CryptographicOperations.FixedTimeEquals(providedBytes, expectedBytes);
     }
 }

@@ -1,5 +1,3 @@
-using MediatR;
-
 namespace TraceFlow.Api.Application.TraceApplications.Commands.UpdateApplication;
 
 public record UpdateApplicationCommand(

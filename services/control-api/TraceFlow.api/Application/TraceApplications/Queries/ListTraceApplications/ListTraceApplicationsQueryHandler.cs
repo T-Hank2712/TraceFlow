@@ -1,29 +1,18 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Application.Common.AccessControl;
-using TraceFlow.Api.Application.Common.Exceptions;
-using TraceFlow.Api.Domain.Constants;
-using TraceFlow.Api.Infrastructure.Persistence;
-
 namespace TraceFlow.Api.Application.TraceApplications.Queries.ListTraceApplications;
 
-public class ListTraceApplicationsQueryHandler
-    : IRequestHandler<ListTraceApplicationsQuery, IReadOnlyList<TraceApplicationSummaryResponse>>
-{
-    private readonly AppDbContext _dbContext;
-    private readonly ProjectAccessService _projectAccess;
-
-    public ListTraceApplicationsQueryHandler(
+public class ListTraceApplicationsQueryHandler(
         AppDbContext dbContext,
         ProjectAccessService projectAccess)
-    {
-        _dbContext = dbContext;
-        _projectAccess = projectAccess;
-    }
+    : IRequestHandler<ListTraceApplicationsQuery, IReadOnlyList<TraceApplicationSummaryResponse>>
+{
+
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly ProjectAccessService _projectAccess = projectAccess;
 
     public async Task<IReadOnlyList<TraceApplicationSummaryResponse>> Handle(
-        ListTraceApplicationsQuery request,
-        CancellationToken cancellationToken)
+           ListTraceApplicationsQuery request,
+           CancellationToken cancellationToken)
     {
         var access = await _projectAccess.GetProjectAccessAsync(
             request.WorkspaceId,

@@ -4,4 +4,4 @@ public record CancelInvitationResponse(
     Ulid InvitationId,
     Ulid WorkspaceId,
     string Status,
-    DateTime UpdatedAt);
+    DateTimeOffset UpdatedAt);

@@ -1,21 +1,17 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Domain.Entities;
-using TraceFlow.Api.Infrastructure.Persistence;
-using TraceFlow.Api.Application.Common.Security;
-using TraceFlow.Api.Application.Common.Exceptions;
-
 namespace TraceFlow.Api.Application.Auth.Commands.Register;
 
-public class RegisterCommandHandler : IRequestHandler<RegisterCommand, RegisterResponse>
+public class RegisterCommandHandler(
+    AppDbContext dbContext,
+    PasswordHasher passwordHasher,
+    TimeProvider timeProvider
+) : IRequestHandler<RegisterCommand, RegisterResponse>
 {
-    private readonly AppDbContext _dbContext;
-    private readonly PasswordHasher _passwordHasher;
-    public RegisterCommandHandler(AppDbContext dbContext, PasswordHasher passwordHasher)
-    {
-        _dbContext = dbContext;
-        _passwordHasher = passwordHasher;
-    }
+
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly PasswordHasher _passwordHasher = passwordHasher;
+    private readonly TimeProvider _timeProvider = timeProvider;
+
     public async Task<RegisterResponse> Handle(
         RegisterCommand request,
         CancellationToken cancellationToken)
@@ -40,14 +36,16 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, RegisterR
             throw new ConflictException("Username is already taken.");
         }
 
+        var email = request.Email.Trim().ToLowerInvariant();
         var passwordHash = _passwordHasher.Hash(request.Password);
 
         var user = new User(
-            request.Email,
+            email,
             request.Username,
             request.FirstName,
             request.LastName,
-            passwordHash
+            passwordHash,
+            _timeProvider.GetUtcNow()
             );
 
         _dbContext.Users.Add(user);

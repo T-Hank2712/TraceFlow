@@ -1,6 +1,4 @@
-using TraceFlow.Api.Domain.Dtos.Logs;
-
-namespace TraceFlow.Api.Application.Logs.Queries.SearchLogs;
+namespace TraceFlow.Api.Application.TraceLogs.Queries.SearchLogs;
 
 public sealed record SearchLogsResponse(
     IReadOnlyList<LogSearchItemResponse> Items,

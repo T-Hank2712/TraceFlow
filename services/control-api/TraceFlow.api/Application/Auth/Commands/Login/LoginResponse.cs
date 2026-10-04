@@ -2,9 +2,9 @@ namespace TraceFlow.Api.Application.Auth.Commands.Login;
 
 public record LoginResponse(
     string AccessToken,
-    DateTime AccessTokenExpiresAt,
+    DateTimeOffset AccessTokenExpiresAt,
     string RefreshToken,
-    DateTime RefreshTokenExpiresAt,
+    DateTimeOffset RefreshTokenExpiresAt,
     LoginUserResponse User
 );
 

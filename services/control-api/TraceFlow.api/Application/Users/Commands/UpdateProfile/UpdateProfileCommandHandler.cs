@@ -1,19 +1,14 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Application.Common.Exceptions;
-using TraceFlow.Api.Infrastructure.Persistence;
-
 namespace TraceFlow.Api.Application.Users.Commands.UpdateProfile;
 
-using TraceFlow.Api.Domain.Constants;
-
-public class UpdateProfileCommandHandler : IRequestHandler<UpdateProfileCommand, UpdateProfileResponse>
+public class UpdateProfileCommandHandler(
+    AppDbContext dbContext,
+    TimeProvider timeProvider) : IRequestHandler<UpdateProfileCommand, UpdateProfileResponse>
 {
-    private readonly AppDbContext _dbContext;
-    public UpdateProfileCommandHandler(AppDbContext dbContext)
-    {
-        _dbContext = dbContext;
-    }
+
+    private readonly AppDbContext _dbContext = dbContext;
+    private readonly TimeProvider _timeProvider = timeProvider;
+
+
     public async Task<UpdateProfileResponse> Handle(UpdateProfileCommand request, CancellationToken cancellationToken)
     {
         var user = await _dbContext.Users.FirstOrDefaultAsync(
@@ -49,7 +44,8 @@ public class UpdateProfileCommandHandler : IRequestHandler<UpdateProfileCommand,
         user.UpdateProfile(
             request.UserName,
             request.FirstName,
-            request.LastName
+            request.LastName,
+            _timeProvider.GetUtcNow()
         );
 
         await _dbContext.SaveChangesAsync(cancellationToken);

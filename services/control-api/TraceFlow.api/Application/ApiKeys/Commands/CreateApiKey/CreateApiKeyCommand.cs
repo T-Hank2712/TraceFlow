@@ -1,5 +1,3 @@
-using MediatR;
-
 namespace TraceFlow.Api.Application.ApiKeys.Commands.CreateApiKey;
 
 public sealed record CreateApiKeyCommand(

@@ -1,21 +1,13 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Application.Common.Exceptions;
-using TraceFlow.Api.Domain.Constants;
-using TraceFlow.Api.Domain.Entities;
-using TraceFlow.Api.Infrastructure.Persistence;
-
 namespace TraceFlow.Api.Application.Projects.Commands.AcceptProjectInvitation;
 
-public class AcceptProjectInvitationCommandHandler
+public class AcceptProjectInvitationCommandHandler(
+    AppDbContext dbContext,
+    TimeProvider timeProvider
+)
     : IRequestHandler<AcceptProjectInvitationCommand, AcceptProjectInvitationResponse>
 {
-    private readonly AppDbContext _dbContext;
-
-    public AcceptProjectInvitationCommandHandler(AppDbContext dbContext)
-    {
-        _dbContext = dbContext;
-    }
+    private readonly AppDbContext _dbContext = dbContext;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<AcceptProjectInvitationResponse> Handle(
         AcceptProjectInvitationCommand request,
@@ -47,19 +39,22 @@ public class AcceptProjectInvitationCommandHandler
                     member.UserId == request.UserId,
                 cancellationToken);
 
+        var utcNow = _timeProvider.GetUtcNow();
+
         if (workspaceMember is null)
         {
             workspaceMember = new WorkspaceMember(
                 invitation.WorkspaceId,
                 request.UserId,
-                WorkspaceMemberRoles.Member);
+                WorkspaceMemberRoles.Member,
+                utcNow);
 
             _dbContext.WorkspaceMembers.Add(workspaceMember);
         }
         else if (workspaceMember.Status != MembershipStatuses.Active)
         {
-            workspaceMember.Activate();
-            workspaceMember.ChangeRole(WorkspaceMemberRoles.Member);
+            workspaceMember.Activate(utcNow);
+            workspaceMember.ChangeRole(WorkspaceMemberRoles.Member, utcNow);
         }
 
         var existingProjectMember = await _dbContext.ProjectMembers
@@ -82,18 +77,19 @@ public class AcceptProjectInvitationCommandHandler
             projectMember = new ProjectMember(
                 invitation.ProjectId,
                 request.UserId,
-                invitation.Role);
+                invitation.Role,
+                utcNow);
 
             _dbContext.ProjectMembers.Add(projectMember);
         }
         else
         {
-            existingProjectMember.Activate();
-            existingProjectMember.ChangeRole(invitation.Role);
+            existingProjectMember.Activate(utcNow);
+            existingProjectMember.ChangeRole(invitation.Role, utcNow);
             projectMember = existingProjectMember;
         }
 
-        invitation.Accept();
+        invitation.Accept(utcNow);
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 

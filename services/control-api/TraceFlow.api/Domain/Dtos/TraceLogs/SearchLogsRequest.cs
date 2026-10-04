@@ -7,7 +7,7 @@ public sealed record SearchLogsRequest(
     string? Service,
     string? TraceId,
     string? CorrelationId,
-    DateTime? From,
-    DateTime? To,
+    DateTimeOffset? From,
+    DateTimeOffset? To,
     int Page = 1,
     int PageSize = 20);

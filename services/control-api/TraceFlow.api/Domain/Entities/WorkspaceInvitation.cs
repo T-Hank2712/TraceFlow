@@ -1,6 +1,3 @@
-using TraceFlow.Api.Domain.Common;
-using TraceFlow.Api.Domain.Constants;
-
 namespace TraceFlow.Api.Domain.Entities;
 
 public class WorkspaceInvitation : Entity
@@ -16,7 +13,7 @@ public class WorkspaceInvitation : Entity
 
     public string Role { get; private set; } = WorkspaceMemberRoles.Member;
     public string Status { get; private set; } = InvitationStatuses.Pending;
-    public DateTime ExpiresAt { get; private set; }
+    public DateTimeOffset ExpiresAt { get; private set; }
 
     private WorkspaceInvitation() { }
 
@@ -25,7 +22,8 @@ public class WorkspaceInvitation : Entity
         Ulid invitedUserId,
         Ulid invitedByUserId,
         string role,
-        DateTime expiresAt)
+        DateTimeOffset expiresAt,
+        DateTimeOffset createdAt)
     {
         Id = Ulid.NewUlid();
         WorkspaceId = workspaceId;
@@ -34,38 +32,38 @@ public class WorkspaceInvitation : Entity
         Role = role.Trim().ToLowerInvariant();
         Status = InvitationStatuses.Pending;
         ExpiresAt = expiresAt;
-        CreatedAt = DateTime.UtcNow;
-        UpdatedAt = DateTime.UtcNow;
+        CreatedAt = createdAt;
+        UpdatedAt = createdAt;
     }
-    public void Accept()
+    public void Accept(DateTimeOffset accepted)
     {
         if (Status != InvitationStatuses.Pending)
         {
             throw new InvalidOperationException("Invitation is not pending.");
         }
-        if (ExpiresAt <= DateTime.UtcNow)
+        if (ExpiresAt <= accepted)
         {
             throw new InvalidOperationException("Invitation has expired.");
         }
         Status = InvitationStatuses.Accepted;
-        UpdatedAt = DateTime.UtcNow;
+        UpdatedAt = accepted;
     }
-    public void Decline()
+    public void Decline(DateTimeOffset declined)
     {
         if (Status != InvitationStatuses.Pending)
         {
             throw new InvalidOperationException("Invitation is not pending.");
         }
 
-        if (ExpiresAt <= DateTime.UtcNow)
+        if (ExpiresAt <= declined)
         {
             throw new InvalidOperationException("Invitation has expired.");
         }
 
         Status = InvitationStatuses.Declined;
-        UpdatedAt = DateTime.UtcNow;
+        UpdatedAt = declined;
     }
-    public void Cancel()
+    public void Cancel(DateTimeOffset cancelled)
     {
         if (Status != InvitationStatuses.Pending)
         {
@@ -73,6 +71,21 @@ public class WorkspaceInvitation : Entity
         }
 
         Status = InvitationStatuses.Cancelled;
-        UpdatedAt = DateTime.UtcNow;
+        UpdatedAt = cancelled;
+    }
+    public void Expire(DateTimeOffset expiredAt)
+    {
+        if (Status != InvitationStatuses.Pending)
+        {
+            return;
+        }
+
+        if (ExpiresAt > expiredAt)
+        {
+            return;
+        }
+
+        Status = InvitationStatuses.Expired;
+        UpdatedAt = expiredAt;
     }
 }

@@ -1,34 +1,23 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Application.Common.AccessControl;
-using TraceFlow.Api.Application.Common.Exceptions;
-using TraceFlow.Api.Domain.Constants;
-using TraceFlow.Api.Domain.Entities;
-using TraceFlow.Api.Infrastructure.Persistence;
-using TraceFlow.Api.Application.Common.Users;
-
 namespace TraceFlow.Api.Application.Projects.Commands.InviteProjectMember;
 
-public class InviteProjectMemberCommandHandler
-    : IRequestHandler<InviteProjectMemberCommand, InviteProjectMemberResponse>
-{
-    private readonly AppDbContext _dbContext;
-    private readonly ProjectAccessService _projectAccess;
-    private readonly UserLookupService _userLookup;
-
-    public InviteProjectMemberCommandHandler(
+public class InviteProjectMemberCommandHandler(
         AppDbContext dbContext,
         ProjectAccessService projectAccess,
-        UserLookupService userLookup)
-    {
-        _dbContext = dbContext;
-        _projectAccess = projectAccess;
-        _userLookup = userLookup;
-    }
+        UserLookupService userLookup,
+        TimeProvider timeProvider)
+    : IRequestHandler<InviteProjectMemberCommand, InviteProjectMemberResponse>
+{
+
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly ProjectAccessService _projectAccess = projectAccess;
+
+    private readonly UserLookupService _userLookup = userLookup;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<InviteProjectMemberResponse> Handle(
-        InviteProjectMemberCommand request,
-        CancellationToken cancellationToken)
+            InviteProjectMemberCommand request,
+            CancellationToken cancellationToken)
     {
         var access = await _projectAccess.GetProjectAccessAsync(
             request.WorkspaceId,
@@ -40,8 +29,6 @@ public class InviteProjectMemberCommandHandler
         _projectAccess.EnsureProjectManager(
             access,
             "You do not have permission to invite project members.");
-
-        var normalizedIdentifier = request.Identifier.Trim().ToLowerInvariant();
 
         var invitedUser = await _userLookup.GetActiveInviteTargetAsync(
             request.Identifier,
@@ -61,13 +48,34 @@ public class InviteProjectMemberCommandHandler
             throw new ConflictException("User is already a project member.");
         }
 
+        var utcNow = _timeProvider.GetUtcNow();
+
+        var pendingInvitation = await _dbContext.ProjectInvitations
+            .FirstOrDefaultAsync(
+                invitation =>
+                    invitation.ProjectId == request.ProjectId &&
+                    invitation.InvitedUserId == invitedUser.Id &&
+                    invitation.Status == InvitationStatuses.Pending,
+                cancellationToken);
+
+        if (pendingInvitation is not null)
+        {
+            if (pendingInvitation.ExpiresAt > utcNow)
+            {
+                throw new ConflictException(
+                    "User already has a pending project invitation.");
+            }
+
+            pendingInvitation.Expire(utcNow);
+        }
+
         var alreadyInvited = await _dbContext.ProjectInvitations
             .AnyAsync(
                 invitation =>
                     invitation.ProjectId == request.ProjectId &&
                     invitation.InvitedUserId == invitedUser.Id &&
                     invitation.Status == InvitationStatuses.Pending &&
-                    invitation.ExpiresAt > DateTime.UtcNow,
+                    invitation.ExpiresAt > utcNow,
                 cancellationToken);
 
         if (alreadyInvited)
@@ -81,7 +89,8 @@ public class InviteProjectMemberCommandHandler
             invitedUser.Id,
             request.InvitedByUserId,
             request.Role,
-            DateTime.UtcNow.AddDays(InvitationDefaults.ExpiresAfterDays));
+            utcNow.AddDays(InvitationDefaults.ExpiresAfterDays),
+            utcNow);
 
         _dbContext.ProjectInvitations.Add(invitation);
 

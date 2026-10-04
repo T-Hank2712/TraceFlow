@@ -1,21 +1,14 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Domain.Entities;
-using TraceFlow.Api.Infrastructure.Persistence;
-using TraceFlow.Api.Application.Common.Exceptions;
-using TraceFlow.Api.Domain.Constants;
-
 namespace TraceFlow.Api.Application.Workspaces.Commands.CreateWorkspace;
 
-public class CreateWorkspaceCommandHandler
+public class CreateWorkspaceCommandHandler(
+    AppDbContext dbContext,
+    TimeProvider timeProvider)
     : IRequestHandler<CreateWorkspaceCommand, CreateWorkspaceResponse>
 {
-    private readonly AppDbContext _dbContext;
 
-    public CreateWorkspaceCommandHandler(AppDbContext dbContext)
-    {
-        _dbContext = dbContext;
-    }
+    private readonly AppDbContext _dbContext = dbContext;
+    private readonly TimeProvider _timeProvider = timeProvider;
+
 
     public async Task<CreateWorkspaceResponse> Handle(
         CreateWorkspaceCommand request,
@@ -37,18 +30,22 @@ public class CreateWorkspaceCommandHandler
                 "Workspace slug is already taken.");
         }
 
+        var utcNow = _timeProvider.GetUtcNow();
+
         var workspace = new Workspace(
             request.UserId,
             request.Name,
             request.Slug,
-            request.Description);
+            request.Description,
+            utcNow);
 
         _dbContext.Workspaces.Add(workspace);
 
         var ownerMember = new WorkspaceMember(
             workspace.Id,
             request.UserId,
-            WorkspaceMemberRoles.Owner);
+            WorkspaceMemberRoles.Owner,
+            utcNow);
 
         _dbContext.WorkspaceMembers.Add(ownerMember);
 

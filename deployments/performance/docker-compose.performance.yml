@@ -143,13 +143,25 @@ services:
       Jwt__Secret: ${Jwt__Secret}
       Jwt__AccessTokenExpirationMinutes: ${Jwt__AccessTokenExpirationMinutes}
       Jwt__RefreshTokenExpirationDays: ${Jwt__RefreshTokenExpirationDays}
-      API_KEY_PEPPER: ${API_KEY_PEPPER}
-      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET}
+      ApiKeySecurity__Pepper: ${ApiKeySecurity__Pepper}
+      InternalService__Secret: ${InternalService__Secret}
       OpenSearch__Url: ${OpenSearch__Url}
       OpenSearch__Username: ${OpenSearch__Username}
       OpenSearch__Password: ${OpenSearch__Password}
       OpenSearch__Index: ${OpenSearch__Index}
       OpenSearch__SkipTlsVerify: ${OpenSearch__SkipTlsVerify}
+      RateLimit__Global__PermitLimit: ${RateLimit__Global__PermitLimit}
+      RateLimit__Global__WindowSeconds: ${RateLimit__Global__WindowSeconds}
+      RateLimit__Global__QueueLimit: ${RateLimit__Global__QueueLimit}
+      RateLimit__Auth__PermitLimit: ${RateLimit__Auth__PermitLimit}
+      RateLimit__Auth__WindowSeconds: ${RateLimit__Auth__WindowSeconds}
+      RateLimit__Auth__QueueLimit: ${RateLimit__Auth__QueueLimit}
+      RateLimit__Internal__PermitLimit: ${RateLimit__Internal__PermitLimit}
+      RateLimit__Internal__WindowSeconds: ${RateLimit__Internal__WindowSeconds}
+      RateLimit__Internal__QueueLimit: ${RateLimit__Internal__QueueLimit}
+      RateLimit__Search__PermitLimit: ${RateLimit__Search__PermitLimit}
+      RateLimit__Search__WindowSeconds: ${RateLimit__Search__WindowSeconds}
+      RateLimit__Search__QueueLimit: ${RateLimit__Search__QueueLimit}
     depends_on:
       postgres:
         condition: service_healthy

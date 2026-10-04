@@ -1,8 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using TraceFlow.Api.Domain.Constants;
-using TraceFlow.Api.Domain.Entities;
-
 namespace TraceFlow.Api.Infrastructure.Persistence.Configurations;
 
 public class ProjectConfiguration : IEntityTypeConfiguration<Project>

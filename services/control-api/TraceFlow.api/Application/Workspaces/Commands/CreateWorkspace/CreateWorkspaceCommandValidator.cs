@@ -1,5 +1,3 @@
-using FluentValidation;
-
 namespace TraceFlow.Api.Application.Workspaces.Commands.CreateWorkspace;
 
 public class CreateWorkspaceCommandValidator

@@ -1,6 +1,4 @@
-using MediatR;
-
-namespace TraceFlow.Api.Application.TraceApplications.Commands.DeleteApplication;
+namespace TraceFlow.Api.Application.TraceApplications.Commands.DeleteTraceApplication;
 
 public record DeleteApplicationCommand(
     Ulid WorkspaceId,

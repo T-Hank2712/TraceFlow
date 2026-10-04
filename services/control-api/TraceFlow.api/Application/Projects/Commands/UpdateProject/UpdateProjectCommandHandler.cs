@@ -1,29 +1,19 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Application.Common.AccessControl;
-using TraceFlow.Api.Application.Common.Exceptions;
-using TraceFlow.Api.Domain.Constants;
-using TraceFlow.Api.Infrastructure.Persistence;
-
 namespace TraceFlow.Api.Application.Projects.Commands.UpdateProject;
 
-public class UpdateProjectCommandHandler
+public class UpdateProjectCommandHandler(
+        AppDbContext dbContext,
+        ProjectAccessService projectAccess,
+        TimeProvider timeProvider
+        )
     : IRequestHandler<UpdateProjectCommand, UpdateProjectResponse>
 {
-    private readonly AppDbContext _dbContext;
-    private readonly ProjectAccessService _projectAccess;
-
-    public UpdateProjectCommandHandler(
-        AppDbContext dbContext,
-        ProjectAccessService projectAccess)
-    {
-        _dbContext = dbContext;
-        _projectAccess = projectAccess;
-    }
+    private readonly AppDbContext _dbContext = dbContext;
+    private readonly ProjectAccessService _projectAccess = projectAccess;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<UpdateProjectResponse> Handle(
-        UpdateProjectCommand request,
-        CancellationToken cancellationToken)
+           UpdateProjectCommand request,
+           CancellationToken cancellationToken)
     {
         var access = await _projectAccess.GetProjectAccessAsync(
             request.WorkspaceId,
@@ -60,7 +50,8 @@ public class UpdateProjectCommandHandler
         project.UpdateProject(
             request.Name,
             request.Slug,
-            request.Description);
+            request.Description,
+            _timeProvider.GetUtcNow());
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 

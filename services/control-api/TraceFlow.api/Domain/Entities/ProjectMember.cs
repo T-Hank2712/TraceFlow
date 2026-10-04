@@ -1,6 +1,3 @@
-using TraceFlow.Api.Domain.Common;
-using TraceFlow.Api.Domain.Constants;
-
 namespace TraceFlow.Api.Domain.Entities;
 
 public class ProjectMember : Entity
@@ -13,33 +10,32 @@ public class ProjectMember : Entity
 
     public string Role { get; private set; } = ProjectMemberRoles.Viewer;
     public string Status { get; private set; } = MembershipStatuses.Active;
-    public DateTime JoinedAt { get; private set; }
 
     private ProjectMember() { }
 
     public ProjectMember(
         Ulid projectId,
         Ulid userId,
-        string role)
+        string role,
+        DateTimeOffset createdAt)
     {
         Id = Ulid.NewUlid();
         ProjectId = projectId;
         UserId = userId;
         Role = role.Trim().ToLowerInvariant();
         Status = MembershipStatuses.Active;
-        JoinedAt = DateTime.UtcNow;
-        CreatedAt = DateTime.UtcNow;
-        UpdatedAt = DateTime.UtcNow;
+        CreatedAt = createdAt;
+        UpdatedAt = createdAt;
     }
-    public void ChangeRole(string role)
+    public void ChangeRole(string role, DateTimeOffset updatedAt)
     {
         Role = role.Trim().ToLowerInvariant();
-        UpdatedAt = DateTime.UtcNow;
+        UpdatedAt = updatedAt;
     }
 
-    public void Activate()
+    public void Activate(DateTimeOffset actived)
     {
         Status = MembershipStatuses.Active;
-        UpdatedAt = DateTime.UtcNow;
+        UpdatedAt = actived;
     }
 }

@@ -1,20 +1,13 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Application.Common.Exceptions;
-using TraceFlow.Api.Infrastructure.Persistence;
-using TraceFlow.Api.Domain.Constants;
-
 namespace TraceFlow.Api.Application.Workspaces.Commands.DeclineWorkspaceInvitation;
 
-public class DeclineInvitationCommandHandler
+public class DeclineInvitationCommandHandler(
+    AppDbContext dbContext,
+    TimeProvider timeProvider)
     : IRequestHandler<DeclineInvitationCommand, DeclineInvitationResponse>
 {
-    private readonly AppDbContext _dbContext;
 
-    public DeclineInvitationCommandHandler(AppDbContext dbContext)
-    {
-        _dbContext = dbContext;
-    }
+    private readonly AppDbContext _dbContext = dbContext;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<DeclineInvitationResponse> Handle(
         DeclineInvitationCommand request,
@@ -38,7 +31,7 @@ public class DeclineInvitationCommandHandler
             throw new ConflictException("Archived workspace invitation cannot be declined.");
         }
 
-        invitation.Decline();
+        invitation.Decline(_timeProvider.GetUtcNow());
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 

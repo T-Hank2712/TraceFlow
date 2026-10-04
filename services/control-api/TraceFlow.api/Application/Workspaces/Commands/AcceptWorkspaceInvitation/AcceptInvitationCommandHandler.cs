@@ -1,21 +1,14 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Application.Common.Exceptions;
-using TraceFlow.Api.Domain.Entities;
-using TraceFlow.Api.Infrastructure.Persistence;
-using TraceFlow.Api.Domain.Constants;
-
 namespace TraceFlow.Api.Application.Workspaces.Commands.AcceptWorkspaceInvitation;
 
-public class AcceptInvitationCommandHandler
+public class AcceptInvitationCommandHandler(
+    AppDbContext dbContext,
+    TimeProvider timeProvider
+    )
     : IRequestHandler<AcceptInvitationCommand, AcceptInvitationResponse>
 {
-    private readonly AppDbContext _dbContext;
 
-    public AcceptInvitationCommandHandler(AppDbContext dbContext)
-    {
-        _dbContext = dbContext;
-    }
+    private readonly AppDbContext _dbContext = dbContext;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<AcceptInvitationResponse> Handle(
         AcceptInvitationCommand request,
@@ -29,9 +22,16 @@ public class AcceptInvitationCommandHandler
                     invitation.InvitedUserId == request.UserId,
                 cancellationToken);
 
+        var utcNow = _timeProvider.GetUtcNow();
+
         if (invitation is null)
         {
             throw new NotFoundException("Invitation not found.");
+        }
+
+        if (invitation.Status != InvitationStatuses.Pending || invitation.ExpiresAt <= utcNow)
+        {
+            throw new ConflictException("Invitation is no longer valid or has already been processed.");
         }
 
         if (invitation.Workspace.Status == ResourceStatuses.Archived)
@@ -39,27 +39,40 @@ public class AcceptInvitationCommandHandler
             throw new ConflictException("Archived workspace cannot be joined.");
         }
 
-        var alreadyMember = await _dbContext.WorkspaceMembers
-            .AnyAsync(
+        var existingMember = await _dbContext.WorkspaceMembers
+            .FirstOrDefaultAsync(
                 member =>
                     member.WorkspaceId == invitation.WorkspaceId &&
-                    member.UserId == request.UserId &&
-                    member.Status == MembershipStatuses.Active,
+                    member.UserId == request.UserId,
                 cancellationToken);
 
-        if (alreadyMember)
+        if (existingMember?.Status == MembershipStatuses.Active)
         {
             throw new ConflictException("User is already a workspace member.");
         }
 
-        invitation.Accept();
+        invitation.Accept(utcNow);
 
-        var member = new WorkspaceMember(
-            invitation.WorkspaceId,
-            request.UserId,
-            invitation.Role);
+        WorkspaceMember member;
 
-        _dbContext.WorkspaceMembers.Add(member);
+        if (existingMember is null)
+        {
+            member = new WorkspaceMember(
+                invitation.WorkspaceId,
+                request.UserId,
+                invitation.Role,
+                utcNow
+            );
+            _dbContext.WorkspaceMembers.Add(member);
+        }
+        else
+        {
+            existingMember.Activate(utcNow);
+            existingMember.ChangeRole(invitation.Role, utcNow);
+
+            member = existingMember;
+
+        }
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 

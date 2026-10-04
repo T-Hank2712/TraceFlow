@@ -1,33 +1,23 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Application.Common.AccessControl;
-using TraceFlow.Api.Application.Common.Exceptions;
-using TraceFlow.Api.Application.Common.Logs;
-using TraceFlow.Api.Domain.Constants;
-using TraceFlow.Api.Infrastructure.Persistence;
+namespace TraceFlow.Api.Application.TraceLogs.Queries.SearchLogs;
 
-namespace TraceFlow.Api.Application.Logs.Queries.SearchLogs;
-
-public sealed class SearchLogsQueryHandler
-    : IRequestHandler<SearchLogsQuery, SearchLogsResponse>
-{
-    private readonly AppDbContext _dbContext;
-    private readonly ProjectAccessService _projectAccess;
-    private readonly ILogSearchReader _logSearchReader;
-
-    public SearchLogsQueryHandler(
+public sealed class SearchLogsQueryHandler(
         AppDbContext dbContext,
         ProjectAccessService projectAccess,
-        ILogSearchReader logSearchReader)
-    {
-        _dbContext = dbContext;
-        _projectAccess = projectAccess;
-        _logSearchReader = logSearchReader;
-    }
+        ILogSearchReader logSearchReader,
+        TimeProvider timeProvider)
+    : IRequestHandler<SearchLogsQuery, SearchLogsResponse>
+{
+
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly ProjectAccessService _projectAccess = projectAccess;
+
+    private readonly ILogSearchReader _logSearchReader = logSearchReader;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<SearchLogsResponse> Handle(
-        SearchLogsQuery request,
-        CancellationToken cancellationToken)
+            SearchLogsQuery request,
+            CancellationToken cancellationToken)
     {
         var access = await _projectAccess.GetProjectAccessAsync(
             request.WorkspaceId,
@@ -58,15 +48,15 @@ public sealed class SearchLogsQueryHandler
             }
         }
 
-        var normalizedQuery = NormalizeTimeRange(request);
+        var normalizedQuery = NormalizeTimeRange(request, _timeProvider.GetUtcNow());
 
         return await _logSearchReader.SearchAsync(
             normalizedQuery,
             cancellationToken);
     }
-    private static SearchLogsQuery NormalizeTimeRange(SearchLogsQuery query)
+    private static SearchLogsQuery NormalizeTimeRange(SearchLogsQuery query, DateTimeOffset utcNow)
     {
-        var to = query.To?.ToUniversalTime() ?? DateTime.UtcNow;
+        var to = query.To?.ToUniversalTime() ?? utcNow;
         var from = query.From?.ToUniversalTime() ?? to.AddHours(-24);
 
         return query with

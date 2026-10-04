@@ -1,30 +1,19 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Application.Common.AccessControl;
-using TraceFlow.Api.Application.Common.Exceptions;
-using TraceFlow.Api.Domain.Constants;
-using TraceFlow.Api.Domain.Entities;
-using TraceFlow.Api.Infrastructure.Persistence;
-
 namespace TraceFlow.Api.Application.Projects.Commands.CreateProject;
 
-public class CreateProjectCommandHandler
+public class CreateProjectCommandHandler(
+        AppDbContext dbContext,
+        WorkspaceAccessService workspaceAccess,
+        TimeProvider timeProvider)
     : IRequestHandler<CreateProjectCommand, CreateProjectResponse>
 {
-    private readonly AppDbContext _dbContext;
-    private readonly WorkspaceAccessService _workspaceAccess;
 
-    public CreateProjectCommandHandler(
-        AppDbContext dbContext,
-        WorkspaceAccessService workspaceAccess)
-    {
-        _dbContext = dbContext;
-        _workspaceAccess = workspaceAccess;
-    }
+    private readonly AppDbContext _dbContext = dbContext;
+    private readonly WorkspaceAccessService _workspaceAccess = workspaceAccess;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<CreateProjectResponse> Handle(
-        CreateProjectCommand request,
-        CancellationToken cancellationToken)
+           CreateProjectCommand request,
+           CancellationToken cancellationToken)
     {
         var membership = await _workspaceAccess.GetActiveMembershipAsync(
             request.WorkspaceId,
@@ -55,12 +44,15 @@ public class CreateProjectCommandHandler
             throw new ConflictException("Project slug is already taken.");
         }
 
+        var utcNow = _timeProvider.GetUtcNow();
+
         var project = new Project(
             request.WorkspaceId,
             request.UserId,
             request.Name,
             request.Slug,
-            request.Description);
+            request.Description,
+            utcNow);
 
         _dbContext.Projects.Add(project);
 
@@ -79,7 +71,8 @@ public class CreateProjectCommandHandler
             .Select(userId => new ProjectMember(
                 project.Id,
                 userId,
-                ProjectMemberRoles.Manager))
+                ProjectMemberRoles.Manager,
+                utcNow))
             .ToList();
 
         _dbContext.ProjectMembers.AddRange(projectMembers);

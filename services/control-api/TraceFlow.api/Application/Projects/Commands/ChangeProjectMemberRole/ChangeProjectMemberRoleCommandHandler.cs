@@ -1,29 +1,20 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Application.Common.AccessControl;
-using TraceFlow.Api.Application.Common.Exceptions;
-using TraceFlow.Api.Domain.Constants;
-using TraceFlow.Api.Infrastructure.Persistence;
-
 namespace TraceFlow.Api.Application.Projects.Commands.ChangeProjectMemberRole;
 
-public class ChangeProjectMemberRoleCommandHandler
+public class ChangeProjectMemberRoleCommandHandler(
+        AppDbContext dbContext,
+        ProjectAccessService projectAccess,
+        TimeProvider timeProvider)
     : IRequestHandler<ChangeProjectMemberRoleCommand, ChangeProjectMemberRoleResponse>
 {
-    private readonly AppDbContext _dbContext;
-    private readonly ProjectAccessService _projectAccess;
 
-    public ChangeProjectMemberRoleCommandHandler(
-        AppDbContext dbContext,
-        ProjectAccessService projectAccess)
-    {
-        _dbContext = dbContext;
-        _projectAccess = projectAccess;
-    }
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly ProjectAccessService _projectAccess = projectAccess;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<ChangeProjectMemberRoleResponse> Handle(
-        ChangeProjectMemberRoleCommand request,
-        CancellationToken cancellationToken)
+           ChangeProjectMemberRoleCommand request,
+           CancellationToken cancellationToken)
     {
         var access = await _projectAccess.GetProjectAccessAsync(
             request.WorkspaceId,
@@ -73,7 +64,7 @@ public class ChangeProjectMemberRoleCommandHandler
             }
         }
 
-        targetMember.ChangeRole(newRole);
+        targetMember.ChangeRole(newRole, _timeProvider.GetUtcNow());
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 

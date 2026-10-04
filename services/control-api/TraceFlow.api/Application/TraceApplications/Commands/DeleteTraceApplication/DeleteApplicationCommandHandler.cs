@@ -1,28 +1,20 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Application.Common.AccessControl;
-using TraceFlow.Api.Application.Common.Exceptions;
-using TraceFlow.Api.Domain.Constants;
-using TraceFlow.Api.Infrastructure.Persistence;
+namespace TraceFlow.Api.Application.TraceApplications.Commands.DeleteTraceApplication;
 
-namespace TraceFlow.Api.Application.TraceApplications.Commands.DeleteApplication;
-
-public class DeleteApplicationCommandHandler
+public class DeleteApplicationCommandHandler(
+        AppDbContext dbContext,
+        ProjectAccessService projectAccess,
+        TimeProvider timeProvider)
     : IRequestHandler<DeleteApplicationCommand, DeleteApplicationResponse>
 {
-    private readonly AppDbContext _dbContext;
-    private readonly ProjectAccessService _projectAccess;
 
-    public DeleteApplicationCommandHandler(
-        AppDbContext dbContext,
-        ProjectAccessService projectAccess)
-    {
-        _dbContext = dbContext;
-        _projectAccess = projectAccess;
-    }
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly ProjectAccessService _projectAccess = projectAccess;
+    private readonly TimeProvider _timeProvider = timeProvider;
+
     public async Task<DeleteApplicationResponse> Handle(
-        DeleteApplicationCommand request,
-        CancellationToken cancellationToken)
+           DeleteApplicationCommand request,
+           CancellationToken cancellationToken)
     {
         var access = await _projectAccess.GetProjectAccessAsync(
             request.WorkspaceId,
@@ -63,7 +55,7 @@ public class DeleteApplicationCommandHandler
                 "Trace application permanently deleted.");
         }
 
-        application.Archive();
+        application.Archive(_timeProvider.GetUtcNow());
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 

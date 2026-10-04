@@ -1,23 +1,14 @@
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Application.Common.Exceptions;
-using TraceFlow.Api.Domain.Constants;
-using TraceFlow.Api.Domain.Entities;
-using TraceFlow.Api.Infrastructure.Persistence;
-
 namespace TraceFlow.Api.Application.Common.AccessControl;
 
-public class ProjectAccessService
+public class ProjectAccessService(
+    AppDbContext dbContext,
+    WorkspaceAccessService workspaceAccess
+)
 {
-    private readonly AppDbContext _dbContext;
-    private readonly WorkspaceAccessService _workspaceAccess;
 
-    public ProjectAccessService(
-        AppDbContext dbContext,
-        WorkspaceAccessService workspaceAccessService)
-    {
-        _dbContext = dbContext;
-        _workspaceAccess = workspaceAccessService;
-    }
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly WorkspaceAccessService _workspaceAccess = workspaceAccess;
 
     public async Task<ProjectAccessContext> GetProjectAccessAsync(
         Ulid workspaceId,

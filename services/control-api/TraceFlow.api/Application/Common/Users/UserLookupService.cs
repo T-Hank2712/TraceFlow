@@ -1,19 +1,12 @@
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Application.Common.Exceptions;
-using TraceFlow.Api.Domain.Constants;
-using TraceFlow.Api.Domain.Entities;
-using TraceFlow.Api.Infrastructure.Persistence;
-
 namespace TraceFlow.Api.Application.Common.Users;
 
-public class UserLookupService
+public class UserLookupService(
+    AppDbContext dbContext
+)
 {
-    private readonly AppDbContext _dbContext;
 
-    public UserLookupService(AppDbContext dbContext)
-    {
-        _dbContext = dbContext;
-    }
+    private readonly AppDbContext _dbContext = dbContext;
+
 
     public async Task<User> GetActiveInviteTargetAsync(
         string identifier,

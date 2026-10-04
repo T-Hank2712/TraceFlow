@@ -1,5 +1,3 @@
-using FluentValidation;
-
 namespace TraceFlow.Api.Application.Users.Commands.UpdateProfile;
 
 public class UpdateMyProfileCommandValidator : AbstractValidator<UpdateProfileCommand>

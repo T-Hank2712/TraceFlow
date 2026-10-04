@@ -1,26 +1,14 @@
-using MediatR;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using TraceFlow.Api.Application.Logs.Queries.SearchLogs;
-using TraceFlow.Api.Domain.Common.Extensions;
-using TraceFlow.Api.Domain.Dtos.Logs;
-using Asp.Versioning;
-
 namespace TraceFlow.Api.Controllers;
 
 [ApiController]
 [ApiVersion(1.0)]
 [Authorize]
 [Route("api/v{version:apiVersion}/workspaces/{workspaceId}/projects/{projectId}/logs")]
-public sealed class LogsController : ControllerBase
+public sealed class LogsController(ISender sender) : ControllerBase
 {
-    private readonly ISender _sender;
+    private readonly ISender _sender = sender;
 
-    public LogsController(ISender sender)
-    {
-        _sender = sender;
-    }
-
+    [EnableRateLimiting(RateLimitPolicies.Search)]
     [HttpGet]
     public async Task<IActionResult> SearchLogs(
         Ulid workspaceId,

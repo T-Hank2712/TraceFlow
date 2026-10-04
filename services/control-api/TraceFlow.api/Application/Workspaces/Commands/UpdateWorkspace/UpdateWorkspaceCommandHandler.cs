@@ -1,29 +1,20 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Application.Common.AccessControl;
-using TraceFlow.Api.Application.Common.Exceptions;
-using TraceFlow.Api.Infrastructure.Persistence;
-using TraceFlow.Api.Domain.Constants;
-
 namespace TraceFlow.Api.Application.Workspaces.Commands.UpdateWorkspace;
 
-public class UpdateWorkspaceCommandHandler
+public class UpdateWorkspaceCommandHandler(
+        AppDbContext dbContext,
+        WorkspaceAccessService workspaceAccess,
+        TimeProvider timeProvider)
     : IRequestHandler<UpdateWorkspaceCommand, UpdateWorkspaceResponse>
 {
-    private readonly AppDbContext _dbContext;
-    private readonly WorkspaceAccessService _workspaceAccess;
 
-    public UpdateWorkspaceCommandHandler(
-        AppDbContext dbContext,
-        WorkspaceAccessService workspaceAccess)
-    {
-        _dbContext = dbContext;
-        _workspaceAccess = workspaceAccess;
-    }
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly WorkspaceAccessService _workspaceAccess = workspaceAccess;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<UpdateWorkspaceResponse> Handle(
-        UpdateWorkspaceCommand request,
-        CancellationToken cancellationToken)
+           UpdateWorkspaceCommand request,
+           CancellationToken cancellationToken)
     {
         var membership = await _workspaceAccess.GetActiveMembershipAsync(
             request.WorkspaceId,
@@ -61,7 +52,8 @@ public class UpdateWorkspaceCommandHandler
         membership.Workspace.UpdateWorkspace(
             request.Name,
             request.Slug,
-            request.Description);
+            request.Description,
+            _timeProvider.GetUtcNow());
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 

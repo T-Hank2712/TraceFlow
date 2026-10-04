@@ -1,21 +1,17 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Application.Common.Exceptions;
-using TraceFlow.Api.Application.Common.Security;
-using TraceFlow.Api.Infrastructure.Persistence;
-using TraceFlow.Api.Domain.Constants;
-
 namespace TraceFlow.Api.Application.Auth.Commands.ChangePassword;
 
-public class ChangePasswordCommandHandler : IRequestHandler<ChangePasswordCommand, ChangePasswordResponse>
+public class ChangePasswordCommandHandler(
+    AppDbContext dbContext,
+    PasswordHasher passwordHasher,
+    TimeProvider timeProvider
+) : IRequestHandler<ChangePasswordCommand, ChangePasswordResponse>
 {
-    private readonly AppDbContext _dbContext;
-    private readonly PasswordHasher _passwordHasher;
-    public ChangePasswordCommandHandler(AppDbContext dbContext, PasswordHasher passwordHasher)
-    {
-        _dbContext = dbContext;
-        _passwordHasher = passwordHasher;
-    }
+
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly PasswordHasher _passwordHasher = passwordHasher;
+    private readonly TimeProvider _timeProvider = timeProvider;
+
     public async Task<ChangePasswordResponse> Handle(ChangePasswordCommand request, CancellationToken cancellationToken)
     {
         var user = await _dbContext.Users
@@ -41,21 +37,22 @@ public class ChangePasswordCommandHandler : IRequestHandler<ChangePasswordComman
                 "Current password is incorrect.");
         }
 
+        var utcNow = _timeProvider.GetUtcNow();
+
         var newPasswordHash = _passwordHasher.Hash(request.NewPassword);
 
-        user.ChangePassword(newPasswordHash);
+        user.ChangePassword(newPasswordHash, utcNow);
 
-        var activeRefreshTokens = await _dbContext.RefreshTokens
+        await _dbContext.RefreshTokens
             .Where(token =>
                 token.UserId == user.Id &&
                 token.RevokedAt == null &&
-                token.ExpiresAt > DateTime.UtcNow)
-            .ToListAsync(cancellationToken);
-
-        foreach (var refreshToken in activeRefreshTokens)
-        {
-            refreshToken.Revoke();
-        }
+                token.ExpiresAt > utcNow)
+            .ExecuteUpdateAsync(
+                setters => setters
+                    .SetProperty(token => token.RevokedAt, utcNow)
+                    .SetProperty(token => token.UpdatedAt, utcNow),
+                cancellationToken);
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 

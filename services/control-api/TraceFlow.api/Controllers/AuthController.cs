@@ -1,29 +1,12 @@
-using MediatR;
-using Microsoft.AspNetCore.Mvc;
-using TraceFlow.Api.Application.Auth.Commands.Register;
-using TraceFlow.Api.Application.Auth.Commands.Login;
-using System.Security.Claims;
-using Microsoft.AspNetCore.Authorization;
-using TraceFlow.Api.Application.Auth.Queries.GetCurrentUser;
-using TraceFlow.Api.Application.Auth.Commands.RefreshSession;
-using TraceFlow.Api.Application.Auth.Commands.ChangePassword;
-using TraceFlow.Api.Domain.Dtos.Auth;
-using TraceFlow.Api.Application.Auth.Commands.Logout;
-using Asp.Versioning;
-
 namespace TraceFlow.Api.Controllers;
 
 [ApiController]
 [ApiVersion(1.0)]
 [Route("api/v{version:apiVersion}/auth")]
-public class AuthController : ControllerBase
+[EnableRateLimiting(RateLimitPolicies.Auth)]
+public class AuthController(ISender sender) : ControllerBase
 {
-    private readonly ISender _sender;
-
-    public AuthController(ISender sender)
-    {
-        _sender = sender;
-    }
+    private readonly ISender _sender = sender;
 
     [HttpPost("register")]
     public async Task<IActionResult> Register(

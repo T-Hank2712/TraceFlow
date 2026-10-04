@@ -1,30 +1,20 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Application.Common.AccessControl;
-using TraceFlow.Api.Application.Common.Exceptions;
-using TraceFlow.Api.Infrastructure.Persistence;
-using TraceFlow.Api.Domain.Constants;
-using TraceFlow.Api.Domain.Entities;
-
 namespace TraceFlow.Api.Application.Workspaces.Commands.ChangeMemberRole;
 
-public class ChangeMemberRoleCommandHandler
+public class ChangeMemberRoleCommandHandler(
+        AppDbContext dbContext,
+        WorkspaceAccessService workspaceAccess,
+        TimeProvider timeProvider)
     : IRequestHandler<ChangeMemberRoleCommand, ChangeMemberRoleResponse>
 {
-    private readonly AppDbContext _dbContext;
-    private readonly WorkspaceAccessService _workspaceAccess;
 
-    public ChangeMemberRoleCommandHandler(
-        AppDbContext dbContext,
-        WorkspaceAccessService workspaceAccess)
-    {
-        _dbContext = dbContext;
-        _workspaceAccess = workspaceAccess;
-    }
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly WorkspaceAccessService _workspaceAccess = workspaceAccess;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<ChangeMemberRoleResponse> Handle(
-        ChangeMemberRoleCommand request,
-        CancellationToken cancellationToken)
+           ChangeMemberRoleCommand request,
+           CancellationToken cancellationToken)
     {
         var actorMembership = await _workspaceAccess.GetActiveMembershipAsync(
             request.WorkspaceId,
@@ -81,7 +71,9 @@ public class ChangeMemberRoleCommandHandler
             throw new ConflictException("Member already has this role.");
         }
 
-        targetMember.ChangeRole(newRole);
+        var utcNow = _timeProvider.GetUtcNow();
+
+        targetMember.ChangeRole(newRole, utcNow);
 
         if (newRole == WorkspaceMemberRoles.Admin)
         {
@@ -103,8 +95,8 @@ public class ChangeMemberRoleCommandHandler
 
             foreach (var existingProjectMember in existingProjectMembers)
             {
-                existingProjectMember.ChangeRole(ProjectMemberRoles.Manager);
-                existingProjectMember.Activate();
+                existingProjectMember.ChangeRole(ProjectMemberRoles.Manager, utcNow);
+                existingProjectMember.Activate(utcNow);
             }
 
             var existingProjectIds = existingProjectMembers
@@ -116,7 +108,8 @@ public class ChangeMemberRoleCommandHandler
                 .Select(project => new ProjectMember(
                     project.Id,
                     targetMember.UserId,
-                    ProjectMemberRoles.Manager))
+                    ProjectMemberRoles.Manager,
+                    utcNow))
                 .ToList();
 
             _dbContext.ProjectMembers.AddRange(missingProjectMembers);

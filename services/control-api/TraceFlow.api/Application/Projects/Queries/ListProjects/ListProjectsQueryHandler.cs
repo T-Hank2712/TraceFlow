@@ -1,29 +1,18 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Application.Common.AccessControl;
-using TraceFlow.Api.Application.Common.Exceptions;
-using TraceFlow.Api.Domain.Constants;
-using TraceFlow.Api.Infrastructure.Persistence;
-
 namespace TraceFlow.Api.Application.Projects.Queries.ListProjects;
 
-public class ListProjectsQueryHandler
-    : IRequestHandler<ListProjectsQuery, IReadOnlyList<ProjectSummaryResponse>>
-{
-    private readonly AppDbContext _dbContext;
-    private readonly WorkspaceAccessService _workspaceAccess;
-
-    public ListProjectsQueryHandler(
+public class ListProjectsQueryHandler(
         AppDbContext dbContext,
         WorkspaceAccessService workspaceAccess)
-    {
-        _dbContext = dbContext;
-        _workspaceAccess = workspaceAccess;
-    }
+    : IRequestHandler<ListProjectsQuery, IReadOnlyList<ProjectSummaryResponse>>
+{
+
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly WorkspaceAccessService _workspaceAccess = workspaceAccess;
 
     public async Task<IReadOnlyList<ProjectSummaryResponse>> Handle(
-        ListProjectsQuery request,
-        CancellationToken cancellationToken)
+           ListProjectsQuery request,
+           CancellationToken cancellationToken)
     {
         var membership = await _workspaceAccess.GetActiveMembershipAsync(
             request.WorkspaceId,

@@ -1,6 +1,4 @@
-using MediatR;
-
-namespace TraceFlow.Api.Application.Logs.Queries.SearchLogs;
+namespace TraceFlow.Api.Application.TraceLogs.Queries.SearchLogs;
 
 public sealed record SearchLogsQuery(
     Ulid WorkspaceId,
@@ -12,8 +10,8 @@ public sealed record SearchLogsQuery(
     string? Service,
     string? TraceId,
     string? CorrelationId,
-    DateTime? From,
-    DateTime? To,
+    DateTimeOffset? From,
+    DateTimeOffset? To,
     int Page,
     int PageSize
 ) : IRequest<SearchLogsResponse>;

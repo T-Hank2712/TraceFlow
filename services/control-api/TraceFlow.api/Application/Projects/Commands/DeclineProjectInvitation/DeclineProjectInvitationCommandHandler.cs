@@ -1,20 +1,14 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Application.Common.Exceptions;
-using TraceFlow.Api.Domain.Constants;
-using TraceFlow.Api.Infrastructure.Persistence;
-
 namespace TraceFlow.Api.Application.Projects.Commands.DeclineProjectInvitation;
 
-public class DeclineProjectInvitationCommandHandler
+public class DeclineProjectInvitationCommandHandler(
+    AppDbContext dbContext,
+    TimeProvider timeProvider
+    )
     : IRequestHandler<DeclineProjectInvitationCommand, DeclineProjectInvitationResponse>
 {
-    private readonly AppDbContext _dbContext;
 
-    public DeclineProjectInvitationCommandHandler(AppDbContext dbContext)
-    {
-        _dbContext = dbContext;
-    }
+    private readonly AppDbContext _dbContext = dbContext;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<DeclineProjectInvitationResponse> Handle(
         DeclineProjectInvitationCommand request,
@@ -44,7 +38,7 @@ public class DeclineProjectInvitationCommandHandler
             throw new ConflictException("Archived project invitation cannot be declined.");
         }
 
-        invitation.Decline();
+        invitation.Decline(_timeProvider.GetUtcNow());
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 
