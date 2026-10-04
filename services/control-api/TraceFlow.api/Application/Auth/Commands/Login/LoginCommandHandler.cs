@@ -27,7 +27,7 @@ public class LoginCommandHandler(
 
         var user = await _dbContext.Users
             .FirstOrDefaultAsync(
-                user => user.Email.ToLower() == identifier ||
+                user => user.Email == identifier ||
                         user.NormalizedUsername == identifier,
                 cancellationToken);
 

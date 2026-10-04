@@ -29,7 +29,7 @@ public class User : Entity
         DateTimeOffset createdAt)
     {
         Id = Ulid.NewUlid();
-        Email = email;
+        Email = NormalizeEmail(email);
         UserName = userName;
         NormalizedUsername = NormalizeUsername(userName);
         FirstName = firstName;
@@ -73,5 +73,9 @@ public class User : Entity
     private static string NormalizeUsername(string username)
     {
         return username.Trim().ToLowerInvariant();
+    }
+    private static string NormalizeEmail(string email)
+    {
+        return email.Trim().ToLowerInvariant();
     }
 }

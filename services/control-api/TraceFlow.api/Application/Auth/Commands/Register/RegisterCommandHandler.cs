@@ -36,10 +36,11 @@ public class RegisterCommandHandler(
             throw new ConflictException("Username is already taken.");
         }
 
+        var email = request.Email.Trim().ToLowerInvariant();
         var passwordHash = _passwordHasher.Hash(request.Password);
 
         var user = new User(
-            request.Email,
+            email,
             request.Username,
             request.FirstName,
             request.LastName,
