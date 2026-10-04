@@ -16,6 +16,8 @@ builder.Services.AddApiDocumentation();
 
 builder.Services.AddApiRateLimiting(builder.Configuration);
 
+builder.Services.AddForwardedClientHeaders();
+
 var app = builder.Build();
 
 // OpenAPI / Swagger
@@ -83,6 +85,8 @@ if (app.Environment.IsDevelopment())
         })
     .WithName("DatabaseConfigurationHealthCheck");
 }
+
+app.UseForwardedHeaders();
 
 app.UseExceptionHandler();
 

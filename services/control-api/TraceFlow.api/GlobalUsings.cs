@@ -17,6 +17,7 @@ global using FluentValidation;
 
 global using MediatR;
 
+global using Microsoft.AspNetCore.HttpOverrides;
 global using Microsoft.AspNetCore.RateLimiting;
 global using Microsoft.AspNetCore.Diagnostics;
 global using Microsoft.AspNetCore.Identity;
