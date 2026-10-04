@@ -8,11 +8,9 @@ public class ValidateApiKeyCommandHandler(
 )
     : IRequestHandler<ValidateApiKeyCommand, ValidateApiKeyResponse>
 {
-
+    private static readonly TimeSpan MinimumLastUsedUpdateInterval = TimeSpan.FromMinutes(1);
     private readonly AppDbContext _dbContext = dbContext;
-
     private readonly ApiKeyParser _apiKeyParser = apiKeyParser;
-
     private readonly ApiKeyHasher _apiKeyHasher = apiKeyHasher;
     private readonly TimeProvider _timeProvider = timeProvider;
 
@@ -59,9 +57,13 @@ public class ValidateApiKeyCommandHandler(
             return Invalid();
         }
 
-        apiKey.MarkUsed(utcNow);
+        if (apiKey.LastUsedAt is null ||
+            utcNow - apiKey.LastUsedAt.Value >= MinimumLastUsedUpdateInterval)
+        {
+            apiKey.MarkUsed(utcNow);
 
-        await _dbContext.SaveChangesAsync(cancellationToken);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
 
         return new ValidateApiKeyResponse(
             true,
