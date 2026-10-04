@@ -2,13 +2,14 @@ namespace TraceFlow.Api.Application.Projects.Queries.ProjectInvitationSent;
 
 public class ProjectInvitationSentQueryHandler(
         AppDbContext dbContext,
-        ProjectAccessService projectAccess)
+        ProjectAccessService projectAccess,
+        InvitationExpirationService invitationExpiration)
     : IRequestHandler<ProjectInvitationSentQuery, IReadOnlyList<ProjectInvitationSentResponse>>
 {
 
     private readonly AppDbContext _dbContext = dbContext;
-
     private readonly ProjectAccessService _projectAccess = projectAccess;
+    private readonly InvitationExpirationService _invitationExpiration = invitationExpiration;
 
  public async Task<IReadOnlyList<ProjectInvitationSentResponse>> Handle(
         ProjectInvitationSentQuery request,
@@ -25,6 +26,10 @@ public class ProjectInvitationSentQueryHandler(
         _projectAccess.EnsureProjectManager(
             access,
             "You do not have permission to view project invitations.");
+
+        await _invitationExpiration.ExpireProjectInvitationsAsync(
+            request.ProjectId,
+            cancellationToken);
 
         return await _dbContext.ProjectInvitations
             .AsNoTracking()

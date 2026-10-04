@@ -2,23 +2,31 @@ namespace TraceFlow.Api.Application.Projects.Queries.ProjectInvitationInbox;
 
 public class ProjectInvitationInboxQueryHandler(
     AppDbContext dbContext,
-    TimeProvider timeProvider)
+    TimeProvider timeProvider,
+    InvitationExpirationService invitationExpiration)
     : IRequestHandler<ProjectInvitationInboxQuery, IReadOnlyList<ProjectInvitationInboxResponse>>
 {
 
     private readonly AppDbContext _dbContext = dbContext;
     private readonly TimeProvider _timeProvider = timeProvider;
+    private readonly InvitationExpirationService _invitationExpiration = invitationExpiration;
 
     public async Task<IReadOnlyList<ProjectInvitationInboxResponse>> Handle(
         ProjectInvitationInboxQuery request,
         CancellationToken cancellationToken)
     {
+        await _invitationExpiration.ExpireProjectInvitationsForUserAsync(
+            request.UserId,
+            cancellationToken);
+
+        var utcNow = _timeProvider.GetUtcNow();
+
         return await _dbContext.ProjectInvitations
             .AsNoTracking()
             .Where(invitation =>
                 invitation.InvitedUserId == request.UserId &&
                 invitation.Status == InvitationStatuses.Pending &&
-                invitation.ExpiresAt > _timeProvider.GetUtcNow() &&
+                invitation.ExpiresAt > utcNow &&
                 invitation.Workspace.Status == ResourceStatuses.Active &&
                 invitation.Project.Status == ResourceStatuses.Active)
             .OrderByDescending(invitation => invitation.CreatedAt)

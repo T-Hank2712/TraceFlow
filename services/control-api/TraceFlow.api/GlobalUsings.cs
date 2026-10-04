@@ -34,6 +34,7 @@ global using TraceFlow.Api.Application.Common.Behaviors;
 global using TraceFlow.Api.Application.Common.Exceptions;
 global using TraceFlow.Api.Application.Common.Security;
 global using TraceFlow.Api.Application.Common.Users;
+global using TraceFlow.Api.Application.Common.Invitations;
 global using TraceFlow.Api.Domain.Common.Extensions;
 global using TraceFlow.Api.Domain.Constants;
 global using TraceFlow.Api.Domain.Entities;

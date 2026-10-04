@@ -53,18 +53,22 @@ public async Task<InviteWorkspaceMemberResponse> Handle(
 
         var utcNow = _timeProvider.GetUtcNow();
 
-        var alreadyInvited = await _dbContext.WorkspaceInvitations
-            .AnyAsync(
+        var pendingInvitation = await _dbContext.WorkspaceInvitations
+            .FirstOrDefaultAsync(
                 invitation =>
                     invitation.WorkspaceId == request.WorkspaceId &&
                     invitation.InvitedUserId == invitedUser.Id &&
-                    invitation.Status == InvitationStatuses.Pending &&
-                    invitation.ExpiresAt > utcNow,
+                    invitation.Status == InvitationStatuses.Pending,
                 cancellationToken);
 
-        if (alreadyInvited)
+        if (pendingInvitation is not null)
         {
-            throw new ConflictException("User already has a pending invitation.");
+            if (pendingInvitation.ExpiresAt > utcNow)
+            {
+                throw new ConflictException("User already has a pending invitation.");
+            }
+
+            pendingInvitation.Expire(utcNow);
         }
 
         var invitation = new WorkspaceInvitation(

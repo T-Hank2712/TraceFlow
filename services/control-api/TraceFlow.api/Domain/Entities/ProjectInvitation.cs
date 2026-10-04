@@ -82,4 +82,19 @@ public class ProjectInvitation : Entity
         Status = InvitationStatuses.Cancelled;
         UpdatedAt = cancelled;
     }
+    public void Expire(DateTimeOffset expiredAt)
+    {
+        if (Status != InvitationStatuses.Pending)
+        {
+            return;
+        }
+
+        if (ExpiresAt > expiredAt)
+        {
+            return;
+        }
+
+        Status = InvitationStatuses.Expired;
+        UpdatedAt = expiredAt;
+    }
 }

@@ -30,8 +30,6 @@ public async Task<InviteProjectMemberResponse> Handle(
             access,
             "You do not have permission to invite project members.");
 
-        var normalizedIdentifier = request.Identifier.Trim().ToLowerInvariant();
-
         var invitedUser = await _userLookup.GetActiveInviteTargetAsync(
             request.Identifier,
             request.InvitedByUserId,
@@ -51,6 +49,25 @@ public async Task<InviteProjectMemberResponse> Handle(
         }
 
         var utcNow = _timeProvider.GetUtcNow();
+
+        var pendingInvitation = await _dbContext.ProjectInvitations
+            .FirstOrDefaultAsync(
+                invitation =>
+                    invitation.ProjectId == request.ProjectId &&
+                    invitation.InvitedUserId == invitedUser.Id &&
+                    invitation.Status == InvitationStatuses.Pending,
+                cancellationToken);
+
+        if (pendingInvitation is not null)
+        {
+            if (pendingInvitation.ExpiresAt > utcNow)
+            {
+                throw new ConflictException(
+                    "User already has a pending project invitation.");
+            }
+
+            pendingInvitation.Expire(utcNow);
+        }
 
         var alreadyInvited = await _dbContext.ProjectInvitations
             .AnyAsync(

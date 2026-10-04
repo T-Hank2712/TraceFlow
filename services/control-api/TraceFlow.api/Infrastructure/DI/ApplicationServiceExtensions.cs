@@ -25,6 +25,7 @@ public static class ApplicationServiceExtensions
         services.AddScoped<ApiKeyHasher>();
         services.AddScoped<ApiKeyExpirationPolicyResolver>();
         services.AddScoped<ApiKeyParser>();
+        services.AddScoped<InvitationExpirationService>();
 
         services.AddSingleton(TimeProvider.System);
 

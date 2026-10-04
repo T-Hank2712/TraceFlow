@@ -2,13 +2,14 @@ namespace TraceFlow.Api.Application.Workspaces.Queries.InvitationSent;
 
 public class InvitationSentQueryHandler(
         AppDbContext dbContext,
-        WorkspaceAccessService workspaceAccess)
+        WorkspaceAccessService workspaceAccess,
+        InvitationExpirationService invitationExpiration)
     : IRequestHandler<InvitationSentQuery, IReadOnlyList<InvitationSentResponse>>
 {
 
     private readonly AppDbContext _dbContext = dbContext;
-
     private readonly WorkspaceAccessService _workspaceAccess = workspaceAccess;
+    private readonly InvitationExpirationService _invitationExpiration = invitationExpiration;
 
  public async Task<IReadOnlyList<InvitationSentResponse>> Handle(
         InvitationSentQuery request,
@@ -27,6 +28,10 @@ public class InvitationSentQueryHandler(
         _workspaceAccess.EnsureWorkspaceManager(
             membership,
             "You do not have permission to view workspace invitations.");
+
+        await _invitationExpiration.ExpireWorkspaceInvitationsAsync(
+            request.WorkspaceId,
+            cancellationToken);
 
         return await _dbContext.WorkspaceInvitations
             .AsNoTracking()
