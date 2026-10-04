@@ -61,7 +61,10 @@ public class TransferOwnershipCommandHandler(
             throw new ConflictException("Target user is already a workspace owner.");
         }
 
-        targetMembership.ChangeRole(WorkspaceMemberRoles.Owner, _timeProvider.GetUtcNow());
+        var utcNow = _timeProvider.GetUtcNow();
+
+        targetMembership.ChangeRole(WorkspaceMemberRoles.Owner, utcNow);
+        actorMembership.ChangeRole(WorkspaceMemberRoles.Admin, utcNow);
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 
