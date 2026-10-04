@@ -15,10 +15,15 @@ var postgresConnectionString =
     ?? throw new InvalidOperationException(
         "Postgres connection string is not configured.");
 
-var jwtSecret =
-    builder.Configuration["Jwt:Secret"]
-    ?? throw new InvalidOperationException(
-        "JWT secret is not configured.");
+builder.Services
+    .AddOptions<JwtOptions>()
+    .Bind(builder.Configuration.GetSection(JwtOptions.SectionName))
+    .Validate(options => !string.IsNullOrWhiteSpace(options.Issuer), "JWT issuer is required.")
+    .Validate(options => !string.IsNullOrWhiteSpace(options.Audience), "JWT audience is required.")
+    .Validate(options => !string.IsNullOrWhiteSpace(options.Secret), "JWT secret is required.")
+    .Validate(options => options.AccessTokenExpirationMinutes > 0, "JWT access token expiration must be greater than 0.")
+    .Validate(options => options.RefreshTokenExpirationDays > 0, "JWT refresh token expiration must be greater than 0.")
+    .ValidateOnStart();
 
 var openSearchUrl =
     builder.Configuration["OpenSearch:Url"]
@@ -159,6 +164,12 @@ builder.Services.AddTransient(
     typeof(ValidationBehavior<,>));
 
 // Authentication
+var jwtOptions =
+    builder.Configuration
+        .GetSection(JwtOptions.SectionName)
+        .Get<JwtOptions>()
+    ?? throw new InvalidOperationException("JWT options are not configured.");
+
 builder.Services
     .AddAuthentication(
         JwtBearerDefaults.AuthenticationScheme)
@@ -172,15 +183,10 @@ builder.Services
                 ValidateLifetime = true,
                 ValidateIssuerSigningKey = true,
 
-                ValidIssuer =
-                    builder.Configuration["Jwt:Issuer"],
-
-                ValidAudience =
-                    builder.Configuration["Jwt:Audience"],
-
-                IssuerSigningKey =
-                    new SymmetricSecurityKey(
-                        Encoding.UTF8.GetBytes(jwtSecret))
+                ValidIssuer = jwtOptions.Issuer,
+                ValidAudience = jwtOptions.Audience,
+                IssuerSigningKey = new SymmetricSecurityKey(
+                    Encoding.UTF8.GetBytes(jwtOptions.Secret))
             };
     });
 

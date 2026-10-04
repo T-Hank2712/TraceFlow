@@ -4,7 +4,7 @@ public class RefreshSessionCommandHandler(
     AppDbContext dbContext,
     JwtTokenGenerator jwtTokenGenerator,
     RefreshTokenGenerator refreshTokenGenerator,
-    IConfiguration configuration,
+    IOptions<JwtOptions> options,
     TimeProvider timeProvider
 ) : IRequestHandler<RefreshSessionCommand, RefreshSessionResponse>
 {
@@ -15,7 +15,7 @@ public class RefreshSessionCommandHandler(
 
     private readonly RefreshTokenGenerator _refreshTokenGenerator = refreshTokenGenerator;
 
-    private readonly IConfiguration _configuration = configuration;
+    private readonly JwtOptions _options = options.Value;
     private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<RefreshSessionResponse> Handle(RefreshSessionCommand request, CancellationToken cancellationToken)
@@ -51,7 +51,7 @@ public class RefreshSessionCommandHandler(
 
         var accessToken = _jwtTokenGenerator.Generate(existingRefreshToken.User);
         var newRefreshToken = _refreshTokenGenerator.Generate();
-        var refreshTokenExpirationDays = int.Parse(_configuration["Jwt:RefreshTokenExpirationDays"] ?? "30");
+        var refreshTokenExpirationDays = _options.RefreshTokenExpirationDays;
 
         var newRefreshTokenEntity = new RefreshToken(
             existingRefreshToken.UserId,

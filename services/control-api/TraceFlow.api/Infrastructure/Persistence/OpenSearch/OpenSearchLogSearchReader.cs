@@ -1,4 +1,4 @@
-namespace TraceFlow.Api.Infrastructure.OpenSearch;
+namespace TraceFlow.Api.Infrastructure.Persistence.OpenSearch;
 
 public sealed class OpenSearchLogSearchReader(
         HttpClient httpClient,

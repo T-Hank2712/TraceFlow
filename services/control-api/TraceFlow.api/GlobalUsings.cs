@@ -25,6 +25,7 @@ global using Microsoft.AspNetCore.Mvc;
 global using Microsoft.EntityFrameworkCore;
 global using Microsoft.IdentityModel.Tokens;
 global using Microsoft.OpenApi;
+global using Microsoft.Extensions.Options;
 
 global using TraceFlow.Api.Application.Common.Logs;
 global using TraceFlow.Api.Application.Common.AccessControl;
@@ -104,4 +105,5 @@ global using TraceFlow.Api.Domain.Dtos.Workspaces;
 
 global using TraceFlow.Api.Domain.Common;
 
-global using TraceFlow.Api.Infrastructure.OpenSearch;
+global using TraceFlow.Api.Infrastructure.Persistence.OpenSearch;
+global using TraceFlow.Api.Infrastructure.Options;
