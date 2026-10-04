@@ -108,3 +108,4 @@ global using TraceFlow.Api.Domain.Common;
 
 global using TraceFlow.Api.Infrastructure.Persistence.OpenSearch;
 global using TraceFlow.Api.Infrastructure.Options;
+global using TraceFlow.Api.Infrastructure.DependencyInjection;
