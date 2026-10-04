@@ -10,9 +10,6 @@ public class RefreshTokenConfiguration : IEntityTypeConfiguration<RefreshToken>
         builder.Property(token => token.Id).HasConversion(id => id.ToString(), value => Ulid.Parse(value)).IsRequired();
 
         builder.Property(token => token.UserId).HasConversion(id => id.ToString(), value => Ulid.Parse(value)).IsRequired();
-        builder.Property(token => token.UserId)
-            .HasConversion(id => id.ToString(), value => Ulid.Parse(value))
-            .IsRequired();
 
         builder.HasOne(token => token.User)
             .WithMany(user => user.RefreshTokens)
