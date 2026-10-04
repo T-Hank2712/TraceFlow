@@ -255,51 +255,13 @@ app.UseAuthorization();
 app.MapControllers();
 
 // Health
-app.MapGet("/health", () =>
-{
-    return Results.Ok(
-        "TraceFlow Control API is running.");
-})
-.WithName("HealthCheck");
+builder.Services
+    .AddHealthChecks()
+    .AddNpgSql(
+        postgresConnectionString,
+        name: "postgres");
 
-// Database health
-app.MapGet(
-    "/health/database",
-    async (AppDbContext dbContext) =>
-    {
-        try
-        {
-            var connection =
-                dbContext.Database.GetDbConnection();
-
-            await connection.OpenAsync();
-
-            await using var command =
-                connection.CreateCommand();
-
-            command.CommandText =
-                "select current_database()";
-
-            var databaseName =
-                await command.ExecuteScalarAsync();
-
-            return Results.Ok(new
-            {
-                message = "Database is reachable.",
-                database = databaseName
-            });
-        }
-        catch (Exception ex)
-        {
-            return Results.BadRequest(new
-            {
-                message =
-                    "Failed to connect to the database.",
-                error = ex.Message
-            });
-        }
-    })
-.WithName("DatabaseHealthCheck");
+app.MapHealthChecks("/health");
 
 // Database configuration health
 app.MapGet(
