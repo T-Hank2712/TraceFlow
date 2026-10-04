@@ -11,7 +11,7 @@ public static class PersistenceExtensions
             ?? throw new InvalidOperationException(
                 "Postgres connection string is not configured.");
 
-        services.AddDbContext<AppDbContext>(
+        services.AddDbContextPool<AppDbContext>(
             options =>
                 options.UseNpgsql(postgresConnectionString));
 
