@@ -15,9 +15,9 @@ public sealed class SearchLogsQueryHandler(
     private readonly ILogSearchReader _logSearchReader = logSearchReader;
     private readonly TimeProvider _timeProvider = timeProvider;
 
-public async Task<SearchLogsResponse> Handle(
-        SearchLogsQuery request,
-        CancellationToken cancellationToken)
+    public async Task<SearchLogsResponse> Handle(
+            SearchLogsQuery request,
+            CancellationToken cancellationToken)
     {
         var access = await _projectAccess.GetProjectAccessAsync(
             request.WorkspaceId,

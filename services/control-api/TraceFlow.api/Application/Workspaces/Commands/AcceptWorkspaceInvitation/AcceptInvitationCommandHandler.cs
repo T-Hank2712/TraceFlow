@@ -55,7 +55,7 @@ public class AcceptInvitationCommandHandler(
 
         WorkspaceMember member;
 
-        if(existingMember is null)
+        if (existingMember is null)
         {
             member = new WorkspaceMember(
                 invitation.WorkspaceId,

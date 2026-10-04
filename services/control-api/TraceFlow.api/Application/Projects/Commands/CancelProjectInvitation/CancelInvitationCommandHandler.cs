@@ -13,9 +13,9 @@ public class CancelProjectInvitationCommandHandler(
     private readonly ProjectAccessService _projectAccess = projectAccess;
     private readonly TimeProvider _timeProvider = timeProvider;
 
- public async Task<CancelProjectInvitationResponse> Handle(
-        CancelProjectInvitationCommand request,
-        CancellationToken cancellationToken)
+    public async Task<CancelProjectInvitationResponse> Handle(
+           CancelProjectInvitationCommand request,
+           CancellationToken cancellationToken)
     {
         var access = await _projectAccess.GetProjectAccessAsync(
             request.WorkspaceId,

@@ -12,9 +12,9 @@ public sealed class OpenSearchLogSearchReader(
 
     private readonly ILogger<OpenSearchLogSearchReader> _logger = logger;
 
-public async Task<SearchLogsResponse> SearchAsync(
-        SearchLogsQuery query,
-        CancellationToken cancellationToken)
+    public async Task<SearchLogsResponse> SearchAsync(
+            SearchLogsQuery query,
+            CancellationToken cancellationToken)
     {
         var index = _options.Index;
 

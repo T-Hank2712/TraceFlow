@@ -1,4 +1,5 @@
 namespace TraceFlow.Api.Domain.Entities;
+
 public class ApiKey : Entity
 {
     public Ulid TraceApplicationId { get; private set; }

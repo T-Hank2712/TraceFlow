@@ -10,9 +10,9 @@ public class GetProjectByIdQueryHandler(
 
     private readonly ProjectAccessService _projectAccess = projectAccess;
 
- public async Task<ProjectDetailResponse> Handle(
-        GetProjectByIdQuery request,
-        CancellationToken cancellationToken)
+    public async Task<ProjectDetailResponse> Handle(
+           GetProjectByIdQuery request,
+           CancellationToken cancellationToken)
     {
         var access = await _projectAccess.GetProjectAccessAsync(
             request.WorkspaceId,

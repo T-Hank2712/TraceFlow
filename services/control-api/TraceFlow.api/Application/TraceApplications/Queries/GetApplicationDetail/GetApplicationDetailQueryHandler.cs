@@ -10,9 +10,9 @@ public class GetApplicationDetailQueryHandler(
 
     private readonly ProjectAccessService _projectAccess = projectAccess;
 
- public async Task<ApplicationDetailResponse> Handle(
-        GetApplicationDetailQuery request,
-        CancellationToken cancellationToken)
+    public async Task<ApplicationDetailResponse> Handle(
+           GetApplicationDetailQuery request,
+           CancellationToken cancellationToken)
     {
         var access = await _projectAccess.GetProjectAccessAsync(
             request.WorkspaceId,

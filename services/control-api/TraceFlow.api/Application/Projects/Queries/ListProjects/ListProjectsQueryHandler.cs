@@ -10,9 +10,9 @@ public class ListProjectsQueryHandler(
 
     private readonly WorkspaceAccessService _workspaceAccess = workspaceAccess;
 
- public async Task<IReadOnlyList<ProjectSummaryResponse>> Handle(
-        ListProjectsQuery request,
-        CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<ProjectSummaryResponse>> Handle(
+           ListProjectsQuery request,
+           CancellationToken cancellationToken)
     {
         var membership = await _workspaceAccess.GetActiveMembershipAsync(
             request.WorkspaceId,

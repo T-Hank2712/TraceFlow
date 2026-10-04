@@ -10,9 +10,9 @@ public class LeaveProjectCommandHandler(
 
     private readonly ProjectAccessService _projectAccess = projectAccess;
 
- public async Task<LeaveProjectResponse> Handle(
-        LeaveProjectCommand request,
-        CancellationToken cancellationToken)
+    public async Task<LeaveProjectResponse> Handle(
+           LeaveProjectCommand request,
+           CancellationToken cancellationToken)
     {
         await _projectAccess.GetProjectAccessAsync(
             request.WorkspaceId,

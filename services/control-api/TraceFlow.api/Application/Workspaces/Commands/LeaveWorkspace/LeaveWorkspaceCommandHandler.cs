@@ -10,9 +10,9 @@ public class LeaveWorkspaceCommandHandler(
 
     private readonly WorkspaceAccessService _workspaceAccess = workspaceAccess;
 
- public async Task<LeaveWorkspaceResponse> Handle(
-        LeaveWorkspaceCommand request,
-        CancellationToken cancellationToken)
+    public async Task<LeaveWorkspaceResponse> Handle(
+           LeaveWorkspaceCommand request,
+           CancellationToken cancellationToken)
     {
         var membership = await _workspaceAccess.GetActiveMembershipAsync(
             request.WorkspaceId,

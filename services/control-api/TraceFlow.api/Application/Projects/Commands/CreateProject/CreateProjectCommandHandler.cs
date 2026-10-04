@@ -11,9 +11,9 @@ public class CreateProjectCommandHandler(
     private readonly WorkspaceAccessService _workspaceAccess = workspaceAccess;
     private readonly TimeProvider _timeProvider = timeProvider;
 
- public async Task<CreateProjectResponse> Handle(
-        CreateProjectCommand request,
-        CancellationToken cancellationToken)
+    public async Task<CreateProjectResponse> Handle(
+           CreateProjectCommand request,
+           CancellationToken cancellationToken)
     {
         var membership = await _workspaceAccess.GetActiveMembershipAsync(
             request.WorkspaceId,

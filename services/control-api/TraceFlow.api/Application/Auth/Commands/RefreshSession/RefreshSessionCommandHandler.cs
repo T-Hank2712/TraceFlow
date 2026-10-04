@@ -86,7 +86,7 @@ public class RefreshSessionCommandHandler(
                     .SetProperty(token => token.UpdatedAt, utcNow),
                 cancellationToken
             );
-        
+
         if (revokedRows != 1)
         {
             throw new UnauthorizedException("Refresh token is no longer active.");

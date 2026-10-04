@@ -12,9 +12,9 @@ public class UpdateApplicationCommandHandler(
     private readonly ProjectAccessService _projectAccess = projectAccess;
     private readonly TimeProvider _timeProvider = timeProvider;
 
- public async Task<UpdateApplicationResponse> Handle(
-        UpdateApplicationCommand request,
-        CancellationToken cancellationToken)
+    public async Task<UpdateApplicationResponse> Handle(
+           UpdateApplicationCommand request,
+           CancellationToken cancellationToken)
     {
         var access = await _projectAccess.GetProjectAccessAsync(
             request.WorkspaceId,

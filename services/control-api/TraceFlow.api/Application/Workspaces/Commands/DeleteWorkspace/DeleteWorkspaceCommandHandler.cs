@@ -12,9 +12,9 @@ public class DeleteWorkspaceCommandHandler(
     private readonly WorkspaceAccessService _workspaceAccess = workspaceAccess;
     private readonly TimeProvider _timeProvider = timeProvider;
 
- public async Task<DeleteWorkspaceResponse> Handle(
-        DeleteWorkspaceCommand request,
-        CancellationToken cancellationToken)
+    public async Task<DeleteWorkspaceResponse> Handle(
+           DeleteWorkspaceCommand request,
+           CancellationToken cancellationToken)
     {
         var membership = await _workspaceAccess.GetActiveMembershipAsync(
             request.WorkspaceId,

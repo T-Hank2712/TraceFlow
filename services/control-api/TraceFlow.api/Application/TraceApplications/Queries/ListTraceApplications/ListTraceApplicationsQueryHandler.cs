@@ -10,9 +10,9 @@ public class ListTraceApplicationsQueryHandler(
 
     private readonly ProjectAccessService _projectAccess = projectAccess;
 
- public async Task<IReadOnlyList<TraceApplicationSummaryResponse>> Handle(
-        ListTraceApplicationsQuery request,
-        CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<TraceApplicationSummaryResponse>> Handle(
+           ListTraceApplicationsQuery request,
+           CancellationToken cancellationToken)
     {
         var access = await _projectAccess.GetProjectAccessAsync(
             request.WorkspaceId,

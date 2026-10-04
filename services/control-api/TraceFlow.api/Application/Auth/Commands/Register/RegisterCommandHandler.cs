@@ -1,7 +1,7 @@
 namespace TraceFlow.Api.Application.Auth.Commands.Register;
 
 public class RegisterCommandHandler(
-    AppDbContext dbContext, 
+    AppDbContext dbContext,
     PasswordHasher passwordHasher,
     TimeProvider timeProvider
 ) : IRequestHandler<RegisterCommand, RegisterResponse>

@@ -10,9 +10,9 @@ public class RemoveMemberCommandHandler(
 
     private readonly WorkspaceAccessService _workspaceAccess = workspaceAccess;
 
- public async Task<RemoveMemberResponse> Handle(
-        RemoveMemberCommand request,
-        CancellationToken cancellationToken)
+    public async Task<RemoveMemberResponse> Handle(
+           RemoveMemberCommand request,
+           CancellationToken cancellationToken)
     {
         var actorMembership = await _workspaceAccess.GetActiveMembershipAsync(
             request.WorkspaceId,

@@ -13,9 +13,9 @@ public class CancelInvitationCommandHandler(
     private readonly WorkspaceAccessService _workspaceAccess = workspaceAccess;
     private readonly TimeProvider _timeProvider = timeProvider;
 
- public async Task<CancelInvitationResponse> Handle(
-        CancelInvitationCommand request,
-        CancellationToken cancellationToken)
+    public async Task<CancelInvitationResponse> Handle(
+           CancelInvitationCommand request,
+           CancellationToken cancellationToken)
     {
         var actorMembership = await _workspaceAccess.GetActiveMembershipAsync(
             request.WorkspaceId,

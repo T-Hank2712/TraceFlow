@@ -10,9 +10,9 @@ public class RemoveProjectMemberCommandHandler(
 
     private readonly ProjectAccessService _projectAccess = projectAccess;
 
- public async Task<RemoveProjectMemberResponse> Handle(
-        RemoveProjectMemberCommand request,
-        CancellationToken cancellationToken)
+    public async Task<RemoveProjectMemberResponse> Handle(
+           RemoveProjectMemberCommand request,
+           CancellationToken cancellationToken)
     {
         var access = await _projectAccess.GetProjectAccessAsync(
             request.WorkspaceId,

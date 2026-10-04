@@ -11,9 +11,9 @@ public class ProjectInvitationSentQueryHandler(
     private readonly ProjectAccessService _projectAccess = projectAccess;
     private readonly InvitationExpirationService _invitationExpiration = invitationExpiration;
 
- public async Task<IReadOnlyList<ProjectInvitationSentResponse>> Handle(
-        ProjectInvitationSentQuery request,
-        CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<ProjectInvitationSentResponse>> Handle(
+           ProjectInvitationSentQuery request,
+           CancellationToken cancellationToken)
     {
         var access = await _projectAccess.GetProjectAccessAsync(
             request.WorkspaceId,

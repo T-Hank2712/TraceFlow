@@ -11,9 +11,9 @@ public class InvitationSentQueryHandler(
     private readonly WorkspaceAccessService _workspaceAccess = workspaceAccess;
     private readonly InvitationExpirationService _invitationExpiration = invitationExpiration;
 
- public async Task<IReadOnlyList<InvitationSentResponse>> Handle(
-        InvitationSentQuery request,
-        CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<InvitationSentResponse>> Handle(
+           InvitationSentQuery request,
+           CancellationToken cancellationToken)
     {
         var membership = await _workspaceAccess.GetActiveMembershipAsync(
             request.WorkspaceId,

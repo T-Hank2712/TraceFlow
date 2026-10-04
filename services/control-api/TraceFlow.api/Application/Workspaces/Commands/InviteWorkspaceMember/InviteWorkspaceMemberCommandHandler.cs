@@ -15,9 +15,9 @@ public class InviteWorkspaceMemberCommandHandler(
     private readonly UserLookupService _userLookup = userLookup;
     private readonly TimeProvider _timeProvider = timeProvider;
 
-public async Task<InviteWorkspaceMemberResponse> Handle(
-        InviteWorkspaceMemberCommand request,
-        CancellationToken cancellationToken)
+    public async Task<InviteWorkspaceMemberResponse> Handle(
+            InviteWorkspaceMemberCommand request,
+            CancellationToken cancellationToken)
     {
         var inviterMembership = await _workspaceAccess.GetActiveMembershipAsync(
             request.WorkspaceId,

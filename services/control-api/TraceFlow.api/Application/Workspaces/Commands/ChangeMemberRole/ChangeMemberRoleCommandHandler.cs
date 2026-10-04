@@ -12,9 +12,9 @@ public class ChangeMemberRoleCommandHandler(
     private readonly WorkspaceAccessService _workspaceAccess = workspaceAccess;
     private readonly TimeProvider _timeProvider = timeProvider;
 
- public async Task<ChangeMemberRoleResponse> Handle(
-        ChangeMemberRoleCommand request,
-        CancellationToken cancellationToken)
+    public async Task<ChangeMemberRoleResponse> Handle(
+           ChangeMemberRoleCommand request,
+           CancellationToken cancellationToken)
     {
         var actorMembership = await _workspaceAccess.GetActiveMembershipAsync(
             request.WorkspaceId,
@@ -95,7 +95,7 @@ public class ChangeMemberRoleCommandHandler(
 
             foreach (var existingProjectMember in existingProjectMembers)
             {
-                existingProjectMember.ChangeRole(ProjectMemberRoles.Manager,utcNow);
+                existingProjectMember.ChangeRole(ProjectMemberRoles.Manager, utcNow);
                 existingProjectMember.Activate(utcNow);
             }
 

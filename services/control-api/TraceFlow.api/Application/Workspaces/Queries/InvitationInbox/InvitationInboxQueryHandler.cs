@@ -20,7 +20,7 @@ public class InvitationInboxQueryHandler(
             cancellationToken);
 
         var utcNow = _timeProvider.GetUtcNow();
-        
+
         return await _dbContext.WorkspaceInvitations
             .AsNoTracking()
             .Where(invitation =>

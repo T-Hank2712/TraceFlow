@@ -12,9 +12,9 @@ public class CreateTraceApplicationCommandHandler(
     private readonly ProjectAccessService _projectAccess = projectAccess;
     private readonly TimeProvider _timeProvider = timeProvider;
 
- public async Task<CreateTraceApplicationResponse> Handle(
-        CreateTraceApplicationCommand request,
-        CancellationToken cancellationToken)
+    public async Task<CreateTraceApplicationResponse> Handle(
+           CreateTraceApplicationCommand request,
+           CancellationToken cancellationToken)
     {
         var access = await _projectAccess.GetProjectAccessAsync(
             request.WorkspaceId,
