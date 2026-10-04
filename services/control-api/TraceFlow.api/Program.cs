@@ -35,6 +35,18 @@ builder.Services
     .Validate(options => !string.IsNullOrWhiteSpace(options.Index), "OpenSearch index is required.")
     .ValidateOnStart();
 
+builder.Services
+    .AddOptions<ApiKeySecurityOptions>()
+    .Bind(builder.Configuration.GetSection(ApiKeySecurityOptions.SectionName))
+    .Validate(options => !string.IsNullOrWhiteSpace(options.Pepper), "API key pepper is required.")
+    .ValidateOnStart();
+
+builder.Services
+    .AddOptions<InternalServiceOptions>()
+    .Bind(builder.Configuration.GetSection(InternalServiceOptions.SectionName))
+    .Validate(options => !string.IsNullOrWhiteSpace(options.Secret), "Internal service secret is required.")
+    .ValidateOnStart();
+
 // Database
 builder.Services.AddDbContext<AppDbContext>(
     options =>

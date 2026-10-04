@@ -123,8 +123,8 @@ services:
       Jwt__Secret: ${Jwt__Secret}
       Jwt__AccessTokenExpirationMinutes: ${Jwt__AccessTokenExpirationMinutes}
       Jwt__RefreshTokenExpirationDays: ${Jwt__RefreshTokenExpirationDays}
-      API_KEY_PEPPER: ${API_KEY_PEPPER}
-      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET}
+      ApiKeySecurity__Pepper: ${ApiKeySecurity__Pepper}
+      InternalService__Secret: ${InternalService__Secret}
       OpenSearch__Url: ${OpenSearch__Url}
       OpenSearch__Username: ${OpenSearch__Username}
       OpenSearch__Password: ${OpenSearch__Password}
