@@ -14,6 +14,8 @@ builder.Services.AddOpenSearch(builder.Configuration);
 
 builder.Services.AddApiDocumentation();
 
+builder.Services.AddApiRateLimiting(builder.Configuration);
+
 var app = builder.Build();
 
 // OpenAPI / Swagger
@@ -88,6 +90,8 @@ app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.UseRateLimiter();
 
 // Versioned Controllers
 app.MapControllers();

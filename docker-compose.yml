@@ -130,6 +130,18 @@ services:
       OpenSearch__Password: ${OpenSearch__Password}
       OpenSearch__Index: ${OpenSearch__Index}
       OpenSearch__SkipTlsVerify: ${OpenSearch__SkipTlsVerify}
+      RateLimit__Global__PermitLimit: ${RateLimit__Global__PermitLimit}
+      RateLimit__Global__WindowSeconds: ${RateLimit__Global__WindowSeconds}
+      RateLimit__Global__QueueLimit: ${RateLimit__Global__QueueLimit}
+      RateLimit__Auth__PermitLimit: ${RateLimit__Auth__PermitLimit}
+      RateLimit__Auth__WindowSeconds: ${RateLimit__Auth__WindowSeconds}
+      RateLimit__Auth__QueueLimit: ${RateLimit__Auth__QueueLimit}
+      RateLimit__Internal__PermitLimit: ${RateLimit__Internal__PermitLimit}
+      RateLimit__Internal__WindowSeconds: ${RateLimit__Internal__WindowSeconds}
+      RateLimit__Internal__QueueLimit: ${RateLimit__Internal__QueueLimit}
+      RateLimit__Search__PermitLimit: ${RateLimit__Search__PermitLimit}
+      RateLimit__Search__WindowSeconds: ${RateLimit__Search__WindowSeconds}
+      RateLimit__Search__QueueLimit: ${RateLimit__Search__QueueLimit}
     depends_on:
       postgres:
         condition: service_healthy

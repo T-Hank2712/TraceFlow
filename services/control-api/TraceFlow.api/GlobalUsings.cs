@@ -7,6 +7,7 @@ global using System.Text.Json;
 global using System.Text.Json.Serialization;
 global using System.IdentityModel.Tokens.Jwt;
 global using System.Text.RegularExpressions;
+global using System.Threading.RateLimiting;
 
 global using Asp.Versioning;
 
@@ -16,6 +17,7 @@ global using FluentValidation;
 
 global using MediatR;
 
+global using Microsoft.AspNetCore.RateLimiting;
 global using Microsoft.AspNetCore.Diagnostics;
 global using Microsoft.AspNetCore.Identity;
 global using Microsoft.AspNetCore.WebUtilities;

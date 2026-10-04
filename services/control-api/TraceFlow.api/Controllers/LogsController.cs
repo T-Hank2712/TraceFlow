@@ -8,7 +8,7 @@ public sealed class LogsController(ISender sender) : ControllerBase
 {
     private readonly ISender _sender = sender;
 
-
+    [EnableRateLimiting(RateLimitPolicies.Search)]
     [HttpGet]
     public async Task<IActionResult> SearchLogs(
         Ulid workspaceId,

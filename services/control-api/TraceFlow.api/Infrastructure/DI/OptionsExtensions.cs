@@ -38,6 +38,23 @@ public static class OptionsExtensions
             .Validate(options => !string.IsNullOrWhiteSpace(options.Secret), "Internal service secret is required.")
             .ValidateOnStart();
 
+        services
+            .AddOptions<RateLimitOptions>()
+            .Bind(configuration.GetSection(RateLimitOptions.SectionName))
+            .Validate(options => options.Global.PermitLimit > 0, "Global rate limit permit limit must be greater than 0.")
+            .Validate(options => options.Global.WindowSeconds > 0, "Global rate limit window must be greater than 0.")
+            .Validate(options => options.Global.QueueLimit >= 0, "Global rate limit queue limit must not be negative.")
+            .Validate(options => options.Auth.PermitLimit > 0, "Auth rate limit permit limit must be greater than 0.")
+            .Validate(options => options.Auth.WindowSeconds > 0, "Auth rate limit window must be greater than 0.")
+            .Validate(options => options.Auth.QueueLimit >= 0, "Auth rate limit queue limit must not be negative.")
+            .Validate(options => options.Internal.PermitLimit > 0, "Internal rate limit permit limit must be greater than 0.")
+            .Validate(options => options.Internal.WindowSeconds > 0, "Internal rate limit window must be greater than 0.")
+            .Validate(options => options.Internal.QueueLimit >= 0, "Internal rate limit queue limit must not be negative.")
+            .Validate(options => options.Search.PermitLimit > 0, "Search rate limit permit limit must be greater than 0.")
+            .Validate(options => options.Search.WindowSeconds > 0, "Search rate limit window must be greater than 0.")
+            .Validate(options => options.Search.QueueLimit >= 0, "Search rate limit queue limit must not be negative.")
+            .ValidateOnStart();
+
         return services;
     }
 }
