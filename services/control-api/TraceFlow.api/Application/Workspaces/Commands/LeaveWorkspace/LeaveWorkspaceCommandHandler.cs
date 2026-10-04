@@ -40,13 +40,11 @@ public class LeaveWorkspaceCommandHandler(
             }
         }
 
-        var projectMembers = await _dbContext.ProjectMembers
+        await _dbContext.ProjectMembers
             .Where(projectMember =>
                 projectMember.UserId == request.UserId &&
                 projectMember.Project.WorkspaceId == request.WorkspaceId)
-            .ToListAsync(cancellationToken);
-
-        _dbContext.ProjectMembers.RemoveRange(projectMembers);
+            .ExecuteDeleteAsync(cancellationToken);
 
         _dbContext.WorkspaceMembers.Remove(membership);
 

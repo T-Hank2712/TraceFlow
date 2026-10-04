@@ -63,13 +63,11 @@ public class RemoveMemberCommandHandler(
             }
         }
 
-        var projectMembers = await _dbContext.ProjectMembers
+        await _dbContext.ProjectMembers
             .Where(projectMember =>
                 projectMember.UserId == targetMember.UserId &&
                 projectMember.Project.WorkspaceId == request.WorkspaceId)
-            .ToListAsync(cancellationToken);
-
-        _dbContext.ProjectMembers.RemoveRange(projectMembers);
+            .ExecuteDeleteAsync(cancellationToken);
 
         var response = new RemoveMemberResponse(
             targetMember.Id,
