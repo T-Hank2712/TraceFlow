@@ -71,6 +71,8 @@ public static class OpenApiExtensions
                                                 document)
                                         ] = []
                                     });
+
+                                AddProblemDetailsResponses(operation);
                             }
                         }
 
@@ -79,5 +81,100 @@ public static class OpenApiExtensions
             });
 
         return services;
+    }
+    private static void AddProblemDetailsResponses(OpenApiOperation operation)
+    {
+        AddProblemDetailsResponse(
+            operation,
+            StatusCodes.Status400BadRequest,
+            "Bad Request");
+
+        AddProblemDetailsResponse(
+            operation,
+            StatusCodes.Status401Unauthorized,
+            "Unauthorized");
+
+        AddProblemDetailsResponse(
+            operation,
+            StatusCodes.Status403Forbidden,
+            "Forbidden");
+
+        AddProblemDetailsResponse(
+            operation,
+            StatusCodes.Status404NotFound,
+            "Not Found");
+
+        AddProblemDetailsResponse(
+            operation,
+            StatusCodes.Status409Conflict,
+            "Conflict");
+
+        AddProblemDetailsResponse(
+            operation,
+            StatusCodes.Status500InternalServerError,
+            "Internal Server Error");
+    }
+
+    private static void AddProblemDetailsResponse(
+        OpenApiOperation operation,
+        int statusCode,
+        string description)
+    {
+        var statusCodeText = statusCode.ToString();
+
+        operation.Responses ??= new OpenApiResponses();
+
+        if (operation.Responses.ContainsKey(statusCodeText))
+        {
+            return;
+        }
+
+        operation.Responses[statusCodeText] = new OpenApiResponse
+        {
+            Description = description,
+            Content = new Dictionary<string, OpenApiMediaType>
+            {
+                ["application/problem+json"] = new()
+                {
+                    Schema = CreateProblemDetailsSchema()
+                }
+            }
+        };
+    }
+
+    private static OpenApiSchema CreateProblemDetailsSchema()
+    {
+        return new OpenApiSchema
+        {
+            Type = JsonSchemaType.Object,
+            Properties = new Dictionary<string, IOpenApiSchema>
+            {
+                ["type"] = new OpenApiSchema
+                {
+                    Type = JsonSchemaType.String
+                },
+                ["title"] = new OpenApiSchema
+                {
+                    Type = JsonSchemaType.String
+                },
+                ["status"] = new OpenApiSchema
+                {
+                    Type = JsonSchemaType.Integer,
+                    Format = "int32"
+                },
+                ["detail"] = new OpenApiSchema
+                {
+                    Type = JsonSchemaType.String
+                },
+                ["instance"] = new OpenApiSchema
+                {
+                    Type = JsonSchemaType.String
+                },
+                ["traceId"] = new OpenApiSchema
+                {
+                    Type = JsonSchemaType.String
+                }
+            }
+        };
     }
 }
