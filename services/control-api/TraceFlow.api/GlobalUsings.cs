@@ -16,6 +16,7 @@ global using FluentValidation;
 
 global using MediatR;
 
+global using Microsoft.AspNetCore.Diagnostics;
 global using Microsoft.AspNetCore.Identity;
 global using Microsoft.AspNetCore.WebUtilities;
 global using Microsoft.EntityFrameworkCore.Metadata.Builders;

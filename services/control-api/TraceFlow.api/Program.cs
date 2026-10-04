@@ -229,7 +229,8 @@ builder.Services.AddHttpClient<
 var app = builder.Build();
 
 // Exception handling
-app.UseMiddleware<ExceptionHandlingMiddleware>();
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 // OpenAPI / Swagger
 if (app.Environment.IsDevelopment())
