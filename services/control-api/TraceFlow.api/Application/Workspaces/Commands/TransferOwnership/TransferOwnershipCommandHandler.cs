@@ -63,6 +63,7 @@ public class TransferOwnershipCommandHandler(
 
         var utcNow = _timeProvider.GetUtcNow();
 
+        actorMembership.Workspace.TransferOwnership(request.TargetUserId, utcNow);
         targetMembership.ChangeRole(WorkspaceMemberRoles.Owner, utcNow);
         actorMembership.ChangeRole(WorkspaceMemberRoles.Admin, utcNow);
 

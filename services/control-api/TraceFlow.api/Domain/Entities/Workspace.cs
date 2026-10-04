@@ -62,4 +62,9 @@ public class Workspace : Entity
         Status = ResourceStatuses.Active;
         UpdatedAt = activatedAt;
     }
+    public void TransferOwnership(Ulid newOwnerUserId, DateTimeOffset transferredAt)
+    {
+        OwnerUserId = newOwnerUserId;
+        UpdatedAt = transferredAt;
+    }
 }
