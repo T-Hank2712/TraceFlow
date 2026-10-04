@@ -43,17 +43,16 @@ public class ChangePasswordCommandHandler(
 
         user.ChangePassword(newPasswordHash, utcNow);
 
-        var activeRefreshTokens = await _dbContext.RefreshTokens
+        await _dbContext.RefreshTokens
             .Where(token =>
                 token.UserId == user.Id &&
                 token.RevokedAt == null &&
                 token.ExpiresAt > utcNow)
-            .ToListAsync(cancellationToken);
-
-        foreach (var refreshToken in activeRefreshTokens)
-        {
-            refreshToken.Revoke(utcNow);
-        }
+            .ExecuteUpdateAsync(
+                setters => setters
+                    .SetProperty(token => token.RevokedAt, utcNow)
+                    .SetProperty(token => token.UpdatedAt, utcNow),
+                cancellationToken);
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 
