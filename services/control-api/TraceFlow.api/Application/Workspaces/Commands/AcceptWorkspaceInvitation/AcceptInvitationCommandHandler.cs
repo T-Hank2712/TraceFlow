@@ -22,9 +22,16 @@ public class AcceptInvitationCommandHandler(
                     invitation.InvitedUserId == request.UserId,
                 cancellationToken);
 
+        var utcNow = _timeProvider.GetUtcNow();
+
         if (invitation is null)
         {
             throw new NotFoundException("Invitation not found.");
+        }
+
+        if (invitation.Status != InvitationStatuses.Pending || invitation.ExpiresAt <= utcNow)
+        {
+            throw new ConflictException("Invitation is no longer valid or has already been processed.");
         }
 
         if (invitation.Workspace.Status == ResourceStatuses.Archived)
@@ -32,30 +39,40 @@ public class AcceptInvitationCommandHandler(
             throw new ConflictException("Archived workspace cannot be joined.");
         }
 
-        var alreadyMember = await _dbContext.WorkspaceMembers
-            .AnyAsync(
+        var existingMember = await _dbContext.WorkspaceMembers
+            .FirstOrDefaultAsync(
                 member =>
                     member.WorkspaceId == invitation.WorkspaceId &&
-                    member.UserId == request.UserId &&
-                    member.Status == MembershipStatuses.Active,
+                    member.UserId == request.UserId,
                 cancellationToken);
 
-        if (alreadyMember)
+        if (existingMember?.Status == MembershipStatuses.Active)
         {
             throw new ConflictException("User is already a workspace member.");
         }
 
-        var utcNow = _timeProvider.GetUtcNow();
-
         invitation.Accept(utcNow);
 
-        var member = new WorkspaceMember(
-            invitation.WorkspaceId,
-            request.UserId,
-            invitation.Role,
-            utcNow);
+        WorkspaceMember member;
 
-        _dbContext.WorkspaceMembers.Add(member);
+        if(existingMember is null)
+        {
+            member = new WorkspaceMember(
+                invitation.WorkspaceId,
+                request.UserId,
+                invitation.Role,
+                utcNow
+            );
+            _dbContext.WorkspaceMembers.Add(member);
+        }
+        else
+        {
+            existingMember.Activate(utcNow);
+            existingMember.ChangeRole(invitation.Role, utcNow);
+
+            member = existingMember;
+
+        }
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 
