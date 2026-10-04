@@ -28,6 +28,7 @@ public class GetApplicationDetailQueryHandler(
         }
 
         var application = await _dbContext.TraceApplications
+            .AsNoTracking()
             .FirstOrDefaultAsync(x =>
                 x.Id == request.ApplicationId &&
                 x.ProjectId == request.ProjectId &&
