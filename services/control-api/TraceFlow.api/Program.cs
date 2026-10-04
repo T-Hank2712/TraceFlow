@@ -25,29 +25,15 @@ builder.Services
     .Validate(options => options.RefreshTokenExpirationDays > 0, "JWT refresh token expiration must be greater than 0.")
     .ValidateOnStart();
 
-var openSearchUrl =
-    builder.Configuration["OpenSearch:Url"]
-    ?? throw new InvalidOperationException(
-        "OpenSearch URL is not configured.");
-
-var openSearchUsername =
-    builder.Configuration["OpenSearch:Username"]
-    ?? throw new InvalidOperationException(
-        "OpenSearch username is not configured.");
-
-var openSearchPassword =
-    builder.Configuration["OpenSearch:Password"]
-    ?? throw new InvalidOperationException(
-        "OpenSearch password is not configured.");
-
-var openSearchIndex =
-    builder.Configuration["OpenSearch:Index"]
-    ?? throw new InvalidOperationException(
-        "OpenSearch index is not configured.");
-
-var openSearchSkipTlsVerify =
-    builder.Configuration.GetValue<bool>(
-        "OpenSearch:SkipTlsVerify");
+builder.Services
+    .AddOptions<OpenSearchOptions>()
+    .Bind(builder.Configuration.GetSection(OpenSearchOptions.SectionName))
+    .Validate(options => !string.IsNullOrWhiteSpace(options.Url), "OpenSearch URL is required.")
+    .Validate(options => Uri.TryCreate(options.Url, UriKind.Absolute, out _), "OpenSearch URL must be absolute.")
+    .Validate(options => !string.IsNullOrWhiteSpace(options.Username), "OpenSearch username is required.")
+    .Validate(options => !string.IsNullOrWhiteSpace(options.Password), "OpenSearch password is required.")
+    .Validate(options => !string.IsNullOrWhiteSpace(options.Index), "OpenSearch index is required.")
+    .ValidateOnStart();
 
 // Database
 builder.Services.AddDbContext<AppDbContext>(
@@ -194,16 +180,22 @@ builder.Services
 builder.Services.AddAuthorization();
 
 // OpenSearch
+var openSearchOptions =
+    builder.Configuration
+        .GetSection(OpenSearchOptions.SectionName)
+        .Get<OpenSearchOptions>()
+    ?? throw new InvalidOperationException("OpenSearch options are not configured.");
+
 builder.Services.AddHttpClient<
     ILogSearchReader,
     OpenSearchLogSearchReader>(client =>
 {
-    client.BaseAddress = new Uri(openSearchUrl);
+    client.BaseAddress = new Uri(openSearchOptions.Url);
 
     var credentials =
         Convert.ToBase64String(
             Encoding.UTF8.GetBytes(
-                $"{openSearchUsername}:{openSearchPassword}"));
+                $"{openSearchOptions.Username}:{openSearchOptions.Password}"));
 
     client.DefaultRequestHeaders.Authorization =
         new AuthenticationHeaderValue(
@@ -215,7 +207,7 @@ builder.Services.AddHttpClient<
     return new HttpClientHandler
     {
         ServerCertificateCustomValidationCallback =
-            openSearchSkipTlsVerify
+            openSearchOptions.SkipTlsVerify
                 ? HttpClientHandler
                     .DangerousAcceptAnyServerCertificateValidator
                 : null
@@ -338,10 +330,10 @@ app.MapGet(
     {
         return Results.Ok(new
         {
-            url = openSearchUrl,
-            username = openSearchUsername,
-            index = openSearchIndex,
-            skipTlsVerify = openSearchSkipTlsVerify
+            url = openSearchOptions.Url,
+            username = openSearchOptions.Username,
+            index = openSearchOptions.Index,
+            skipTlsVerify = openSearchOptions.SkipTlsVerify
         });
     })
 .WithName("OpenSearchConfigurationHealthCheck");

@@ -2,13 +2,13 @@ namespace TraceFlow.Api.Infrastructure.Persistence.OpenSearch;
 
 public sealed class OpenSearchLogSearchReader(
         HttpClient httpClient,
-        IConfiguration configuration,
+        IOptions<OpenSearchOptions> options,
         ILogger<OpenSearchLogSearchReader> logger) : ILogSearchReader
 {
 
     private readonly HttpClient _httpClient = httpClient;
 
-    private readonly IConfiguration _configuration = configuration;
+    private readonly OpenSearchOptions _options = options.Value;
 
     private readonly ILogger<OpenSearchLogSearchReader> _logger = logger;
 
@@ -16,8 +16,7 @@ public async Task<SearchLogsResponse> SearchAsync(
         SearchLogsQuery query,
         CancellationToken cancellationToken)
     {
-        var index = _configuration["OpenSearch:Index"]
-            ?? throw new InvalidOperationException("OpenSearch index is not configured.");
+        var index = _options.Index;
 
         var filters = BuildFilters(query);
 
