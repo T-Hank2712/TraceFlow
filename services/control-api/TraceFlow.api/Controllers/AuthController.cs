@@ -3,12 +3,12 @@ namespace TraceFlow.Api.Controllers;
 [ApiController]
 [ApiVersion(1.0)]
 [Route("api/v{version:apiVersion}/auth")]
-[EnableRateLimiting(RateLimitPolicies.Auth)]
 public class AuthController(ISender sender) : ControllerBase
 {
     private readonly ISender _sender = sender;
 
     [AllowAnonymous]
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
     [HttpPost("register")]
     public async Task<IActionResult> Register(
         RegisterCommand command,
@@ -19,6 +19,7 @@ public class AuthController(ISender sender) : ControllerBase
     }
 
     [AllowAnonymous]
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginCommand command, CancellationToken cancellationToken)
     {
@@ -47,6 +48,7 @@ public class AuthController(ISender sender) : ControllerBase
     }
 
     [AllowAnonymous]
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
     [HttpPost("refresh-token")]
     public async Task<IActionResult> RefreshToken(RefreshSessionCommand command, CancellationToken cancellationToken)
     {
