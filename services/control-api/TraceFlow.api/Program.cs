@@ -18,7 +18,7 @@ builder.Services.AddApiDocumentation();
 
 builder.Services.AddApiRateLimiting(builder.Configuration);
 
-builder.Services.AddForwardedClientHeaders();
+builder.Services.AddForwardedClientHeaders(builder.Configuration, builder.Environment);
 
 var app = builder.Build();
 

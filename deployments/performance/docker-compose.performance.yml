@@ -162,6 +162,7 @@ services:
       RateLimit__Search__PermitLimit: ${RateLimit__Search__PermitLimit}
       RateLimit__Search__WindowSeconds: ${RateLimit__Search__WindowSeconds}
       RateLimit__Search__QueueLimit: ${RateLimit__Search__QueueLimit}
+      TrustedProxies__KnownNetworks__0: ${TrustedProxies__KnownNetworks__0}
     depends_on:
       postgres:
         condition: service_healthy
