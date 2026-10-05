@@ -145,6 +145,7 @@ services:
       Jwt__RefreshTokenExpirationDays: ${Jwt__RefreshTokenExpirationDays}
       ApiKeySecurity__Pepper: ${ApiKeySecurity__Pepper}
       InternalService__Secret: ${InternalService__Secret}
+      RefreshTokenSecurity__Pepper: ${RefreshTokenSecurity__Pepper}
       OpenSearch__Url: ${OpenSearch__Url}
       OpenSearch__Username: ${OpenSearch__Username}
       OpenSearch__Password: ${OpenSearch__Password}

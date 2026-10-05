@@ -67,6 +67,13 @@ public static class OptionsExtensions
             .Validate(options => options.InternalBytes <= options.DefaultBytes, "Internal request body limit should not exceed default limit.")
             .ValidateOnStart();
 
+        services
+            .AddOptions<RefreshTokenSecurityOptions>()
+            .Bind(configuration.GetSection(RefreshTokenSecurityOptions.SectionName))
+            .Validate(options => !string.IsNullOrWhiteSpace(options.Pepper), "Refresh token pepper is required.")
+            .Validate(options => Encoding.UTF8.GetByteCount(options.Pepper) >= 32, "Refresh token pepper must be at least 32 bytes.")
+            .ValidateOnStart();
+
         return services;
     }
 }

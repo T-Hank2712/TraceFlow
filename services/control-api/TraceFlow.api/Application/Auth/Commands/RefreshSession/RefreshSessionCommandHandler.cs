@@ -20,7 +20,7 @@ public class RefreshSessionCommandHandler(
 
     public async Task<RefreshSessionResponse> Handle(RefreshSessionCommand request, CancellationToken cancellationToken)
     {
-        var refreshTokenHash = RefreshTokenGenerator.Hash(request.RefreshToken);
+        var refreshTokenHash = _refreshTokenGenerator.Hash(request.RefreshToken);
 
         var existingRefreshToken = await _dbContext.RefreshTokens
         .AsNoTracking()
