@@ -12,6 +12,7 @@ public static class OptionsExtensions
             .Validate(options => !string.IsNullOrWhiteSpace(options.Issuer), "JWT issuer is required.")
             .Validate(options => !string.IsNullOrWhiteSpace(options.Audience), "JWT audience is required.")
             .Validate(options => !string.IsNullOrWhiteSpace(options.Secret), "JWT secret is required.")
+            .Validate(options => Encoding.UTF8.GetByteCount(options.Secret) >= 32, "JWT secret must be at least 32 bytes.")
             .Validate(options => options.AccessTokenExpirationMinutes > 0, "JWT access token expiration must be greater than 0.")
             .Validate(options => options.RefreshTokenExpirationDays > 0, "JWT refresh token expiration must be greater than 0.")
             .ValidateOnStart();
