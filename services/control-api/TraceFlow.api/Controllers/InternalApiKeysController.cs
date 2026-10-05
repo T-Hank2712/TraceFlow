@@ -10,6 +10,7 @@ public class InternalApiKeysController(ISender sender, IOptions<InternalServiceO
 
     private const string InternalSecretHeader = "X-Internal-Secret";
 
+    [AllowAnonymous]
     [EnableRateLimiting(RateLimitPolicies.Internal)]
     [HttpPost("validate")]
     public async Task<IActionResult> ValidateApiKey(

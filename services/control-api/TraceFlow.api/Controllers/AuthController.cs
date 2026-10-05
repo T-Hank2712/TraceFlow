@@ -8,6 +8,7 @@ public class AuthController(ISender sender) : ControllerBase
 {
     private readonly ISender _sender = sender;
 
+    [AllowAnonymous]
     [HttpPost("register")]
     public async Task<IActionResult> Register(
         RegisterCommand command,
@@ -17,6 +18,7 @@ public class AuthController(ISender sender) : ControllerBase
         return CreatedAtAction(nameof(Register), new { email = result.Email }, result);
     }
 
+    [AllowAnonymous]
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginCommand command, CancellationToken cancellationToken)
     {
@@ -43,6 +45,8 @@ public class AuthController(ISender sender) : ControllerBase
 
         return Ok(result);
     }
+
+    [AllowAnonymous]
     [HttpPost("refresh-token")]
     public async Task<IActionResult> RefreshToken(RefreshSessionCommand command, CancellationToken cancellationToken)
     {
