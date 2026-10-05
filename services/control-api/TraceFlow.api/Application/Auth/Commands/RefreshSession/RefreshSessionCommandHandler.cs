@@ -53,8 +53,7 @@ public class RefreshSessionCommandHandler(
 
         if (existingRefreshToken.IsExpired(utcNow))
         {
-            throw new UnauthorizedException(
-                "Refresh token has expired.");
+            throw new UnauthorizedException(invalidRefreshTokenMessage);
         }
 
         if (existingRefreshToken.User.Status != UserStatuses.Active)

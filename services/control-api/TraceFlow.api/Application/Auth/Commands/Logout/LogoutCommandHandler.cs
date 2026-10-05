@@ -27,8 +27,7 @@ public class LogoutCommandHandler(
 
         if (refreshToken is null)
         {
-            throw new UnauthorizedException(
-                "Logged out successfully.");
+            return new LogoutResponse("Logged out successfully.");
         }
 
         var utcNow = _timeProvider.GetUtcNow();

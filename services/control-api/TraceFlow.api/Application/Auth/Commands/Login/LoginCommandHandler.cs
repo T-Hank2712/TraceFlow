@@ -48,7 +48,7 @@ public class LoginCommandHandler(
 
         if (user.Status != UserStatuses.Active)
         {
-            throw new NotFoundException(
+            throw new UnauthorizedException(
                 "Invalid username/email or password.");
         }
 
