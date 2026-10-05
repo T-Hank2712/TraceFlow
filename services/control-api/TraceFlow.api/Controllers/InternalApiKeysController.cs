@@ -2,6 +2,7 @@ namespace TraceFlow.Api.Controllers;
 
 [ApiController]
 [ApiVersion(1.0)]
+[RequestBodyLimitPolicy(RequestBodyLimitPolicies.Internal)]
 [Route("internal/v{version:apiVersion}/api-keys")]
 public class InternalApiKeysController(ISender sender, IOptions<InternalServiceOptions> options) : ControllerBase
 {

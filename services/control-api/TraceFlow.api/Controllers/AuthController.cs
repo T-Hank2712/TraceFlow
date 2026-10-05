@@ -2,6 +2,7 @@ namespace TraceFlow.Api.Controllers;
 
 [ApiController]
 [ApiVersion(1.0)]
+[RequestBodyLimitPolicy(RequestBodyLimitPolicies.Auth)]
 [Route("api/v{version:apiVersion}/auth")]
 public class AuthController(ISender sender) : ControllerBase
 {

@@ -143,6 +143,10 @@ services:
       RateLimit__Search__WindowSeconds: ${RateLimit__Search__WindowSeconds}
       RateLimit__Search__QueueLimit: ${RateLimit__Search__QueueLimit}
       TrustedProxies__KnownNetworks__0: ${TrustedProxies__KnownNetworks__0}
+      RequestBodyLimits__DefaultBytes: ${RequestBodyLimits__DefaultBytes}
+      RequestBodyLimits__AuthBytes: ${RequestBodyLimits__AuthBytes}
+      RequestBodyLimits__InternalBytes: ${RequestBodyLimits__InternalBytes}
+      RequestBodyLimits__SearchBytes: ${RequestBodyLimits__SearchBytes}
     depends_on:
       postgres:
         condition: service_healthy

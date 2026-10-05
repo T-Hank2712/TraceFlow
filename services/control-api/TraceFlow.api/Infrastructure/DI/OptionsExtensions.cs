@@ -56,6 +56,17 @@ public static class OptionsExtensions
             .Validate(options => options.Search.QueueLimit >= 0, "Search rate limit queue limit must not be negative.")
             .ValidateOnStart();
 
+        services
+            .AddOptions<RequestBodyLimitOptions>()
+            .Bind(configuration.GetSection(RequestBodyLimitOptions.SectionName))
+            .Validate(options => options.DefaultBytes > 0, "Default request body limit must be greater than 0.")
+            .Validate(options => options.AuthBytes > 0, "Auth request body limit must be greater than 0.")
+            .Validate(options => options.InternalBytes > 0, "Internal request body limit must be greater than 0.")
+            .Validate(options => options.SearchBytes > 0, "Search request body limit must be greater than 0.")
+            .Validate(options => options.AuthBytes <= options.DefaultBytes, "Auth request body limit should not exceed default limit.")
+            .Validate(options => options.InternalBytes <= options.DefaultBytes, "Internal request body limit should not exceed default limit.")
+            .ValidateOnStart();
+
         return services;
     }
 }
