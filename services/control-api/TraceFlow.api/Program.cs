@@ -86,6 +86,11 @@ if (app.Environment.IsDevelopment())
     .WithName("DatabaseConfigurationHealthCheck");
 }
 
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHsts();
+}
+
 app.UseForwardedHeaders();
 
 app.UseExceptionHandler();
