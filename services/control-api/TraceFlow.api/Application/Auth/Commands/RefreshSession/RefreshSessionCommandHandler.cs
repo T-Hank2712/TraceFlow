@@ -8,7 +8,7 @@ public class RefreshSessionCommandHandler(
     TimeProvider timeProvider
 ) : IRequestHandler<RefreshSessionCommand, RefreshSessionResponse>
 {
-
+    const string invalidRefreshTokenMessage = "Invalid refresh token.";
     private readonly AppDbContext _dbContext = dbContext;
 
     private readonly JwtTokenGenerator _jwtTokenGenerator = jwtTokenGenerator;
@@ -31,7 +31,7 @@ public class RefreshSessionCommandHandler(
 
         if (existingRefreshToken is null)
         {
-            throw new UnauthorizedException("Invalid refresh token.");
+            throw new UnauthorizedException(invalidRefreshTokenMessage);
         }
 
         var utcNow = _timeProvider.GetUtcNow();
@@ -48,7 +48,7 @@ public class RefreshSessionCommandHandler(
                         .SetProperty(token => token.UpdatedAt, utcNow),
                     cancellationToken);
 
-            throw new UnauthorizedException("Refresh token reuse detected.");
+            throw new UnauthorizedException(invalidRefreshTokenMessage);
         }
 
         if (existingRefreshToken.IsExpired(utcNow))
@@ -59,8 +59,7 @@ public class RefreshSessionCommandHandler(
 
         if (existingRefreshToken.User.Status != UserStatuses.Active)
         {
-            throw new UnauthorizedException(
-                "User account is not active.");
+            throw new UnauthorizedException(invalidRefreshTokenMessage);
         }
 
         var accessToken = _jwtTokenGenerator.Generate(existingRefreshToken.User);
@@ -89,7 +88,7 @@ public class RefreshSessionCommandHandler(
 
         if (revokedRows != 1)
         {
-            throw new UnauthorizedException("Refresh token is no longer active.");
+            throw new UnauthorizedException(invalidRefreshTokenMessage);
         }
 
         _dbContext.RefreshTokens.Add(newRefreshTokenEntity);

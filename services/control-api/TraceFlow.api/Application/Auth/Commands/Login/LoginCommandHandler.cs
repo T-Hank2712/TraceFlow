@@ -49,7 +49,7 @@ public class LoginCommandHandler(
         if (user.Status != UserStatuses.Active)
         {
             throw new NotFoundException(
-                "User account is not found.");
+                "Invalid username/email or password.");
         }
 
         var accessToken = _jwtTokenGenerator.Generate(user);
