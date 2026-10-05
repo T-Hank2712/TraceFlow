@@ -10,7 +10,9 @@ builder.Services.AddApplicationServices();
 
 builder.Services.AddJwtSecurity(builder.Configuration);
 
-builder.Services.AddOpenSearch(builder.Configuration);
+builder.Services.AddOpenSearch(
+    builder.Configuration,
+    builder.Environment);
 
 builder.Services.AddApiDocumentation();
 
