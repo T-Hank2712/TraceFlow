@@ -31,7 +31,9 @@ public static class SecurityExtensions
 
                         IssuerSigningKey =
                             new SymmetricSecurityKey(
-                                Encoding.UTF8.GetBytes(jwtOptions.Secret))
+                                Encoding.UTF8.GetBytes(jwtOptions.Secret)),
+
+                        ClockSkew = TimeSpan.Zero
                     };
             });
 
