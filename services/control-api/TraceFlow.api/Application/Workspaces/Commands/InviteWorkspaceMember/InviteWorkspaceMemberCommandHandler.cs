@@ -19,78 +19,86 @@ public class InviteWorkspaceMemberCommandHandler(
             InviteWorkspaceMemberCommand request,
             CancellationToken cancellationToken)
     {
-        var inviterMembership = await _workspaceAccess.GetActiveMembershipAsync(
+        var strategy = _dbContext.Database.CreateExecutionStrategy();
+
+        return await strategy.ExecuteAsync(async () =>
+        {
+            var inviterMembership = await _workspaceAccess.GetActiveMembershipAsync(
             request.WorkspaceId,
             request.InvitedByUserId,
             "Workspace not found.",
             cancellationToken);
 
-        _workspaceAccess.EnsureWorkspaceIsActive(
-            inviterMembership.Workspace,
-            "Archived workspace cannot be modified.");
+            _workspaceAccess.EnsureWorkspaceIsActive(
+                inviterMembership.Workspace,
+                "Archived workspace cannot be modified.");
 
-        _workspaceAccess.EnsureWorkspaceManager(
-            inviterMembership,
-            "You do not have permission to invite workspace members.");
+            _workspaceAccess.EnsureWorkspaceManager(
+                inviterMembership,
+                "You do not have permission to invite workspace members.");
 
-        var invitedUser = await _userLookup.GetActiveInviteTargetAsync(
-            request.Identifier,
-            request.InvitedByUserId,
-            cancellationToken);
-
-        var alreadyMember = await _dbContext.WorkspaceMembers
-            .AnyAsync(
-                member =>
-                    member.WorkspaceId == request.WorkspaceId &&
-                    member.UserId == invitedUser.Id &&
-                    member.Status == MembershipStatuses.Active,
+            var invitedUser = await _userLookup.GetActiveInviteTargetAsync(
+                request.Identifier,
+                request.InvitedByUserId,
                 cancellationToken);
 
-        if (alreadyMember)
-        {
-            throw new ConflictException("User is already a workspace member.");
-        }
+            var alreadyMember = await _dbContext.WorkspaceMembers
+                .AnyAsync(
+                    member =>
+                        member.WorkspaceId == request.WorkspaceId &&
+                        member.UserId == invitedUser.Id &&
+                        member.Status == MembershipStatuses.Active,
+                    cancellationToken);
 
-        var utcNow = _timeProvider.GetUtcNow();
-
-        var pendingInvitation = await _dbContext.WorkspaceInvitations
-            .FirstOrDefaultAsync(
-                invitation =>
-                    invitation.WorkspaceId == request.WorkspaceId &&
-                    invitation.InvitedUserId == invitedUser.Id &&
-                    invitation.Status == InvitationStatuses.Pending,
-                cancellationToken);
-
-        if (pendingInvitation is not null)
-        {
-            if (pendingInvitation.ExpiresAt > utcNow)
+            if (alreadyMember)
             {
-                throw new ConflictException("User already has a pending invitation.");
+                throw new ConflictException("User is already a workspace member.");
             }
 
-            pendingInvitation.Expire(utcNow);
-        }
+            var utcNow = _timeProvider.GetUtcNow();
+            
+            await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
 
-        var invitation = new WorkspaceInvitation(
-            request.WorkspaceId,
-            invitedUser.Id,
-            request.InvitedByUserId,
-            request.Role,
-            utcNow.AddDays(InvitationDefaults.ExpiresAfterDays),
-            utcNow);
+            var pendingInvitation = await _dbContext.WorkspaceInvitations
+                .FirstOrDefaultAsync(
+                    invitation =>
+                        invitation.WorkspaceId == request.WorkspaceId &&
+                        invitation.InvitedUserId == invitedUser.Id &&
+                        invitation.Status == InvitationStatuses.Pending,
+                    cancellationToken);
 
-        _dbContext.WorkspaceInvitations.Add(invitation);
+            if (pendingInvitation is not null)
+            {
+                if (pendingInvitation.ExpiresAt > utcNow)
+                {
+                    throw new ConflictException("User already has a pending invitation.");
+                }
 
-        await _dbContext.SaveChangesAsync(cancellationToken);
+                pendingInvitation.Expire(utcNow);
+            }
 
-        return new InviteWorkspaceMemberResponse(
-            invitation.Id,
-            invitation.WorkspaceId,
-            invitedUser.Id,
-            invitedUser.UserName,
-            invitedUser.Email,
-            invitation.Role,
-            invitation.Status,
-            invitation.ExpiresAt);
+            var invitation = new WorkspaceInvitation(
+                request.WorkspaceId,
+                invitedUser.Id,
+                request.InvitedByUserId,
+                request.Role,
+                utcNow.AddDays(InvitationDefaults.ExpiresAfterDays),
+                utcNow);
+
+            _dbContext.WorkspaceInvitations.Add(invitation);
+
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+
+            return new InviteWorkspaceMemberResponse(
+                invitation.Id,
+                invitation.WorkspaceId,
+                invitedUser.Id,
+                invitedUser.UserName,
+                invitedUser.Email,
+                invitation.Role,
+                invitation.Status,
+                invitation.ExpiresAt);
+        });
     }
 }
