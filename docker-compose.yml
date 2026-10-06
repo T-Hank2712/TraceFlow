@@ -142,6 +142,8 @@ services:
       RateLimit__Search__PermitLimit: ${RateLimit__Search__PermitLimit}
       RateLimit__Search__WindowSeconds: ${RateLimit__Search__WindowSeconds}
       RateLimit__Search__QueueLimit: ${RateLimit__Search__QueueLimit}
+      Database__MaxRetryCount: ${Database__MaxRetryCount}
+      Database__MaxRetryDelaySeconds: ${Database__MaxRetryDelaySeconds}
     depends_on:
       postgres:
         condition: service_healthy
