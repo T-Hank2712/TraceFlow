@@ -23,54 +23,18 @@ public class RefreshSessionCommandHandler(
         var refreshTokenHash =
             _refreshTokenGenerator.Hash(request.RefreshToken);
 
-        var utcNow = _timeProvider.GetUtcNow();
-
-        var tokenSnapshot = await _dbContext.RefreshTokens
-            .AsNoTracking()
-            .Include(token => token.User)
-            .FirstOrDefaultAsync(
-                token => token.TokenHash == refreshTokenHash,
-                cancellationToken);
-
-        if (tokenSnapshot is null)
-        {
-            throw new UnauthorizedException(InvalidRefreshTokenMessage);
-        }
-
-        if (tokenSnapshot.IsRevoked)
-        {
-            await RevokeActiveTokensForUserAsync(
-                tokenSnapshot.UserId,
-                utcNow,
-                cancellationToken);
-
-            throw new UnauthorizedException(InvalidRefreshTokenMessage);
-        }
-
-        if (tokenSnapshot.IsExpired(utcNow))
-        {
-            throw new UnauthorizedException(InvalidRefreshTokenMessage);
-        }
-
-        if (tokenSnapshot.User.Status != UserStatuses.Active)
-        {
-            throw new UnauthorizedException(InvalidRefreshTokenMessage);
-        }
-
         var strategy = _dbContext.Database.CreateExecutionStrategy();
 
         return await strategy.ExecuteAsync(async () =>
         {
-            await using var transaction =
-                await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+
+            var utcNow = _timeProvider.GetUtcNow();
 
             var existingRefreshToken = await _dbContext.RefreshTokens
+                .AsNoTracking()
                 .Include(token => token.User)
                 .FirstOrDefaultAsync(
-                    token =>
-                        token.Id == tokenSnapshot.Id &&
-                        token.RevokedAt == null &&
-                        token.ExpiresAt > utcNow,
+                    token => token.TokenHash == refreshTokenHash,
                     cancellationToken);
 
             if (existingRefreshToken is null)
@@ -78,12 +42,46 @@ public class RefreshSessionCommandHandler(
                 throw new UnauthorizedException(InvalidRefreshTokenMessage);
             }
 
-            if (existingRefreshToken.User.Status != UserStatuses.Active)
+            if (existingRefreshToken.IsRevoked)
+            {
+                await _dbContext.RefreshTokens
+                    .Where(token =>
+                        token.UserId == existingRefreshToken.UserId &&
+                        token.RevokedAt == null &&
+                        token.ExpiresAt > utcNow)
+                    .ExecuteUpdateAsync(
+                        setters => setters
+                            .SetProperty(token => token.RevokedAt, utcNow)
+                            .SetProperty(token => token.UpdatedAt, utcNow),
+                        cancellationToken);
+
+                throw new UnauthorizedException(InvalidRefreshTokenMessage);
+            }
+
+            if (existingRefreshToken.IsExpired(utcNow) ||
+                existingRefreshToken.User.Status != UserStatuses.Active)
             {
                 throw new UnauthorizedException(InvalidRefreshTokenMessage);
             }
 
-            existingRefreshToken.Revoke(utcNow);
+            await using var transaction =
+                await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+
+            var revokedRows = await _dbContext.RefreshTokens
+                .Where(token =>
+                    token.Id == existingRefreshToken.Id &&
+                    token.RevokedAt == null &&
+                    token.ExpiresAt > utcNow)
+                .ExecuteUpdateAsync(
+                    setters => setters
+                        .SetProperty(token => token.RevokedAt, utcNow)
+                        .SetProperty(token => token.UpdatedAt, utcNow),
+                    cancellationToken);
+
+            if (revokedRows != 1)
+            {
+                throw new UnauthorizedException(InvalidRefreshTokenMessage);
+            }
 
             var accessToken =
                 _jwtTokenGenerator.Generate(existingRefreshToken.User);
@@ -108,36 +106,6 @@ public class RefreshSessionCommandHandler(
                 accessToken.ExpiresAt,
                 newRefreshToken.Token,
                 newRefreshTokenEntity.ExpiresAt);
-        });
-    }
-
-    private async Task RevokeActiveTokensForUserAsync(
-        Ulid userId,
-        DateTimeOffset utcNow,
-        CancellationToken cancellationToken)
-    {
-        var strategy = _dbContext.Database.CreateExecutionStrategy();
-
-        await strategy.ExecuteAsync(async () =>
-        {
-            await using var transaction =
-                await _dbContext.Database.BeginTransactionAsync(cancellationToken);
-
-            var activeTokens = await _dbContext.RefreshTokens
-                .Where(token =>
-                    token.UserId == userId &&
-                    token.RevokedAt == null &&
-                    token.ExpiresAt > utcNow)
-                .ToListAsync(cancellationToken);
-
-            foreach (var token in activeTokens)
-            {
-                token.Revoke(utcNow);
-            }
-
-            await _dbContext.SaveChangesAsync(cancellationToken);
-
-            await transaction.CommitAsync(cancellationToken);
         });
     }
 }
