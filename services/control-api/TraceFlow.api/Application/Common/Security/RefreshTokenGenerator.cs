@@ -10,12 +10,12 @@ public class RefreshTokenGenerator
         return new RefreshTokenResult(token, hash);
     }
 
-    public static string GenerateRawToken()
+    public string GenerateRawToken()
     {
         var bytes = RandomNumberGenerator.GetBytes(64);
         return Convert.ToBase64String(bytes);
     }
-    public static string Hash(string refreshToken)
+    public string Hash(string refreshToken)
     {
         var bytes = Encoding.UTF8.GetBytes(refreshToken);
         var hash = SHA256.HashData(bytes);

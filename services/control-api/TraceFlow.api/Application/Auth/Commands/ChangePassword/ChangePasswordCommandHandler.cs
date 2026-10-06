@@ -14,49 +14,54 @@ public class ChangePasswordCommandHandler(
 
     public async Task<ChangePasswordResponse> Handle(ChangePasswordCommand request, CancellationToken cancellationToken)
     {
-        var user = await _dbContext.Users
-        .FirstOrDefaultAsync(
-            user => user.Id == request.UserId, cancellationToken
-        );
 
-        if (user is null)
+        var strategy = _dbContext.Database.CreateExecutionStrategy();
+
+        return await strategy.ExecuteAsync(async () =>
         {
-            throw new NotFoundException("User not found.");
-        }
+            var user = await _dbContext.Users
+            .FirstOrDefaultAsync(
+                user => user.Id == request.UserId, cancellationToken
+            );
 
-        if (user.Status != UserStatuses.Active)
-        {
-            throw new UnauthorizedException(
-                "User account is not active.");
-        }
+            if (user is null || user.Status != UserStatuses.Active)
+            {
+                throw new NotFoundException("User not found.");
+            }
 
-        var currentPasswordValid = _passwordHasher.Verify(request.CurrentPassword, user.PasswordHash);
-        if (!currentPasswordValid)
-        {
-            throw new UnauthorizedException(
-                "Current password is incorrect.");
-        }
+            var currentPasswordValid = _passwordHasher.Verify(request.CurrentPassword, user.PasswordHash);
 
-        var utcNow = _timeProvider.GetUtcNow();
+            if (!currentPasswordValid)
+            {
+                throw new UnauthorizedException(
+                    "Current password is incorrect.");
+            }
 
-        var newPasswordHash = _passwordHasher.Hash(request.NewPassword);
+            var utcNow = _timeProvider.GetUtcNow();
 
-        user.ChangePassword(newPasswordHash, utcNow);
+            var newPasswordHash = _passwordHasher.Hash(request.NewPassword);
 
-        await _dbContext.RefreshTokens
-            .Where(token =>
-                token.UserId == user.Id &&
-                token.RevokedAt == null &&
-                token.ExpiresAt > utcNow)
-            .ExecuteUpdateAsync(
-                setters => setters
-                    .SetProperty(token => token.RevokedAt, utcNow)
-                    .SetProperty(token => token.UpdatedAt, utcNow),
-                cancellationToken);
+            await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
 
-        await _dbContext.SaveChangesAsync(cancellationToken);
+            user.ChangePassword(newPasswordHash, utcNow);
 
-        return new ChangePasswordResponse(
-            "Password changed successfully.");
+            var activeRefreshTokens = await _dbContext.RefreshTokens
+                .Where(token =>
+                    token.UserId == user.Id &&
+                    token.RevokedAt == null &&
+                    token.ExpiresAt > utcNow)
+                .ToListAsync(cancellationToken);
+
+            foreach (var token in activeRefreshTokens)
+            {
+                token.Revoke(utcNow);
+            }
+                    
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+
+            return new ChangePasswordResponse(
+                "Password changed successfully.");
+        });
     }
 }
