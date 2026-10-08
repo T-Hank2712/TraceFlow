@@ -36,9 +36,11 @@ public class LoginCommandHandler(
             throw new UnauthorizedException("Invalid username/email or password.");
         }
 
-        var passwordValid = _passwordHasher.Verify(request.Password, user.PasswordHash);
+        var passwordVerificationResult = _passwordHasher.VerifyDetailed(
+            request.Password,
+            user.PasswordHash);
 
-        if (!passwordValid)
+        if (passwordVerificationResult == PasswordVerificationResult.Failed)
         {
             throw new UnauthorizedException(
                 "Invalid username/email or password.");
@@ -46,8 +48,8 @@ public class LoginCommandHandler(
 
         if (user.Status != UserStatuses.Active)
         {
-            throw new NotFoundException(
-                "User account is not found.");
+            throw new UnauthorizedException(
+                "Invalid username/email or password.");
         }
 
         var accessToken = _jwtTokenGenerator.Generate(user);
@@ -56,6 +58,12 @@ public class LoginCommandHandler(
         var refreshTokenExpirationDays = _options.RefreshTokenExpirationDays;
 
         var utcNow = _timeProvider.GetUtcNow();
+
+        if (passwordVerificationResult == PasswordVerificationResult.SuccessRehashNeeded)
+        {
+            var newPasswordHash = _passwordHasher.Hash(request.Password);
+            user.ChangePassword(newPasswordHash, utcNow);
+        }
 
         var refreshTokenEntity = new RefreshToken(user.Id, refreshToken.Hash, utcNow.AddDays(refreshTokenExpirationDays), utcNow);
 

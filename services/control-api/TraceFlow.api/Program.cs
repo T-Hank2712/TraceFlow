@@ -10,13 +10,15 @@ builder.Services.AddApplicationServices();
 
 builder.Services.AddJwtSecurity(builder.Configuration);
 
-builder.Services.AddOpenSearch(builder.Configuration);
+builder.Services.AddOpenSearch(
+    builder.Configuration,
+    builder.Environment);
 
 builder.Services.AddApiDocumentation();
 
 builder.Services.AddApiRateLimiting(builder.Configuration);
 
-builder.Services.AddForwardedClientHeaders();
+builder.Services.AddForwardedClientHeaders(builder.Configuration, builder.Environment);
 
 var app = builder.Build();
 
@@ -86,6 +88,11 @@ if (app.Environment.IsDevelopment())
     .WithName("DatabaseConfigurationHealthCheck");
 }
 
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHsts();
+}
+
 app.UseForwardedHeaders();
 
 app.UseExceptionHandler();
@@ -100,6 +107,7 @@ app.UseRateLimiter();
 // Versioned Controllers
 app.MapControllers();
 
-app.MapHealthChecks("/health");
+app.MapHealthChecks("/health")
+.AllowAnonymous();
 
 app.Run();

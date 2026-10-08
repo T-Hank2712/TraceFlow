@@ -3,6 +3,7 @@ namespace TraceFlow.Api.Controllers;
 [ApiController]
 [ApiVersion(1.0)]
 [Authorize]
+[RequestBodyLimitPolicy(RequestBodyLimitPolicies.Search)]
 [Route("api/v{version:apiVersion}/workspaces/{workspaceId}/projects/{projectId}/logs")]
 public sealed class LogsController(ISender sender) : ControllerBase
 {

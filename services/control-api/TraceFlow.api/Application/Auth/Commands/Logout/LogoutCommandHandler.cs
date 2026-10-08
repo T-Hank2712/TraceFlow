@@ -2,19 +2,21 @@ namespace TraceFlow.Api.Application.Auth.Commands.Logout;
 
 public class LogoutCommandHandler(
     AppDbContext dbContext,
+    RefreshTokenGenerator refreshTokenGenerator,
     TimeProvider timeProvider
 )
     : IRequestHandler<LogoutCommand, LogoutResponse>
 {
 
     private readonly AppDbContext _dbContext = dbContext;
+    private readonly RefreshTokenGenerator _refreshTokenGenerator = refreshTokenGenerator;
     private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<LogoutResponse> Handle(
         LogoutCommand request,
         CancellationToken cancellationToken)
     {
-        var refreshTokenHash = RefreshTokenGenerator.Hash(
+        var refreshTokenHash = _refreshTokenGenerator.Hash(
             request.RefreshToken);
 
         var refreshToken = await _dbContext.RefreshTokens
@@ -25,8 +27,7 @@ public class LogoutCommandHandler(
 
         if (refreshToken is null)
         {
-            throw new UnauthorizedException(
-                "Invalid refresh token.");
+            return new LogoutResponse("Logged out successfully.");
         }
 
         var utcNow = _timeProvider.GetUtcNow();

@@ -31,11 +31,18 @@ public static class SecurityExtensions
 
                         IssuerSigningKey =
                             new SymmetricSecurityKey(
-                                Encoding.UTF8.GetBytes(jwtOptions.Secret))
+                                Encoding.UTF8.GetBytes(jwtOptions.Secret)),
+
+                        ClockSkew = TimeSpan.Zero
                     };
             });
 
-        services.AddAuthorization();
+        services.AddAuthorization(options =>
+        {
+            options.FallbackPolicy = new AuthorizationPolicyBuilder()
+                .RequireAuthenticatedUser()
+                .Build();
+        });
 
         return services;
     }

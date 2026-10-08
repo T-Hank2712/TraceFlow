@@ -5,7 +5,11 @@ public static class ApplicationServiceExtensions
     public static IServiceCollection AddApplicationServices(
         this IServiceCollection services)
     {
-        services.AddControllers();
+        services.AddControllers(options =>
+        {
+            options.Filters.Add(
+                new RequestBodyLimitPolicyAttribute(RequestBodyLimitPolicies.Default));
+        });
 
         services.AddValidatorsFromAssemblyContaining<Program>();
 
