@@ -37,7 +37,7 @@ public class AcceptInvitationCommandHandler(
         if (invitation.Workspace.Status == ResourceStatuses.Archived)
         {
             throw new ConflictException("Archived workspace cannot be joined.");
-        }    
+        }
 
         var existingMember = await _dbContext.WorkspaceMembers
             .FirstOrDefaultAsync(
