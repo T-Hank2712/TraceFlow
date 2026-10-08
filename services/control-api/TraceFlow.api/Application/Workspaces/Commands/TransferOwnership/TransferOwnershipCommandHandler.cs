@@ -18,86 +18,76 @@ public class TransferOwnershipCommandHandler(
                 "Target user is already the current owner.");
         }
 
-        var strategy = _dbContext.Database.CreateExecutionStrategy();
+        var members = await _dbContext.WorkspaceMembers
+            .Include(member => member.Workspace)
+            .Where(member =>
+                member.WorkspaceId == request.WorkspaceId &&
+                (member.UserId == request.ActorUserId ||
+                 member.UserId == request.TargetUserId) &&
+                member.Status == MembershipStatuses.Active)
+            .ToListAsync(cancellationToken);
 
-        return await strategy.ExecuteAsync(async () =>
+        var actorMembership = members.FirstOrDefault(
+            member => member.UserId == request.ActorUserId);
+
+        if (actorMembership is null)
         {
-            await using var transaction =
-                await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+            throw new NotFoundException("Workspace not found.");
+        }
 
-            var members = await _dbContext.WorkspaceMembers
-                .Include(member => member.Workspace)
-                .Where(member =>
-                    member.WorkspaceId == request.WorkspaceId &&
-                    (member.UserId == request.ActorUserId ||
-                     member.UserId == request.TargetUserId) &&
-                    member.Status == MembershipStatuses.Active)
-                .ToListAsync(cancellationToken);
+        if (actorMembership.Workspace.Status == ResourceStatuses.Archived)
+        {
+            throw new ConflictException(
+                "Archived workspace cannot be modified.");
+        }
 
-            var actorMembership = members.FirstOrDefault(
-                member => member.UserId == request.ActorUserId);
+        if (actorMembership.Role != WorkspaceMemberRoles.Owner)
+        {
+            throw new ForbiddenException(
+                "Only workspace owner can transfer ownership.");
+        }
 
-            if (actorMembership is null)
-            {
-                throw new NotFoundException("Workspace not found.");
-            }
+        if (actorMembership.Workspace.OwnerUserId != request.ActorUserId)
+        {
+            throw new ConflictException(
+                "Workspace ownership state is inconsistent.");
+        }
 
-            if (actorMembership.Workspace.Status == ResourceStatuses.Archived)
-            {
-                throw new ConflictException(
-                    "Archived workspace cannot be modified.");
-            }
+        var targetMembership = members.FirstOrDefault(
+            member => member.UserId == request.TargetUserId);
 
-            if (actorMembership.Role != WorkspaceMemberRoles.Owner)
-            {
-                throw new ForbiddenException(
-                    "Only workspace owner can transfer ownership.");
-            }
+        if (targetMembership is null)
+        {
+            throw new NotFoundException(
+                "Target workspace member not found.");
+        }
 
-            if (actorMembership.Workspace.OwnerUserId != request.ActorUserId)
-            {
-                throw new ConflictException(
-                    "Workspace ownership state is inconsistent.");
-            }
+        if (targetMembership.Role == WorkspaceMemberRoles.Owner)
+        {
+            throw new ConflictException(
+                "Target user is already a workspace owner.");
+        }
 
-            var targetMembership = members.FirstOrDefault(
-                member => member.UserId == request.TargetUserId);
+        var utcNow = _timeProvider.GetUtcNow();
 
-            if (targetMembership is null)
-            {
-                throw new NotFoundException(
-                    "Target workspace member not found.");
-            }
+        actorMembership.Workspace.TransferOwnership(
+            request.TargetUserId,
+            utcNow);
 
-            if (targetMembership.Role == WorkspaceMemberRoles.Owner)
-            {
-                throw new ConflictException(
-                    "Target user is already a workspace owner.");
-            }
+        targetMembership.ChangeRole(
+            WorkspaceMemberRoles.Owner,
+            utcNow);
 
-            var utcNow = _timeProvider.GetUtcNow();
+        actorMembership.ChangeRole(
+            WorkspaceMemberRoles.Admin,
+            utcNow);
 
-            actorMembership.Workspace.TransferOwnership(
-                request.TargetUserId,
-                utcNow);
+        await _dbContext.SaveChangesAsync(cancellationToken);
 
-            targetMembership.ChangeRole(
-                WorkspaceMemberRoles.Owner,
-                utcNow);
-
-            actorMembership.ChangeRole(
-                WorkspaceMemberRoles.Admin,
-                utcNow);
-
-            await _dbContext.SaveChangesAsync(cancellationToken);
-
-            await transaction.CommitAsync(cancellationToken);
-
-            return new TransferOwnershipResponse(
-                request.WorkspaceId,
-                targetMembership.UserId,
-                targetMembership.Role,
-                targetMembership.UpdatedAt);
-        });
+        return new TransferOwnershipResponse(
+            request.WorkspaceId,
+            targetMembership.UserId,
+            targetMembership.Role,
+            targetMembership.UpdatedAt);
     }
 }

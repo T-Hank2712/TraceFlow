@@ -14,52 +14,42 @@ public class LeaveWorkspaceCommandHandler(
         LeaveWorkspaceCommand request,
         CancellationToken cancellationToken)
     {
-        var strategy = _dbContext.Database.CreateExecutionStrategy();
+        var membership = await _workspaceAccess.GetActiveMembershipAsync(
+            request.WorkspaceId,
+            request.UserId,
+            "Workspace not found.",
+            cancellationToken);
 
-        return await strategy.ExecuteAsync(async () =>
+        _workspaceAccess.EnsureWorkspaceIsActive(
+            membership.Workspace,
+            "Archived workspace cannot be left.");
+
+        if (membership.UserId == membership.Workspace.OwnerUserId)
         {
-            await using var transaction =
-                await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+            throw new ConflictException(
+                "Workspace primary owner cannot leave. Transfer primary ownership first.");
+        }
 
-            var membership = await _workspaceAccess.GetActiveMembershipAsync(
-                request.WorkspaceId,
-                request.UserId,
-                "Workspace not found.",
-                cancellationToken);
+        var utcNow = _timeProvider.GetUtcNow();
 
-            _workspaceAccess.EnsureWorkspaceIsActive(
-                membership.Workspace,
-                "Archived workspace cannot be left.");
+        var projectMemberships = await _dbContext.ProjectMembers
+            .Where(projectMember =>
+                projectMember.UserId == request.UserId &&
+                projectMember.Project.WorkspaceId == request.WorkspaceId)
+            .ToListAsync(cancellationToken);
 
-            if (membership.UserId == membership.Workspace.OwnerUserId)
-            {
-                throw new ConflictException(
-                    "Workspace primary owner cannot leave. Transfer primary ownership first.");
-            }
+        foreach (var projectMembership in projectMemberships)
+        {
+            projectMembership.Remove(utcNow);
+        }
 
-            var utcNow = _timeProvider.GetUtcNow();
+        membership.Remove(utcNow);
 
-            var projectMemberships = await _dbContext.ProjectMembers
-                .Where(projectMember =>
-                    projectMember.UserId == request.UserId &&
-                    projectMember.Project.WorkspaceId == request.WorkspaceId)
-                .ToListAsync(cancellationToken);
+        await _dbContext.SaveChangesAsync(cancellationToken);
 
-            foreach (var projectMembership in projectMemberships)
-            {
-                projectMembership.Remove(utcNow);
-            }
-
-            membership.Remove(utcNow);
-
-            await _dbContext.SaveChangesAsync(cancellationToken);
-
-            await transaction.CommitAsync(cancellationToken);
-
-            return new LeaveWorkspaceResponse(
-                request.WorkspaceId,
-                request.UserId,
-                "Left workspace successfully.");
-        });
+        return new LeaveWorkspaceResponse(
+            request.WorkspaceId,
+            request.UserId,
+            "Left workspace successfully.");
     }
 }
