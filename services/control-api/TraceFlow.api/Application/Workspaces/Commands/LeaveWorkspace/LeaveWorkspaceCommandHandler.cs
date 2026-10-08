@@ -2,57 +2,64 @@ namespace TraceFlow.Api.Application.Workspaces.Commands.LeaveWorkspace;
 
 public class LeaveWorkspaceCommandHandler(
         AppDbContext dbContext,
-        WorkspaceAccessService workspaceAccess)
+        WorkspaceAccessService workspaceAccess,
+        TimeProvider timeProvider)
     : IRequestHandler<LeaveWorkspaceCommand, LeaveWorkspaceResponse>
 {
-
     private readonly AppDbContext _dbContext = dbContext;
-
     private readonly WorkspaceAccessService _workspaceAccess = workspaceAccess;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<LeaveWorkspaceResponse> Handle(
-           LeaveWorkspaceCommand request,
-           CancellationToken cancellationToken)
+        LeaveWorkspaceCommand request,
+        CancellationToken cancellationToken)
     {
-        var membership = await _workspaceAccess.GetActiveMembershipAsync(
-            request.WorkspaceId,
-            request.UserId,
-            "Workspace not found.",
-            cancellationToken);
+        var strategy = _dbContext.Database.CreateExecutionStrategy();
 
-        _workspaceAccess.EnsureWorkspaceIsActive(
-            membership.Workspace,
-            "Archived workspace cannot be left.");
-
-        if (membership.Role == WorkspaceMemberRoles.Owner)
+        return await strategy.ExecuteAsync(async () =>
         {
-            var ownerCount = await _dbContext.WorkspaceMembers
-                .CountAsync(
-                    member =>
-                        member.WorkspaceId == request.WorkspaceId &&
-                        member.Role == WorkspaceMemberRoles.Owner &&
-                        member.Status == MembershipStatuses.Active,
-                    cancellationToken);
+            await using var transaction =
+                await _dbContext.Database.BeginTransactionAsync(cancellationToken);
 
-            if (ownerCount <= 1)
+            var membership = await _workspaceAccess.GetActiveMembershipAsync(
+                request.WorkspaceId,
+                request.UserId,
+                "Workspace not found.",
+                cancellationToken);
+
+            _workspaceAccess.EnsureWorkspaceIsActive(
+                membership.Workspace,
+                "Archived workspace cannot be left.");
+
+            if (membership.UserId == membership.Workspace.OwnerUserId)
             {
-                throw new ConflictException("Workspace must have at least one owner.");
+                throw new ConflictException(
+                    "Workspace primary owner cannot leave. Transfer primary ownership first.");
             }
-        }
 
-        await _dbContext.ProjectMembers
-            .Where(projectMember =>
-                projectMember.UserId == request.UserId &&
-                projectMember.Project.WorkspaceId == request.WorkspaceId)
-            .ExecuteDeleteAsync(cancellationToken);
+            var utcNow = _timeProvider.GetUtcNow();
 
-        _dbContext.WorkspaceMembers.Remove(membership);
+            var projectMemberships = await _dbContext.ProjectMembers
+                .Where(projectMember =>
+                    projectMember.UserId == request.UserId &&
+                    projectMember.Project.WorkspaceId == request.WorkspaceId)
+                .ToListAsync(cancellationToken);
 
-        await _dbContext.SaveChangesAsync(cancellationToken);
+            foreach (var projectMembership in projectMemberships)
+            {
+                projectMembership.Remove(utcNow);
+            }
 
-        return new LeaveWorkspaceResponse(
-            request.WorkspaceId,
-            request.UserId,
-            "Left workspace successfully.");
+            membership.Remove(utcNow);
+
+            await _dbContext.SaveChangesAsync(cancellationToken);
+
+            await transaction.CommitAsync(cancellationToken);
+
+            return new LeaveWorkspaceResponse(
+                request.WorkspaceId,
+                request.UserId,
+                "Left workspace successfully.");
+        });
     }
 }

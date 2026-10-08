@@ -38,4 +38,9 @@ public class ProjectMember : Entity
         Status = MembershipStatuses.Active;
         UpdatedAt = actived;
     }
+    public void Remove(DateTimeOffset removedAt)
+    {
+        Status = MembershipStatuses.Removed;
+        UpdatedAt = removedAt;
+    }
 }
