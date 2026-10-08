@@ -2,13 +2,14 @@ namespace TraceFlow.Api.Application.Projects.Commands.RemoveProjectMember;
 
 public class RemoveProjectMemberCommandHandler(
         AppDbContext dbContext,
-        ProjectAccessService projectAccess)
+        ProjectAccessService projectAccess,
+        TimeProvider timeProvider)
     : IRequestHandler<RemoveProjectMemberCommand, RemoveProjectMemberResponse>
 {
 
     private readonly AppDbContext _dbContext = dbContext;
-
     private readonly ProjectAccessService _projectAccess = projectAccess;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<RemoveProjectMemberResponse> Handle(
            RemoveProjectMemberCommand request,
@@ -59,7 +60,7 @@ public class RemoveProjectMemberCommandHandler(
             targetMember.ProjectId,
             targetMember.UserId);
 
-        _dbContext.ProjectMembers.Remove(targetMember);
+        targetMember.Remove(_timeProvider.GetUtcNow());
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 
