@@ -112,6 +112,21 @@ public class ChangeMemberRoleCommandHandler(
 
             _dbContext.ProjectMembers.AddRange(missingProjectMembers);
         }
+        else if (newRole == WorkspaceMemberRoles.Member)
+        {
+            var activeProjectMembers = await _dbContext.ProjectMembers
+                .Where(member =>
+                    member.UserId == targetMember.UserId &&
+                    member.Status == MembershipStatuses.Active &&
+                    member.Project.WorkspaceId == request.WorkspaceId &&
+                    member.Project.Status == ResourceStatuses.Active)
+                .ToListAsync(cancellationToken);
+
+            foreach (var projectMember in activeProjectMembers)
+            {
+                projectMember.Remove(utcNow);
+            }
+        }
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 
