@@ -40,9 +40,12 @@ public class DeleteApplicationCommandHandler(
             throw new NotFoundException("Application not found.");
         }
 
-        var hasBusinessDependencies = false;
+        var hasApiKeys = await _dbContext.ApiKeys
+            .AnyAsync(
+                apiKey => apiKey.TraceApplicationId == request.ApplicationId,
+                cancellationToken);
 
-        if (!hasBusinessDependencies)
+        if (!hasApiKeys)
         {
             _dbContext.TraceApplications.Remove(application);
 
