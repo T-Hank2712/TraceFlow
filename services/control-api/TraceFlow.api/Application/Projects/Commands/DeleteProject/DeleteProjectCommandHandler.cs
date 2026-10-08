@@ -28,9 +28,11 @@ public class DeleteProjectCommandHandler(
 
         var project = access.Project;
 
-        var hasMembers = await _dbContext.ProjectMembers
+        var hasAdditionalMembers = await _dbContext.ProjectMembers
             .AnyAsync(
-                member => member.ProjectId == request.ProjectId,
+                member =>
+                    member.ProjectId == request.ProjectId &&
+                    member.UserId != request.UserId,
                 cancellationToken);
 
         var hasInvitations = await _dbContext.ProjectInvitations
@@ -44,7 +46,7 @@ public class DeleteProjectCommandHandler(
                 cancellationToken);
 
         var canHardDelete =
-            !hasMembers &&
+            !hasAdditionalMembers &&
             !hasInvitations &&
             !hasTraceApplications;
 
