@@ -3,6 +3,7 @@ namespace TraceFlow.Api.Application.TraceApplications.Commands.DeleteTraceApplic
 public class DeleteApplicationCommandHandler(
         AppDbContext dbContext,
         ProjectAccessService projectAccess,
+        ILogSearchReader logSearchReader,
         TimeProvider timeProvider)
     : IRequestHandler<DeleteApplicationCommand, DeleteApplicationResponse>
 {
@@ -10,6 +11,7 @@ public class DeleteApplicationCommandHandler(
     private readonly AppDbContext _dbContext = dbContext;
 
     private readonly ProjectAccessService _projectAccess = projectAccess;
+    private readonly ILogSearchReader _logSearchReader = logSearchReader;
     private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<DeleteApplicationResponse> Handle(
@@ -45,7 +47,24 @@ public class DeleteApplicationCommandHandler(
                 apiKey => apiKey.TraceApplicationId == request.ApplicationId,
                 cancellationToken);
 
-        if (!hasApiKeys)
+        bool hasLogs;
+
+        try
+        {
+            hasLogs = await _logSearchReader.HasLogsAsync(
+                request.WorkspaceId,
+                request.ProjectId,
+                request.ApplicationId,
+                cancellationToken);
+        }
+        catch (ExternalServiceException)
+        {
+            hasLogs = true;
+        }
+
+        var canHardDelete = !hasApiKeys && !hasLogs;
+
+        if (canHardDelete)
         {
             _dbContext.TraceApplications.Remove(application);
 
@@ -57,6 +76,8 @@ public class DeleteApplicationCommandHandler(
                 DeleteMode.Hard,
                 "Trace application permanently deleted.");
         }
+
+        application.Archive(_timeProvider.GetUtcNow());
 
         application.Archive(_timeProvider.GetUtcNow());
 

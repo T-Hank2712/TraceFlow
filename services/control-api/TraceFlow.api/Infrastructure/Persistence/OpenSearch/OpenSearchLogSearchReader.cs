@@ -113,6 +113,110 @@ public sealed class OpenSearchLogSearchReader(
         }
     }
 
+    public async Task<bool> HasLogsAsync(
+        Ulid workspaceId,
+        Ulid projectId,
+        Ulid applicationId,
+        CancellationToken cancellationToken)
+    {
+        var index = _options.Index;
+
+        var payload = new
+        {
+            size = 0,
+            track_total_hits = 1,
+            query = new
+            {
+                @bool = new
+                {
+                    filter = new object[]
+                    {
+                        Term("workspaceId.keyword", workspaceId.ToString()),
+                        Term("projectId.keyword", projectId.ToString()),
+                        Term("applicationId.keyword", applicationId.ToString())
+                    }
+                }
+            }
+        };
+
+        using var request = new HttpRequestMessage(
+            HttpMethod.Post,
+            $"{index}/_search");
+
+        request.Content = new StringContent(
+            JsonSerializer.Serialize(payload),
+            Encoding.UTF8,
+            "application/json");
+
+        try
+        {
+            using var response = await _httpClient.SendAsync(
+                request,
+                cancellationToken);
+
+            var content = await response.Content.ReadAsStringAsync(cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError(
+                    "OpenSearch log existence check failed. Index={Index} StatusCode={StatusCode} Body={Body}",
+                    index,
+                    response.StatusCode,
+                    content);
+
+                throw new ExternalServiceException(
+                    "Log search backend is unavailable.");
+            }
+
+            using var document = JsonDocument.Parse(content);
+
+            var total = document.RootElement
+                .GetProperty("hits")
+                .GetProperty("total")
+                .GetProperty("value")
+                .GetInt64();
+
+            return total > 0;
+        }
+        catch (ExternalServiceException)
+        {
+            throw;
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogError(
+                ex,
+                "Failed to connect to OpenSearch during log existence check. Index={Index}",
+                index);
+
+            throw new ExternalServiceException(
+                "Log search backend is unavailable.",
+                ex);
+        }
+        catch (TaskCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+        {
+            _logger.LogError(
+                ex,
+                "OpenSearch log existence check timed out. Index={Index}",
+                index);
+
+            throw new ExternalServiceException(
+                "Log search backend timed out.",
+                ex);
+        }
+        catch (JsonException ex)
+        {
+            _logger.LogError(
+                ex,
+                "Failed to parse OpenSearch log existence response. Index={Index}",
+                index);
+
+            throw new ExternalServiceException(
+                "Log search backend returned an invalid response.",
+                ex);
+        }
+    }
+
     private static List<object> BuildFilters(SearchLogsQuery query)
     {
         var filters = new List<object>
