@@ -47,19 +47,22 @@ public class DeleteApplicationCommandHandler(
                 apiKey => apiKey.TraceApplicationId == request.ApplicationId,
                 cancellationToken);
 
-        bool hasLogs;
+        bool hasLogs = false;
 
-        try
+        if (!hasApiKeys)
         {
-            hasLogs = await _logSearchReader.HasLogsAsync(
-                request.WorkspaceId,
-                request.ProjectId,
-                request.ApplicationId,
-                cancellationToken);
-        }
-        catch (ExternalServiceException)
-        {
-            hasLogs = true;
+            try
+            {
+                hasLogs = await _logSearchReader.HasLogsAsync(
+                    request.WorkspaceId,
+                    request.ProjectId,
+                    request.ApplicationId,
+                    cancellationToken);
+            }
+            catch (ExternalServiceException)
+            {
+                hasLogs = true;
+            }
         }
 
         var canHardDelete = !hasApiKeys && !hasLogs;
@@ -76,8 +79,6 @@ public class DeleteApplicationCommandHandler(
                 DeleteMode.Hard,
                 "Trace application permanently deleted.");
         }
-
-        application.Archive(_timeProvider.GetUtcNow());
 
         application.Archive(_timeProvider.GetUtcNow());
 
