@@ -6,7 +6,6 @@ public class LeaveProjectCommandHandler(
         TimeProvider timeProvider)
     : IRequestHandler<LeaveProjectCommand, LeaveProjectResponse>
 {
-
     private readonly AppDbContext _dbContext = dbContext;
     private readonly ProjectAccessService _projectAccess = projectAccess;
     private readonly TimeProvider _timeProvider = timeProvider;

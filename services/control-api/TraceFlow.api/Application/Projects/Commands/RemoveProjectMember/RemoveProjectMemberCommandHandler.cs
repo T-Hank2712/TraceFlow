@@ -39,6 +39,12 @@ public class RemoveProjectMemberCommandHandler(
             throw new NotFoundException("Project member not found.");
         }
 
+        if (request.ActorUserId == targetMember.UserId)
+        {
+            throw new ConflictException(
+                "Use leave project to remove your own project membership.");
+        }
+
         if (targetMember.Role == ProjectMemberRoles.Manager)
         {
             var managerCount = await _dbContext.ProjectMembers
@@ -55,15 +61,13 @@ public class RemoveProjectMemberCommandHandler(
             }
         }
 
-        var response = new RemoveProjectMemberResponse(
-            targetMember.Id,
-            targetMember.ProjectId,
-            targetMember.UserId);
-
         targetMember.Remove(_timeProvider.GetUtcNow());
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        return response;
+        return new RemoveProjectMemberResponse(
+            targetMember.Id,
+            targetMember.ProjectId,
+            targetMember.UserId);
     }
 }
