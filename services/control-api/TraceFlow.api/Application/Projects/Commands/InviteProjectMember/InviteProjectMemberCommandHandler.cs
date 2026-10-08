@@ -16,89 +16,81 @@ public class InviteProjectMemberCommandHandler(
     private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<InviteProjectMemberResponse> Handle(
-            InviteProjectMemberCommand request,
-            CancellationToken cancellationToken)
+        InviteProjectMemberCommand request,
+        CancellationToken cancellationToken)
     {
-        var strategy = _dbContext.Database.CreateExecutionStrategy();
+        var access = await _projectAccess.GetProjectAccessAsync(
+            request.WorkspaceId,
+            request.ProjectId,
+            request.InvitedByUserId,
+            "Project not found.",
+            cancellationToken);
 
-        return await strategy.ExecuteAsync(async () =>
+        _projectAccess.EnsureProjectManager(
+            access,
+            "You do not have permission to invite project members.");
+
+        var invitedUser = await _userLookup.GetActiveInviteTargetAsync(
+            request.Identifier,
+            request.InvitedByUserId,
+            cancellationToken);
+
+        var alreadyProjectMember = await _dbContext.ProjectMembers
+            .AnyAsync(
+                member =>
+                    member.ProjectId == request.ProjectId &&
+                    member.UserId == invitedUser.Id &&
+                    member.Status == MembershipStatuses.Active,
+                cancellationToken);
+
+        if (alreadyProjectMember)
         {
-            var access = await _projectAccess.GetProjectAccessAsync(
-                request.WorkspaceId,
-                request.ProjectId,
-                request.InvitedByUserId,
-                "Project not found.",
+            throw new ConflictException("User is already a project member.");
+        }
+
+        var utcNow = _timeProvider.GetUtcNow();
+
+        var pendingInvitation = await _dbContext.ProjectInvitations
+            .FirstOrDefaultAsync(
+                invitation =>
+                    invitation.ProjectId == request.ProjectId &&
+                    invitation.InvitedUserId == invitedUser.Id &&
+                    invitation.Status == InvitationStatuses.Pending,
                 cancellationToken);
 
-            _projectAccess.EnsureProjectManager(
-                access,
-                "You do not have permission to invite project members.");
-
-            var invitedUser = await _userLookup.GetActiveInviteTargetAsync(
-                request.Identifier,
-                request.InvitedByUserId,
-                cancellationToken);
-
-            var alreadyProjectMember = await _dbContext.ProjectMembers
-                .AnyAsync(
-                    member =>
-                        member.ProjectId == request.ProjectId &&
-                        member.UserId == invitedUser.Id &&
-                        member.Status == MembershipStatuses.Active,
-                    cancellationToken);
-
-            if (alreadyProjectMember)
+        if (pendingInvitation is not null)
+        {
+            if (pendingInvitation.ExpiresAt > utcNow)
             {
-                throw new ConflictException("User is already a project member.");
+                throw new ConflictException(
+                    "User already has a pending project invitation.");
             }
 
-            var utcNow = _timeProvider.GetUtcNow();
+            pendingInvitation.Expire(utcNow);
+        }
 
-            await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+        var invitation = new ProjectInvitation(
+            request.WorkspaceId,
+            request.ProjectId,
+            invitedUser.Id,
+            request.InvitedByUserId,
+            request.Role,
+            utcNow.AddDays(InvitationDefaults.ExpiresAfterDays),
+            utcNow);
 
-            var pendingInvitation = await _dbContext.ProjectInvitations
-                .FirstOrDefaultAsync(
-                    invitation =>
-                        invitation.ProjectId == request.ProjectId &&
-                        invitation.InvitedUserId == invitedUser.Id &&
-                        invitation.Status == InvitationStatuses.Pending,
-                    cancellationToken);
+        _dbContext.ProjectInvitations.Add(invitation);
 
-            if (pendingInvitation is not null)
-            {
-                if (pendingInvitation.ExpiresAt > utcNow)
-                {
-                    throw new ConflictException(
-                        "User already has a pending project invitation.");
-                }
+        await _dbContext.SaveChangesAsync(cancellationToken);
 
-                pendingInvitation.Expire(utcNow);
-            }
-
-            var invitation = new ProjectInvitation(
-                request.WorkspaceId,
-                request.ProjectId,
-                invitedUser.Id,
-                request.InvitedByUserId,
-                request.Role,
-                utcNow.AddDays(InvitationDefaults.ExpiresAfterDays),
-                utcNow);
-
-            _dbContext.ProjectInvitations.Add(invitation);
-
-            await _dbContext.SaveChangesAsync(cancellationToken);
-            await transaction.CommitAsync(cancellationToken);
-
-            return new InviteProjectMemberResponse(
-                invitation.Id,
-                invitation.WorkspaceId,
-                invitation.ProjectId,
-                invitedUser.Id,
-                invitedUser.UserName,
-                invitedUser.Email,
-                invitation.Role,
-                invitation.Status,
-                invitation.ExpiresAt);
-        });
+        return new InviteProjectMemberResponse(
+            invitation.Id,
+            invitation.WorkspaceId,
+            invitation.ProjectId,
+            invitedUser.Id,
+            invitedUser.UserName,
+            invitedUser.Email,
+            invitation.Role,
+            invitation.Status,
+            invitation.ExpiresAt);
     }
 }
