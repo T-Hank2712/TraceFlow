@@ -6,7 +6,7 @@ builder.Services
     .AddApplicationOptions(builder.Configuration)
     .AddApiDocumentation()
     .AddIngestionServices()
-    .AddControlApiClient()
+    .AddControlApiClient(builder.Configuration)
     .AddKafkaProducer()
     .AddRedisInfrastructure(builder.Configuration);
 

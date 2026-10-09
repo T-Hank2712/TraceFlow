@@ -8,8 +8,6 @@ public sealed class ControlApiClient : IApiKeyValidator
     {
         _httpClient = httpClient;
         _options = options.Value;
-        _httpClient.BaseAddress = new Uri(_options.BaseUrl);
-        _httpClient.Timeout = TimeSpan.FromSeconds(_options.TimeoutSeconds);
     }
 
     public async Task<ApiKeyValidationResult> ValidateAsync(
