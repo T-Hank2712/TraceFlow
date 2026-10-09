@@ -123,7 +123,7 @@ public sealed class IngestLogService : IIngestLogService
 
         if (validEvents.Count > 0)
         {
-            var publishResults = _publisher.Publish(validEvents);
+            var publishResults = await _publisher.PublishAsync(validEvents);
 
             foreach (var publishResult in publishResults)
             {
