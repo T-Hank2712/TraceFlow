@@ -3,6 +3,9 @@ global using System.Security.Cryptography;
 global using System.Text;
 global using System.Text.Json;
 
+global using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+global using Microsoft.Extensions.Diagnostics.HealthChecks;
+
 global using Asp.Versioning;
 global using Confluent.Kafka;
 global using FluentValidation;
@@ -28,3 +31,4 @@ global using TraceFlow.Ingestion.Api.Security;
 global using TraceFlow.Ingestion.Api.Services.Ingestion;
 global using TraceFlow.Ingestion.Api.Services.RateLimiting;
 global using TraceFlow.Ingestion.Api.Services.Redis;
+global using TraceFlow.Ingestion.Api.Infrastructure.Health;

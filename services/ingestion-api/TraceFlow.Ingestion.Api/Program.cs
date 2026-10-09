@@ -8,7 +8,8 @@ builder.Services
     .AddIngestionServices()
     .AddControlApiClient(builder.Configuration)
     .AddKafkaProducer()
-    .AddRedisInfrastructure(builder.Configuration);
+    .AddRedisInfrastructure(builder.Configuration)
+    .AddIngestionHealthChecks(builder.Configuration);
 
 var app = builder.Build();
 
