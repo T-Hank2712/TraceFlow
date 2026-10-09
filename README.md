@@ -1,8 +1,8 @@
 # TraceFlow
 
-> Backend-focused distributed logging platform built with .NET, Kafka, PostgreSQL, Redis and OpenSearch.
+> Nền tảng logging backend cho hệ thống phân tán, xây dựng bằng .NET, Kafka, PostgreSQL, Redis và OpenSearch.
 
-TraceFlow is a multi-service observability backend for collecting, processing and searching structured application logs. It provides a Control Plane for users, workspaces, projects, trace applications and API keys, and a Data Plane for high-throughput log ingestion, Kafka buffering, background processing and OpenSearch indexing.
+TraceFlow là một hệ thống backend nhiều service dùng để thu thập, xử lý, lưu trữ và tìm kiếm structured logs từ các ứng dụng. Hệ thống gồm Control Plane để quản lý user, workspace, project, trace application và API key; cùng Data Plane để tiếp nhận log, đưa vào Kafka, xử lý nền và index vào OpenSearch.
 
 ![Backend](https://img.shields.io/badge/backend-focused-111827)
 ![.NET](https://img.shields.io/badge/.NET-10-512BD4)
@@ -10,66 +10,66 @@ TraceFlow is a multi-service observability backend for collecting, processing an
 ![OpenSearch](https://img.shields.io/badge/OpenSearch-log_search-005EB8)
 ![Docker](https://img.shields.io/badge/Docker_Compose-local_stack-2496ED)
 
-## 1. Overview
+## 1. Tổng Quan
 
-In distributed systems, logs are often scattered across services, containers and environments. Debugging production issues becomes slow when developers need to inspect each service manually and correlate requests by hand.
+Trong hệ thống phân tán, log thường nằm rải rác ở nhiều service, container và môi trường khác nhau. Khi xảy ra lỗi, developer phải kiểm tra từng service riêng lẻ và tự liên kết log theo request, trace hoặc tenant context. Việc này làm quá trình debug chậm, khó mở rộng và dễ bỏ sót dữ liệu quan trọng.
 
-TraceFlow centralizes this workflow:
+TraceFlow tập trung hóa quy trình đó:
 
 ```text
-Client Applications
+Ứng dụng client
   -> Ingestion API
   -> Kafka
   -> Log Processor
   -> OpenSearch
   -> Control API
-  -> Project-scoped Log Search
+  -> Tìm kiếm log theo phạm vi project
 ```
 
-Core scope:
+Phạm vi lõi của project:
 
 ```text
-TraceFlow Core = multi-tenant log ingestion, indexing and project-scoped search
+TraceFlow Core = tiếp nhận log đa tenant, index log và tìm kiếm log theo project
 ```
 
-The project is designed as a backend engineering portfolio system with emphasis on API design, domain lifecycle rules, security, reliability, data isolation and operational clarity.
+Project được xây dựng như một backend engineering portfolio project, tập trung vào thiết kế API, vòng đời domain, phân quyền, bảo mật, độ tin cậy, cô lập dữ liệu và khả năng vận hành.
 
-## 2. Core Features
+## 2. Tính Năng Chính
 
-- **Multi-tenant resource model**: users, workspaces, projects, trace applications and API keys.
-- **Control Plane API**: JWT authentication, refresh token rotation, RBAC, resource lifecycle management and log search.
-- **Data Plane API**: API-key-based ingestion for client applications, independent from user JWT authentication.
-- **Server-side tenant resolution**: ingestion clients do not provide trusted `workspaceId`, `projectId`, `applicationId` or `environment`; these are resolved from the API key.
-- **Single and batch ingestion**: supports both single log events and batch requests.
-- **Kafka-backed asynchronous processing**: ingestion is decoupled from OpenSearch indexing.
-- **Log Processor worker**: consumes Kafka events, validates payloads, batches documents and indexes through OpenSearch Bulk API.
-- **Dead letter handling**: malformed or failed events can be routed to a DLQ topic.
-- **Project-scoped search**: users can only search logs inside projects they are allowed to access.
-- **Control API request protection**: built-in ASP.NET Core rate limiting, request body limits, forwarded header restrictions and production configuration guards.
-- **Ingestion runtime protection**: Redis-backed tenant context cache and ingestion rate limiting.
+- **Mô hình tài nguyên đa tenant**: quản lý user, workspace, project, trace application và API key.
+- **Control Plane API**: xác thực JWT, refresh token rotation, RBAC, quản lý tài nguyên và search log.
+- **Data Plane API**: tiếp nhận log bằng API key, độc lập với JWT của user.
+- **Resolve tenant ở server**: client gửi log không được tự quyết định `workspaceId`, `projectId`, `applicationId` hoặc `environment`; các thông tin này được resolve từ API key.
+- **Single và batch ingestion**: hỗ trợ gửi một log hoặc nhiều log trong cùng một request.
+- **Xử lý bất đồng bộ bằng Kafka**: tách ingestion khỏi indexing để giảm coupling và hấp thụ traffic spike.
+- **Log Processor worker**: consume Kafka events, validate payload, gom batch và index vào OpenSearch bằng Bulk API.
+- **Dead letter handling**: event lỗi hoặc không hợp lệ có thể được đưa vào DLQ topic.
+- **Tìm kiếm theo project scope**: user chỉ có thể search log trong những project mà họ có quyền truy cập.
+- **Bảo vệ Control API**: sử dụng rate limiting built-in của ASP.NET Core, request body limits, forwarded header restrictions và production configuration guards.
+- **Bảo vệ Ingestion API**: sử dụng Redis cho tenant context cache và rate limiting ở Ingestion API.
 
-## 3. Architecture
+## 3. Kiến Trúc
 
-TraceFlow separates responsibilities into two planes:
+TraceFlow tách hệ thống thành hai mặt phẳng trách nhiệm:
 
-| Plane | Services | Responsibility |
+| Plane | Service | Trách nhiệm |
 | :--- | :--- | :--- |
-| Control Plane | `control-api` | Auth, RBAC, workspaces, projects, trace applications, API keys and search API |
-| Data Plane | `ingestion-api`, `log-processor` | Log intake, API key validation, Kafka publishing, background processing and OpenSearch indexing |
+| Control Plane | `control-api` | Auth, RBAC, workspace, project, trace application, API key và search API |
+| Data Plane | `ingestion-api`, `log-processor` | Tiếp nhận log, validate API key, publish Kafka, xử lý nền và index OpenSearch |
 
-### Technology Stack
+### Công Nghệ Sử Dụng
 
-| Technology | Role |
+| Công nghệ | Vai trò |
 | :--- | :--- |
-| C# / ASP.NET Core | Control API, Ingestion API, authentication, RBAC and HTTP APIs |
-| .NET Worker Service | Kafka consumer and OpenSearch indexing worker |
-| PostgreSQL | Source of truth for users, resources, memberships, invitations, sessions and API keys |
-| Redis | Ingestion API cache and rate-limit backing store |
-| Kafka | Durable event stream between ingestion and processing |
-| OpenSearch | Log indexing and search backend |
-| Docker Compose | Local development environment |
+| C# / ASP.NET Core | Control API, Ingestion API, authentication, RBAC và HTTP APIs |
+| .NET Worker Service | Kafka consumer và OpenSearch indexing worker |
+| PostgreSQL | Source of truth cho user, resource, membership, invitation, session và API key |
+| Redis | Cache và rate-limit backing store cho Ingestion API |
+| Kafka | Event stream bền vững giữa ingestion và processing |
+| OpenSearch | Log indexing và search backend |
+| Docker Compose | Môi trường chạy local |
 
-### System Diagram
+### Sơ Đồ Hệ Thống
 
 ```mermaid
 flowchart LR
@@ -77,49 +77,49 @@ flowchart LR
     ControlAPI --> Postgres[(PostgreSQL)]
     ControlAPI --> OpenSearch[(OpenSearch)]
 
-    Client[Client Application] -->|ApiKey| IngestionAPI[Ingestion API]
+    Client[Ứng dụng client] -->|ApiKey| IngestionAPI[Ingestion API]
     IngestionAPI -->|validate API key| ControlAPI
     IngestionAPI -->|cache / rate limit| Redis[(Redis)]
-    IngestionAPI -->|enriched log event| Kafka[(Kafka)]
+    IngestionAPI -->|log event đã enrich| Kafka[(Kafka)]
     Kafka --> Processor[Log Processor]
     Processor -->|bulk index| OpenSearch
-    Processor -->|failed events| DLQ[(Kafka DLQ Topic)]
+    Processor -->|event lỗi| DLQ[(Kafka DLQ Topic)]
 ```
 
-### Reliability Model
+### Mô Hình Độ Tin Cậy
 
 ```text
 Accepted != Indexed
-Accepted = Kafka accepted the event
-Indexed  = OpenSearch stored the document
+Accepted = Kafka đã nhận event
+Indexed  = OpenSearch đã lưu document
 ```
 
-The Ingestion API does not depend on OpenSearch availability. Indexing is handled asynchronously by the Log Processor, which can retry or route failures to the DLQ.
+Ingestion API không phụ thuộc trực tiếp vào trạng thái của OpenSearch. Việc index log được xử lý bất đồng bộ bởi Log Processor, có thể retry hoặc đưa event lỗi vào DLQ.
 
-## 4. Getting Started
+## 4. Bắt Đầu
 
-### Prerequisites
+### Yêu Cầu
 
-- Docker Desktop or Docker Engine with Docker Compose
+- Docker Desktop hoặc Docker Engine có Docker Compose
 - .NET SDK 10.x
-- `curl` for basic API and health checks
+- `curl` để kiểm tra health/API cơ bản
 
-### Clone
+### Clone Repository
 
 ```bash
 git clone <repository-url>
 cd TraceFlow
 ```
 
-### Environment Files
+### Tạo File Môi Trường
 
-Create the local environment file:
+Tạo file môi trường local:
 
 ```bash
 cp .env.example .env
 ```
 
-Update secrets before running outside local development:
+Trước khi chạy ngoài môi trường local, cần thay các secret mặc định:
 
 ```text
 Jwt__Secret
@@ -131,43 +131,41 @@ OPENSEARCH_INITIAL_ADMIN_PASSWORD
 REDIS_PASSWORD
 ```
 
-## 5. Running The System
+## 5. Chạy Hệ Thống
 
-### Local Docker Compose
+### Docker Compose Local
 
-Start the default local stack:
+Khởi động local stack:
 
 ```bash
 docker compose up -d --build
 ```
 
-Check containers:
+Kiểm tra container:
 
 ```bash
 docker compose ps
 ```
 
-Follow logs:
+Theo dõi log:
 
 ```bash
 docker compose logs -f control-api ingestion-api log-processor
 ```
 
-Stop the stack:
+Dừng stack:
 
 ```bash
 docker compose down
 ```
 
-Reset local volumes:
+Xóa volume local nếu muốn reset dữ liệu:
 
 ```bash
 docker compose down -v
 ```
 
-### Service Endpoints
-
-Default local endpoints:
+### Endpoint Local
 
 | Service | URL |
 | :--- | :--- |
@@ -183,7 +181,7 @@ curl http://localhost:5075/health
 curl http://localhost:5100/health
 ```
 
-### Run Services Locally
+### Chạy Từng Service Bằng .NET CLI
 
 Control API:
 
@@ -203,22 +201,22 @@ Log Processor:
 dotnet run --project services/log-processor/TraceFlow.LogProcessor/TraceFlow.LogProcessor.csproj
 ```
 
-## 6. Usage Flow
+## 6. Luồng Sử Dụng
 
-Main workflow:
+Luồng chính của hệ thống:
 
 ```text
-1. Register or log in through the Control API.
-2. Create a workspace.
-3. Create a project.
-4. Create a trace application.
-5. Create an API key for the trace application.
-6. Send logs to the Ingestion API with the API key.
-7. Log Processor indexes events into OpenSearch.
-8. Search logs through the Control API with project-scoped authorization.
+1. User đăng ký hoặc đăng nhập qua Control API.
+2. User tạo workspace.
+3. User tạo project.
+4. User tạo trace application.
+5. User tạo API key cho trace application.
+6. Ứng dụng client gửi log tới Ingestion API bằng API key.
+7. Log Processor index event vào OpenSearch.
+8. User search log qua Control API theo project scope.
 ```
 
-Example ingestion request:
+Ví dụ gửi log:
 
 ```bash
 curl -X POST http://localhost:5100/logs \
@@ -233,59 +231,60 @@ curl -X POST http://localhost:5100/logs \
     "correlationId": "order-10001",
     "metadata": {
       "provider": "stripe",
-      "durationMs": 3500 }
+      "durationMs": 3500
+    }
   }'
 ```
 
-## 7. Build And Test
+## 7. Build Và Test
 
-Build the Control API:
+Build Control API:
 
 ```bash
 dotnet build services/control-api/TraceFlow.api/TraceFlow.api.csproj
 ```
 
-Build the Ingestion API:
+Build Ingestion API:
 
 ```bash
 dotnet build services/ingestion-api/TraceFlow.Ingestion.Api/TraceFlow.Ingestion.Api.csproj
 ```
 
-Build the Log Processor:
+Build Log Processor:
 
 ```bash
 dotnet build services/log-processor/TraceFlow.LogProcessor/TraceFlow.LogProcessor.csproj
 ```
 
-Run tests:
+Chạy test:
 
 ```bash
 dotnet test
 ```
 
-## 8. Project Structure
+## 8. Cấu Trúc Thư Mục
 
 ```text
 .
 ├── services/
 │   ├── control-api/       ASP.NET Core Control Plane
 │   ├── ingestion-api/     ASP.NET Core Ingestion API
-│   └── log-processor/     .NET Worker Kafka Consumer and OpenSearch Indexer
+│   └── log-processor/     .NET Worker Kafka Consumer và OpenSearch Indexer
 ├── contracts/
 │   ├── openapi/           HTTP API contracts
 │   ├── kafka/             Kafka event contracts
-│   └── opensearch/        OpenSearch document and index contracts
-├── deployments/           Docker Compose and deployment configuration
-├── docs/                  Product, API, architecture, operations and testing docs
-├── system-design/         Requirements, HLD, LLD, reliability, security and roadmap
-├── tests/                 Unit, integration, E2E and performance tests/docs
-├── scripts/               Development and operations helper scripts
+│   └── opensearch/        OpenSearch document và index contracts
+├── deployments/           Docker Compose và deployment configuration
+├── docs/                  Product, API, architecture, operations và testing docs
+├── system-design/         Requirements, HLD, LLD, reliability, security và roadmap
+├── tests/                 Unit, integration, E2E và performance tests/docs
+├── scripts/               Development và operations helper scripts
 └── tools/                 Supporting developer tools
 ```
 
-## 9. Documentation
+## 9. Tài Liệu
 
-Design and architecture:
+Thiết kế hệ thống:
 
 - [Requirements](system-design/01-requirements.md)
 - [High-Level Design](system-design/02-high-level-design.md)
@@ -296,7 +295,7 @@ Design and architecture:
 - [Testing Strategy](system-design/07-testing-strategy.md)
 - [Implementation Roadmap](system-design/08-implementation-roadmap.md)
 
-Operational and service docs:
+Tài liệu vận hành và service:
 
 - [Documentation Overview](docs/README.md)
 - [API Documentation](docs/04-api/README.md)
@@ -308,8 +307,8 @@ Operational and service docs:
 
 ## 10. License
 
-License has not been declared yet. Add a `LICENSE` file before publishing this project as open source.
+Project chưa khai báo license. Nếu public hoặc open-source, cần bổ sung file `LICENSE`.
 
 ## 11. Maintainer
 
-TraceFlow is maintained by `ltthanh` as a backend engineering portfolio project focused on distributed systems, security, reliability and data pipeline design.
+TraceFlow được duy trì bởi `ltthanh` như một backend engineering portfolio project, tập trung vào distributed systems, security, reliability và data pipeline design.
