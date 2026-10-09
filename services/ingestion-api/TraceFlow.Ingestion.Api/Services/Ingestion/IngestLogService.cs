@@ -1,11 +1,3 @@
-using TraceFlow.Ingestion.Api.Contracts;
-using TraceFlow.Ingestion.Api.Contracts.Authentication;
-using TraceFlow.Ingestion.Api.Contracts.Log;
-using TraceFlow.Ingestion.Api.Contracts.BatchLog;
-using TraceFlow.Ingestion.Api.Errors;
-using TraceFlow.Ingestion.Api.Kafka;
-using FluentValidation;
-
 namespace TraceFlow.Ingestion.Api.Services.Ingestion;
 
 public sealed class IngestLogService : IIngestLogService

@@ -1,11 +1,3 @@
-using System.Security.Cryptography;
-using System.Text;
-using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.Extensions.Options;
-using StackExchange.Redis;
-using TraceFlow.Ingestion.Api.Configuration;
-using TraceFlow.Ingestion.Api.Contracts.RateLimiting;
-
 namespace TraceFlow.Ingestion.Api.Services.RateLimiting;
 
 public sealed class RedisRateLimiter : IRateLimiter

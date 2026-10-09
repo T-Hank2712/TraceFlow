@@ -1,7 +1,3 @@
-using TraceFlow.Ingestion.Api.Extensions;
-using TraceFlow.Ingestion.Api.Security;
-using TraceFlow.Ingestion.Api.Services.RateLimiting;
-
 namespace TraceFlow.Ingestion.Api.Middleware;
 
 public sealed class RateLimitingMiddleware

@@ -1,11 +1,3 @@
-using System.Text.Json;
-using Confluent.Kafka;
-using Microsoft.Extensions.Options;
-using TraceFlow.Ingestion.Api.Configuration;
-using TraceFlow.Ingestion.Api.Services.Ingestion;
-using TraceFlow.Ingestion.Api.Contracts.Log;
-using TraceFlow.Ingestion.Api.Contracts.BatchLog;
-
 namespace TraceFlow.Ingestion.Api.Kafka;
 
 public sealed class KafkaLogProducer : ILogEventPublisher, IDisposable

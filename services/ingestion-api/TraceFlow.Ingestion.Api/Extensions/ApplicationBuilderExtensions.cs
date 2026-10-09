@@ -1,5 +1,3 @@
-using TraceFlow.Ingestion.Api.Middleware;
-
 namespace TraceFlow.Ingestion.Api.Extensions;
 
 public static class ApplicationBuilderExtensions

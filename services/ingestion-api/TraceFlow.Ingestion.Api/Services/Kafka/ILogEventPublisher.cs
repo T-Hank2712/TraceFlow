@@ -1,6 +1,3 @@
-using TraceFlow.Ingestion.Api.Contracts.BatchLog;
-using TraceFlow.Ingestion.Api.Contracts.Log;
-
 namespace TraceFlow.Ingestion.Api.Kafka;
 
 public interface ILogEventPublisher

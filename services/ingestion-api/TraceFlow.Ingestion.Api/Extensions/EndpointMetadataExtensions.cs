@@ -1,5 +1,3 @@
-using Microsoft.AspNetCore.Authorization;
-
 namespace TraceFlow.Ingestion.Api.Extensions;
 
 public static class EndpointMetadataExtensions

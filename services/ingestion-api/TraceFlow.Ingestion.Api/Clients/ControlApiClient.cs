@@ -1,8 +1,3 @@
-using Microsoft.Extensions.Options;
-using TraceFlow.Ingestion.Api.Configuration;
-using TraceFlow.Ingestion.Api.Contracts.Authentication;
-using System.Net;
-
 namespace TraceFlow.Ingestion.Api.Clients;
 
 public sealed class ControlApiClient : IApiKeyValidator

@@ -1,7 +1,3 @@
-using FluentValidation;
-using TraceFlow.Ingestion.Api.Configuration;
-using Microsoft.Extensions.Options;
-
 namespace TraceFlow.Ingestion.Api.Contracts.Log;
 
 public sealed class IngestLogRequestValidator

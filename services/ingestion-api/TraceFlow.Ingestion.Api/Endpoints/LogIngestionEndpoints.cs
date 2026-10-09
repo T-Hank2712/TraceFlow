@@ -1,9 +1,3 @@
-using Microsoft.Extensions.Primitives;
-using TraceFlow.Ingestion.Api.Contracts.BatchLog;
-using TraceFlow.Ingestion.Api.Contracts.Log;
-using TraceFlow.Ingestion.Api.Security;
-using TraceFlow.Ingestion.Api.Services.Ingestion;
-
 namespace TraceFlow.Ingestion.Api.Endpoints;
 
 public static class LogIngestionEndpoints

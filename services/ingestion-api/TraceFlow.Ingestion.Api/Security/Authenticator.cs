@@ -1,14 +1,3 @@
-using Microsoft.Extensions.Options;
-using StackExchange.Redis;
-using TraceFlow.Ingestion.Api.Clients;
-using TraceFlow.Ingestion.Api.Configuration;
-using TraceFlow.Ingestion.Api.Contracts;
-using TraceFlow.Ingestion.Api.Contracts.Authentication;
-using TraceFlow.Ingestion.Api.Errors;
-using TraceFlow.Ingestion.Api.Services.Ingestion;
-using TraceFlow.Ingestion.Api.Services.Redis;
-using Microsoft.Extensions.Caching.Memory;
-
 namespace TraceFlow.Ingestion.Api.Security;
 
 public sealed class Authenticator

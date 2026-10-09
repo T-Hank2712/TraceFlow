@@ -1,8 +1,3 @@
-using TraceFlow.Ingestion.Api.Contracts.Log;
-using TraceFlow.Ingestion.Api.Contracts.BatchLog;
-using TraceFlow.Ingestion.Api.Contracts;
-using TraceFlow.Ingestion.Api.Contracts.Authentication;
-
 namespace TraceFlow.Ingestion.Api.Services.Ingestion;
 
 public interface IIngestLogService
