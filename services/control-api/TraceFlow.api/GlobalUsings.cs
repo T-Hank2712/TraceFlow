@@ -17,6 +17,8 @@ global using FluentValidation;
 
 global using MediatR;
 
+global using Microsoft.AspNetCore.Mvc.Filters;
+global using Microsoft.AspNetCore.Http.Features;
 global using Microsoft.AspNetCore.HttpOverrides;
 global using Microsoft.AspNetCore.RateLimiting;
 global using Microsoft.AspNetCore.Diagnostics;
@@ -113,3 +115,4 @@ global using TraceFlow.Api.Domain.Common;
 global using TraceFlow.Api.Infrastructure.Persistence.OpenSearch;
 global using TraceFlow.Api.Infrastructure.Options;
 global using TraceFlow.Api.Infrastructure.DependencyInjection;
+global using TraceFlow.Api.Infrastructure.RequestLimits;

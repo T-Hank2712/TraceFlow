@@ -1,7 +1,9 @@
 namespace TraceFlow.Api.Application.Common.Security;
 
-public class RefreshTokenGenerator
+public class RefreshTokenGenerator(IOptions<RefreshTokenSecurityOptions> options)
 {
+    private readonly RefreshTokenSecurityOptions _options = options.Value;
+
     public RefreshTokenResult Generate()
     {
         var token = GenerateRawToken();
@@ -10,17 +12,21 @@ public class RefreshTokenGenerator
         return new RefreshTokenResult(token, hash);
     }
 
-    public string GenerateRawToken()
+    public string Hash(string refreshToken)
+    {
+        var key = Encoding.UTF8.GetBytes(_options.Pepper);
+        var bytes = Encoding.UTF8.GetBytes(refreshToken);
+
+        using var hmac = new HMACSHA256(key);
+        var hash = hmac.ComputeHash(bytes);
+
+        return Convert.ToHexString(hash);
+    }
+
+    private static string GenerateRawToken()
     {
         var bytes = RandomNumberGenerator.GetBytes(64);
         return Convert.ToBase64String(bytes);
-    }
-    public string Hash(string refreshToken)
-    {
-        var bytes = Encoding.UTF8.GetBytes(refreshToken);
-        var hash = SHA256.HashData(bytes);
-
-        return Convert.ToHexString(hash);
     }
 }
 

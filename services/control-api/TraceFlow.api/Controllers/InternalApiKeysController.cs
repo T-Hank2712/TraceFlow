@@ -2,6 +2,7 @@ namespace TraceFlow.Api.Controllers;
 
 [ApiController]
 [ApiVersion(1.0)]
+[RequestBodyLimitPolicy(RequestBodyLimitPolicies.Internal)]
 [Route("internal/v{version:apiVersion}/api-keys")]
 public class InternalApiKeysController(ISender sender, IOptions<InternalServiceOptions> options) : ControllerBase
 {
@@ -10,6 +11,7 @@ public class InternalApiKeysController(ISender sender, IOptions<InternalServiceO
 
     private const string InternalSecretHeader = "X-Internal-Secret";
 
+    [AllowAnonymous]
     [EnableRateLimiting(RateLimitPolicies.Internal)]
     [HttpPost("validate")]
     public async Task<IActionResult> ValidateApiKey(

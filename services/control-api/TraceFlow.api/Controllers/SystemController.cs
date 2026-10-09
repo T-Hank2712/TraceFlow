@@ -4,6 +4,7 @@ namespace TraceFlow.Api.Controllers;
 [Route("api/system")]
 public class SystemController : ControllerBase
 {
+    [AllowAnonymous]
     [HttpGet("status")]
     public IActionResult GetStatus()
     {

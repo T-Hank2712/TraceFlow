@@ -9,7 +9,6 @@ public class RefreshSessionCommandHandler(
 ) : IRequestHandler<RefreshSessionCommand, RefreshSessionResponse>
 {
     private const string InvalidRefreshTokenMessage = "Invalid refresh token.";
-
     private readonly AppDbContext _dbContext = dbContext;
     private readonly JwtTokenGenerator _jwtTokenGenerator = jwtTokenGenerator;
     private readonly RefreshTokenGenerator _refreshTokenGenerator = refreshTokenGenerator;
@@ -27,7 +26,6 @@ public class RefreshSessionCommandHandler(
 
         return await strategy.ExecuteAsync(async () =>
         {
-
             var utcNow = _timeProvider.GetUtcNow();
 
             var existingRefreshToken = await _dbContext.RefreshTokens

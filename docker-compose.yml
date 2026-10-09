@@ -125,6 +125,7 @@ services:
       Jwt__RefreshTokenExpirationDays: ${Jwt__RefreshTokenExpirationDays}
       ApiKeySecurity__Pepper: ${ApiKeySecurity__Pepper}
       InternalService__Secret: ${InternalService__Secret}
+      RefreshTokenSecurity__Pepper: ${RefreshTokenSecurity__Pepper}
       OpenSearch__Url: ${OpenSearch__Url}
       OpenSearch__Username: ${OpenSearch__Username}
       OpenSearch__Password: ${OpenSearch__Password}
@@ -144,6 +145,11 @@ services:
       RateLimit__Search__QueueLimit: ${RateLimit__Search__QueueLimit}
       Database__MaxRetryCount: ${Database__MaxRetryCount}
       Database__MaxRetryDelaySeconds: ${Database__MaxRetryDelaySeconds}
+      TrustedProxies__KnownNetworks__0: ${TrustedProxies__KnownNetworks__0}
+      RequestBodyLimits__DefaultBytes: ${RequestBodyLimits__DefaultBytes}
+      RequestBodyLimits__AuthBytes: ${RequestBodyLimits__AuthBytes}
+      RequestBodyLimits__InternalBytes: ${RequestBodyLimits__InternalBytes}
+      RequestBodyLimits__SearchBytes: ${RequestBodyLimits__SearchBytes}
     depends_on:
       postgres:
         condition: service_healthy

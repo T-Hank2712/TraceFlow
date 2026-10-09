@@ -12,6 +12,7 @@ public static class OptionsExtensions
             .Validate(options => !string.IsNullOrWhiteSpace(options.Issuer), "JWT issuer is required.")
             .Validate(options => !string.IsNullOrWhiteSpace(options.Audience), "JWT audience is required.")
             .Validate(options => !string.IsNullOrWhiteSpace(options.Secret), "JWT secret is required.")
+            .Validate(options => Encoding.UTF8.GetByteCount(options.Secret) >= 32, "JWT secret must be at least 32 bytes.")
             .Validate(options => options.AccessTokenExpirationMinutes > 0, "JWT access token expiration must be greater than 0.")
             .Validate(options => options.RefreshTokenExpirationDays > 0, "JWT refresh token expiration must be greater than 0.")
             .ValidateOnStart();
@@ -53,6 +54,24 @@ public static class OptionsExtensions
             .Validate(options => options.Search.PermitLimit > 0, "Search rate limit permit limit must be greater than 0.")
             .Validate(options => options.Search.WindowSeconds > 0, "Search rate limit window must be greater than 0.")
             .Validate(options => options.Search.QueueLimit >= 0, "Search rate limit queue limit must not be negative.")
+            .ValidateOnStart();
+
+        services
+            .AddOptions<RequestBodyLimitOptions>()
+            .Bind(configuration.GetSection(RequestBodyLimitOptions.SectionName))
+            .Validate(options => options.DefaultBytes > 0, "Default request body limit must be greater than 0.")
+            .Validate(options => options.AuthBytes > 0, "Auth request body limit must be greater than 0.")
+            .Validate(options => options.InternalBytes > 0, "Internal request body limit must be greater than 0.")
+            .Validate(options => options.SearchBytes > 0, "Search request body limit must be greater than 0.")
+            .Validate(options => options.AuthBytes <= options.DefaultBytes, "Auth request body limit should not exceed default limit.")
+            .Validate(options => options.InternalBytes <= options.DefaultBytes, "Internal request body limit should not exceed default limit.")
+            .ValidateOnStart();
+
+        services
+            .AddOptions<RefreshTokenSecurityOptions>()
+            .Bind(configuration.GetSection(RefreshTokenSecurityOptions.SectionName))
+            .Validate(options => !string.IsNullOrWhiteSpace(options.Pepper), "Refresh token pepper is required.")
+            .Validate(options => Encoding.UTF8.GetByteCount(options.Pepper) >= 32, "Refresh token pepper must be at least 32 bytes.")
             .ValidateOnStart();
 
         return services;

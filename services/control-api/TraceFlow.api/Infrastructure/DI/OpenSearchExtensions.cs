@@ -4,7 +4,8 @@ public static class OpenSearchExtensions
 {
     public static IServiceCollection AddOpenSearch(
         this IServiceCollection services,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IHostEnvironment environment)
     {
         var openSearchOptions =
             configuration
@@ -12,6 +13,12 @@ public static class OpenSearchExtensions
                 .Get<OpenSearchOptions>()
             ?? throw new InvalidOperationException(
                 "OpenSearch options are not configured.");
+
+        if (environment.IsProduction() && openSearchOptions.SkipTlsVerify)
+        {
+            throw new InvalidOperationException(
+                "OpenSearch TLS verification cannot be disabled in production.");
+        }
 
         services.AddHttpClient<
             ILogSearchReader,
