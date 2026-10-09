@@ -5,6 +5,7 @@ public static class IngestionServiceExtensions
     public static IServiceCollection AddIngestionServices(
         this IServiceCollection services)
     {
+        services.AddSingleton(TimeProvider.System);
         services.AddSingleton<ApiKeyHeaderParser>();
         services.AddSingleton<EnrichedLogEventFactory>();
 
