@@ -1,6 +1,3 @@
-using TraceFlow.Ingestion.Api.Extensions;
-using TraceFlow.Ingestion.Api.Security;
-
 namespace TraceFlow.Ingestion.Api.Middleware;
 
 public sealed class AuthenticationMiddleware

@@ -1,11 +1,3 @@
-using TraceFlow.Ingestion.Api.Contracts;
-using TraceFlow.Ingestion.Api.Contracts.Authentication;
-using TraceFlow.Ingestion.Api.Contracts.Log;
-using TraceFlow.Ingestion.Api.Contracts.BatchLog;
-using TraceFlow.Ingestion.Api.Errors;
-using TraceFlow.Ingestion.Api.Kafka;
-using FluentValidation;
-
 namespace TraceFlow.Ingestion.Api.Services.Ingestion;
 
 public sealed class IngestLogService : IIngestLogService
@@ -14,17 +6,20 @@ public sealed class IngestLogService : IIngestLogService
     private readonly ILogEventPublisher _publisher;
     private readonly IValidator<IngestLogRequest> _logValidator;
     private readonly IValidator<BatchLogRequest> _batchValidator;
+    private readonly TimeProvider _timeProvider;
 
     public IngestLogService(
         EnrichedLogEventFactory eventFactory,
         ILogEventPublisher publisher,
         IValidator<IngestLogRequest> logValidator,
-        IValidator<BatchLogRequest> batchValidator)
+        IValidator<BatchLogRequest> batchValidator,
+        TimeProvider timeProvider)
     {
         _eventFactory = eventFactory;
         _publisher = publisher;
         _logValidator = logValidator;
         _batchValidator = batchValidator;
+        _timeProvider = timeProvider;
     }
 
     public async Task<Result<IngestLogResponse>> IngestAsync(
@@ -60,7 +55,7 @@ public sealed class IngestLogService : IIngestLogService
         var response = new IngestLogResponse(
             eventId,
             true,
-            DateTimeOffset.UtcNow
+            _timeProvider.GetUtcNow()
         );
         return Result<IngestLogResponse>.Ok(response);
     }
@@ -123,7 +118,7 @@ public sealed class IngestLogService : IIngestLogService
 
         if (validEvents.Count > 0)
         {
-            var publishResults = _publisher.Publish(validEvents);
+            var publishResults = await _publisher.PublishAsync(validEvents, cancellationToken);
 
             foreach (var publishResult in publishResults)
             {

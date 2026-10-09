@@ -1,14 +1,3 @@
-using Microsoft.Extensions.Options;
-using StackExchange.Redis;
-using TraceFlow.Ingestion.Api.Clients;
-using TraceFlow.Ingestion.Api.Configuration;
-using TraceFlow.Ingestion.Api.Contracts;
-using TraceFlow.Ingestion.Api.Contracts.Authentication;
-using TraceFlow.Ingestion.Api.Errors;
-using TraceFlow.Ingestion.Api.Services.Ingestion;
-using TraceFlow.Ingestion.Api.Services.Redis;
-using Microsoft.Extensions.Caching.Memory;
-
 namespace TraceFlow.Ingestion.Api.Security;
 
 public sealed class Authenticator
@@ -100,9 +89,23 @@ public sealed class Authenticator
             _logger.LogInformation(
                 "Tenant context cache miss. Validating API key through Control API.");
 
-            tenant = await _apiKeyValidator.ValidateAsync(
-                apiKey,
-                cancellationToken);
+            try
+            {
+                tenant = await _apiKeyValidator.ValidateAsync(
+                    apiKey,
+                    cancellationToken);
+            }
+            catch (ControlApiUnavailableException ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Control API unavailable while validating API key.");
+
+                return Result<AuthenticatedContext>.Fail(
+                    ErrorCodes.ControlApiUnavailable,
+                    "API key validation service is unavailable.",
+                    StatusCodes.Status503ServiceUnavailable);
+            }
 
             if (!tenant.Valid)
             {

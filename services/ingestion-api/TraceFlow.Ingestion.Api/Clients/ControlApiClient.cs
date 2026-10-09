@@ -1,7 +1,3 @@
-using Microsoft.Extensions.Options;
-using TraceFlow.Ingestion.Api.Configuration;
-using TraceFlow.Ingestion.Api.Contracts.Authentication;
-
 namespace TraceFlow.Ingestion.Api.Clients;
 
 public sealed class ControlApiClient : IApiKeyValidator
@@ -12,23 +8,58 @@ public sealed class ControlApiClient : IApiKeyValidator
     {
         _httpClient = httpClient;
         _options = options.Value;
-        _httpClient.BaseAddress = new Uri(_options.BaseUrl);
     }
 
-    public async Task<ApiKeyValidationResult> ValidateAsync(string apiKey, CancellationToken cancellationToken)
+    public async Task<ApiKeyValidationResult> ValidateAsync(
+        string apiKey,
+        CancellationToken cancellationToken)
     {
-        var request = new HttpRequestMessage(HttpMethod.Post, _options.ValidateApiPath);
+        using var request = new HttpRequestMessage(
+            HttpMethod.Post,
+            _options.ValidateApiPath);
+
         request.Headers.Add("X-Internal-Secret", _options.InternalServiceSecret);
         request.Content = JsonContent.Create(new { apiKey });
 
-        var response = await _httpClient.SendAsync(request, cancellationToken);
-
-        if (!response.IsSuccessStatusCode)
+        try
         {
-            return new(false, null, null, null, null);
-        }
+            using var response = await _httpClient.SendAsync(
+                request,
+                cancellationToken);
 
-        return await response.Content.ReadFromJsonAsync<ApiKeyValidationResult>(cancellationToken)
-            ?? new(false, null, null, null, null);
+            if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
+            {
+                return new ApiKeyValidationResult(
+                    Valid: false,
+                    WorkspaceId: null,
+                    ProjectId: null,
+                    ApplicationId: null,
+                    Environment: null);
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new ControlApiUnavailableException(
+                    $"Control API validation failed with status code {(int)response.StatusCode}.");
+            }
+
+            var result = await response.Content.ReadFromJsonAsync<ApiKeyValidationResult>(
+                cancellationToken);
+
+            return result ?? throw new ControlApiUnavailableException(
+                "Control API validation returned an empty response.");
+        }
+        catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new ControlApiUnavailableException(
+                "Control API validation timed out.",
+                ex);
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new ControlApiUnavailableException(
+                "Control API validation request failed.",
+                ex);
+        }
     }
 }

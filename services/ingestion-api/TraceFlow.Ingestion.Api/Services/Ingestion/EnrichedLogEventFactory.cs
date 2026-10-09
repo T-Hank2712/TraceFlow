@@ -1,6 +1,3 @@
-using TraceFlow.Ingestion.Api.Contracts.Authentication;
-using TraceFlow.Ingestion.Api.Contracts.Log;
-
 namespace TraceFlow.Ingestion.Api.Services.Ingestion;
 
 public sealed class EnrichedLogEventFactory

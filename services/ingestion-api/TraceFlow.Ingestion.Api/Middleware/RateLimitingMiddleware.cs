@@ -1,7 +1,3 @@
-using TraceFlow.Ingestion.Api.Extensions;
-using TraceFlow.Ingestion.Api.Security;
-using TraceFlow.Ingestion.Api.Services.RateLimiting;
-
 namespace TraceFlow.Ingestion.Api.Middleware;
 
 public sealed class RateLimitingMiddleware
@@ -42,9 +38,31 @@ public sealed class RateLimitingMiddleware
             return;
         }
 
-        var result = await _rateLimiter.CheckAsync(
-            authenticationContext.ApiKey,
-            context.RequestAborted);
+        RateLimitResult result;
+
+        try
+        {
+            result = await _rateLimiter.CheckAsync(
+                authenticationContext.ApiKey,
+                context.RequestAborted);
+        }
+        catch (RedisException ex)
+        {
+            _logger.LogError(
+                ex,
+                "Redis unavailable while checking ingestion rate limit.");
+
+            context.Response.StatusCode =
+                StatusCodes.Status503ServiceUnavailable;
+
+            await context.Response.WriteAsJsonAsync(
+                new ErrorResponse(
+                    ErrorCodes.RateLimitUnavailable,
+                    "Rate limit service is unavailable."),
+                context.RequestAborted);
+
+            return;
+        }
 
         if (!result.Allowed)
         {
