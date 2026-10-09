@@ -13,16 +13,18 @@ public sealed class FailingLogEventPublisher : ILogEventPublisher
         throw new InvalidOperationException("Kafka publish failed.");
     }
 
-    public IReadOnlyList<BatchLogItemResult> Publish(
+    public Task<IReadOnlyList<BatchLogItemResult>> PublishAsync(
         IReadOnlyList<(int Index, EnrichedLogEvent Event)> logEvents,
         CancellationToken cancellationToken = default)
     {
-        return logEvents
+        IReadOnlyList<BatchLogItemResult> results = logEvents
             .Select(item => new BatchLogItemResult(
                 item.Index,
                 false,
                 item.Event.EventId,
                 "Kafka publish failed."))
             .ToList();
+
+        return Task.FromResult(results);
     }
 }

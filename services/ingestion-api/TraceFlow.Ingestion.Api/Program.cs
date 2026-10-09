@@ -19,10 +19,10 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseIngestionPipeline();
+
 app.MapHealthEndpoints();
 app.MapLogIngestionEndpoints();
 app.MapBatchLogEndpoints();
-
-app.UseIngestionPipeline();
 
 app.Run();

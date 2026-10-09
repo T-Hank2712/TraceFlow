@@ -19,7 +19,7 @@ public sealed class NoopLogEventPublisher : ILogEventPublisher
         return Task.CompletedTask;
     }
 
-    public IReadOnlyList<BatchLogItemResult> Publish(
+    public Task<IReadOnlyList<BatchLogItemResult>> PublishAsync(
         IReadOnlyList<(int Index, EnrichedLogEvent Event)> logEvents,
         CancellationToken cancellationToken = default)
     {
@@ -28,12 +28,14 @@ public sealed class NoopLogEventPublisher : ILogEventPublisher
             _publishedEvents.Add(item.Event);
         }
 
-        return logEvents
+        IReadOnlyList<BatchLogItemResult> results = logEvents
             .Select(item => new BatchLogItemResult(
                 item.Index,
                 true,
                 item.Event.EventId,
                 null))
             .ToList();
+
+        return Task.FromResult(results);
     }
 }
