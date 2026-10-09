@@ -27,7 +27,7 @@ public static class LogIngestionEndpoints
             return result.Success
                 ? Results.Json(result.Data, statusCode: result.StatusCode)
                 : Results.Json(result.Error, statusCode: result.StatusCode);
-        });
+        }).RequireRateLimiting(RateLimitingExtensions.PreAuthPolicy);
 
         return app;
     }
@@ -55,7 +55,7 @@ public static class LogIngestionEndpoints
             return result.Success
                 ? Results.Json(result.Data, statusCode: result.StatusCode)
                 : Results.Json(result.Error, statusCode: result.StatusCode);
-        });
+        }).RequireRateLimiting(RateLimitingExtensions.PreAuthPolicy);
 
         return app;
     }

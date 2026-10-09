@@ -55,6 +55,14 @@ public static class OptionsExtensions
             .Validate(options => !string.IsNullOrWhiteSpace(options.RateLimitKeyPrefix), "RateLimiting__RateLimitKeyPrefix is required.")
             .ValidateOnStart();
 
+        services
+            .AddOptions<PreAuthRateLimitOptions>()
+            .Bind(configuration.GetSection(PreAuthRateLimitOptions.SectionName))
+            .Validate(options => options.PermitLimit > 0, "PreAuthRateLimiting__PermitLimit must be greater than 0.")
+            .Validate(options => options.WindowSeconds > 0, "PreAuthRateLimiting__WindowSeconds must be greater than 0.")
+            .Validate(options => options.QueueLimit >= 0, "PreAuthRateLimiting__QueueLimit must not be negative.")
+            .ValidateOnStart();
+
         return services;
     }
 }

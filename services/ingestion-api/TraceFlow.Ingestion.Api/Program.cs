@@ -9,7 +9,8 @@ builder.Services
     .AddControlApiClient(builder.Configuration)
     .AddKafkaProducer()
     .AddRedisInfrastructure(builder.Configuration)
-    .AddIngestionHealthChecks(builder.Configuration);
+    .AddIngestionHealthChecks(builder.Configuration)
+    .AddPreAuthRateLimiting(builder.Configuration);
 
 var app = builder.Build();
 

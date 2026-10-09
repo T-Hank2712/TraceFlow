@@ -198,6 +198,9 @@ services:
       RateLimiting__PermitLimit: ${RateLimiting__PermitLimit}
       RateLimiting__WindowSeconds: ${RateLimiting__WindowSeconds}
       RateLimiting__RateLimitKeyPrefix: ${RateLimiting__RateLimitKeyPrefix}
+      PreAuthRateLimiting__PermitLimit: ${PreAuthRateLimiting__PermitLimit}
+      PreAuthRateLimiting__WindowSeconds: ${PreAuthRateLimiting__WindowSeconds}
+      PreAuthRateLimiting__QueueLimit: ${PreAuthRateLimiting__QueueLimit}
     depends_on:
       kafka:
         condition: service_healthy

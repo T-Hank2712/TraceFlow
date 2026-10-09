@@ -5,6 +5,8 @@ public static class IngestionPipelineExtensions
     public static WebApplication UseIngestionPipeline(
         this WebApplication app)
     {
+        app.UseRateLimiter();
+
         app.UseRequestBodySizeLimit();
         app.UseMiddleware<AuthenticationMiddleware>();
         app.UseMiddleware<RateLimitingMiddleware>();

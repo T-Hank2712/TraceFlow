@@ -5,6 +5,7 @@ global using System.Text.Json;
 
 global using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 global using Microsoft.Extensions.Diagnostics.HealthChecks;
+global using System.Threading.RateLimiting;
 
 global using Asp.Versioning;
 global using Confluent.Kafka;
