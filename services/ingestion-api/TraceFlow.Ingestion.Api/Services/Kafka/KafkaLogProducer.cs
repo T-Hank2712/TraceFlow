@@ -87,7 +87,7 @@ public sealed class KafkaLogProducer : ILogEventPublisher, IDisposable
                     Index: item.Index,
                     Accepted: false,
                     EventId: eventId,
-                    Error: ex.Error.Reason));
+                    Error: "Failed to publish log event to Kafka."));
             }
             catch (Exception ex)
             {
@@ -95,6 +95,7 @@ public sealed class KafkaLogProducer : ILogEventPublisher, IDisposable
                     ex,
                     "Unexpected error publishing batch log event. EventId: {EventId}",
                     eventId);
+                    
                 results.Add(new BatchLogItemResult(
                     Index: item.Index,
                     Accepted: false,
