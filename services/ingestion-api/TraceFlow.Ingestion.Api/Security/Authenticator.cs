@@ -100,9 +100,23 @@ public sealed class Authenticator
             _logger.LogInformation(
                 "Tenant context cache miss. Validating API key through Control API.");
 
-            tenant = await _apiKeyValidator.ValidateAsync(
-                apiKey,
-                cancellationToken);
+            try
+            {
+                tenant = await _apiKeyValidator.ValidateAsync(
+                    apiKey,
+                    cancellationToken);
+            }
+            catch (ControlApiUnavailableException ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Control API unavailable while validating API key.");
+
+                return Result<AuthenticatedContext>.Fail(
+                    ErrorCodes.ControlApiUnavailable,
+                    "API key validation service is unavailable.",
+                    StatusCodes.Status503ServiceUnavailable);
+            }
 
             if (!tenant.Valid)
             {
