@@ -71,7 +71,6 @@ public class AcceptInvitationCommandHandler(
             existingMember.ChangeRole(invitation.Role, utcNow);
 
             member = existingMember;
-
         }
 
         await _dbContext.SaveChangesAsync(cancellationToken);

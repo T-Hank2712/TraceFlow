@@ -12,51 +12,86 @@ public class ChangePasswordCommandHandler(
     private readonly PasswordHasher _passwordHasher = passwordHasher;
     private readonly TimeProvider _timeProvider = timeProvider;
 
-    public async Task<ChangePasswordResponse> Handle(ChangePasswordCommand request, CancellationToken cancellationToken)
+    public async Task<ChangePasswordResponse> Handle(
+    ChangePasswordCommand request,
+    CancellationToken cancellationToken)
     {
-        var user = await _dbContext.Users
-        .FirstOrDefaultAsync(
-            user => user.Id == request.UserId, cancellationToken
-        );
+        var userSnapshot = await _dbContext.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(
+                user => user.Id == request.UserId,
+                cancellationToken);
 
-        if (user is null)
+        if (userSnapshot is null)
         {
             throw new NotFoundException("User not found.");
         }
 
-        if (user.Status != UserStatuses.Active)
+        if (userSnapshot.Status != UserStatuses.Active)
         {
             throw new UnauthorizedException(
                 "User account is not active.");
         }
 
-        var currentPasswordValid = _passwordHasher.Verify(request.CurrentPassword, user.PasswordHash);
+        var currentPasswordValid = _passwordHasher.Verify(
+            request.CurrentPassword,
+            userSnapshot.PasswordHash);
+
         if (!currentPasswordValid)
         {
             throw new UnauthorizedException(
                 "Current password is incorrect.");
         }
 
-        var utcNow = _timeProvider.GetUtcNow();
+        var oldPasswordHash = userSnapshot.PasswordHash;
 
-        var newPasswordHash = _passwordHasher.Hash(request.NewPassword);
+        var newPasswordHash = _passwordHasher.Hash(
+            request.NewPassword);
 
-        user.ChangePassword(newPasswordHash, utcNow);
+        var strategy = _dbContext.Database.CreateExecutionStrategy();
 
-        await _dbContext.RefreshTokens
-            .Where(token =>
-                token.UserId == user.Id &&
-                token.RevokedAt == null &&
-                token.ExpiresAt > utcNow)
-            .ExecuteUpdateAsync(
-                setters => setters
-                    .SetProperty(token => token.RevokedAt, utcNow)
-                    .SetProperty(token => token.UpdatedAt, utcNow),
-                cancellationToken);
+        return await strategy.ExecuteAsync(async () =>
+        {
 
-        await _dbContext.SaveChangesAsync(cancellationToken);
+            var utcNow = _timeProvider.GetUtcNow();
 
-        return new ChangePasswordResponse(
-            "Password changed successfully.");
+            await using var transaction =
+                await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+
+            var user = await _dbContext.Users
+                .FirstOrDefaultAsync(
+                    user =>
+                        user.Id == request.UserId &&
+                        user.Status == UserStatuses.Active &&
+                        user.PasswordHash == oldPasswordHash,
+                    cancellationToken);
+
+            if (user is null)
+            {
+                throw new ConflictException(
+                    "Password was changed by another request. Please try again.");
+            }
+
+            user.ChangePassword(newPasswordHash, utcNow);
+
+            var activeRefreshTokens = await _dbContext.RefreshTokens
+                .Where(token =>
+                    token.UserId == user.Id &&
+                    token.RevokedAt == null &&
+                    token.ExpiresAt > utcNow)
+                .ToListAsync(cancellationToken);
+
+            foreach (var token in activeRefreshTokens)
+            {
+                token.Revoke(utcNow);
+            }
+
+            await _dbContext.SaveChangesAsync(cancellationToken);
+
+            await transaction.CommitAsync(cancellationToken);
+
+            return new ChangePasswordResponse(
+                "Password changed successfully.");
+        });
     }
 }

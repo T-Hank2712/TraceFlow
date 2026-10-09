@@ -22,14 +22,28 @@ public class AcceptProjectInvitationCommandHandler(
                     invitation.InvitedUserId == request.UserId,
                 cancellationToken);
 
+        var utcNow = _timeProvider.GetUtcNow();
+
         if (invitation is null)
         {
             throw new NotFoundException("Invitation not found.");
         }
 
+        if (invitation.Status != InvitationStatuses.Pending ||
+            invitation.ExpiresAt <= utcNow)
+        {
+            throw new ConflictException(
+                "Invitation is no longer valid or has already been processed.");
+        }
+
         if (invitation.Workspace.Status == ResourceStatuses.Archived)
         {
             throw new ConflictException("Archived workspace cannot be joined.");
+        }
+
+        if (invitation.Project.Status == ResourceStatuses.Archived)
+        {
+            throw new ConflictException("Archived project cannot be joined.");
         }
 
         var workspaceMember = await _dbContext.WorkspaceMembers
@@ -38,8 +52,6 @@ public class AcceptProjectInvitationCommandHandler(
                     member.WorkspaceId == invitation.WorkspaceId &&
                     member.UserId == request.UserId,
                 cancellationToken);
-
-        var utcNow = _timeProvider.GetUtcNow();
 
         if (workspaceMember is null)
         {
@@ -57,22 +69,19 @@ public class AcceptProjectInvitationCommandHandler(
             workspaceMember.ChangeRole(WorkspaceMemberRoles.Member, utcNow);
         }
 
-        var existingProjectMember = await _dbContext.ProjectMembers
+        var projectMember = await _dbContext.ProjectMembers
             .FirstOrDefaultAsync(
                 member =>
                     member.ProjectId == invitation.ProjectId &&
                     member.UserId == request.UserId,
                 cancellationToken);
 
-        if (existingProjectMember is not null &&
-            existingProjectMember.Status == MembershipStatuses.Active)
+        if (projectMember?.Status == MembershipStatuses.Active)
         {
             throw new ConflictException("User is already a project member.");
         }
 
-        ProjectMember projectMember;
-
-        if (existingProjectMember is null)
+        if (projectMember is null)
         {
             projectMember = new ProjectMember(
                 invitation.ProjectId,
@@ -84,9 +93,8 @@ public class AcceptProjectInvitationCommandHandler(
         }
         else
         {
-            existingProjectMember.Activate(utcNow);
-            existingProjectMember.ChangeRole(invitation.Role, utcNow);
-            projectMember = existingProjectMember;
+            projectMember.Activate(utcNow);
+            projectMember.ChangeRole(invitation.Role, utcNow);
         }
 
         invitation.Accept(utcNow);

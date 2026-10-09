@@ -2,13 +2,13 @@ namespace TraceFlow.Api.Application.Projects.Commands.LeaveProject;
 
 public class LeaveProjectCommandHandler(
         AppDbContext dbContext,
-        ProjectAccessService projectAccess)
+        ProjectAccessService projectAccess,
+        TimeProvider timeProvider)
     : IRequestHandler<LeaveProjectCommand, LeaveProjectResponse>
 {
-
     private readonly AppDbContext _dbContext = dbContext;
-
     private readonly ProjectAccessService _projectAccess = projectAccess;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<LeaveProjectResponse> Handle(
            LeaveProjectCommand request,
@@ -51,7 +51,7 @@ public class LeaveProjectCommandHandler(
             }
         }
 
-        _dbContext.ProjectMembers.Remove(projectMember);
+        projectMember.Remove(_timeProvider.GetUtcNow());
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 

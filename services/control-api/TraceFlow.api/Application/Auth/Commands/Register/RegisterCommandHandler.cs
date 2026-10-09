@@ -18,7 +18,7 @@ public class RegisterCommandHandler(
     {
         var emailExists = await _dbContext.Users
             .AnyAsync(
-                user => user.Email == request.Email,
+                user => user.Email == request.Email.ToLowerInvariant(),
                 cancellationToken);
 
         if (emailExists)

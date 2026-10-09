@@ -16,8 +16,8 @@ public class InviteProjectMemberCommandHandler(
     private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<InviteProjectMemberResponse> Handle(
-            InviteProjectMemberCommand request,
-            CancellationToken cancellationToken)
+        InviteProjectMemberCommand request,
+        CancellationToken cancellationToken)
     {
         var access = await _projectAccess.GetProjectAccessAsync(
             request.WorkspaceId,
@@ -67,20 +67,6 @@ public class InviteProjectMemberCommandHandler(
             }
 
             pendingInvitation.Expire(utcNow);
-        }
-
-        var alreadyInvited = await _dbContext.ProjectInvitations
-            .AnyAsync(
-                invitation =>
-                    invitation.ProjectId == request.ProjectId &&
-                    invitation.InvitedUserId == invitedUser.Id &&
-                    invitation.Status == InvitationStatuses.Pending &&
-                    invitation.ExpiresAt > utcNow,
-                cancellationToken);
-
-        if (alreadyInvited)
-        {
-            throw new ConflictException("User already has a pending project invitation.");
         }
 
         var invitation = new ProjectInvitation(

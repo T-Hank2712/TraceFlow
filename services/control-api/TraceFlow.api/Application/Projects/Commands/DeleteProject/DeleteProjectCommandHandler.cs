@@ -28,9 +28,21 @@ public class DeleteProjectCommandHandler(
 
         var project = access.Project;
 
-        var hasBusinessDependencies = false;
+        var hasInvitations = await _dbContext.ProjectInvitations
+            .AnyAsync(
+                invitation => invitation.ProjectId == request.ProjectId,
+                cancellationToken);
 
-        if (!hasBusinessDependencies)
+        var hasTraceApplications = await _dbContext.TraceApplications
+            .AnyAsync(
+                application => application.ProjectId == request.ProjectId,
+                cancellationToken);
+
+        var canHardDelete =
+            !hasInvitations &&
+            !hasTraceApplications;
+
+        if (canHardDelete)
         {
             _dbContext.Projects.Remove(project);
 

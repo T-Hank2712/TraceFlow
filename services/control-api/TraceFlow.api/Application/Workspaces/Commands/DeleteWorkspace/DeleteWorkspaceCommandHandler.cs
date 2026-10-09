@@ -32,9 +32,11 @@ public class DeleteWorkspaceCommandHandler(
             workspace,
             "Workspace is already archived.");
 
-        var memberCount = await _dbContext.WorkspaceMembers
-            .CountAsync(
-                member => member.WorkspaceId == request.WorkspaceId,
+        var hasAdditionalMembers = await _dbContext.WorkspaceMembers
+            .AnyAsync(
+                member =>
+                    member.WorkspaceId == request.WorkspaceId &&
+                    member.UserId != request.UserId,
                 cancellationToken);
 
         var hasInvitations = await _dbContext.WorkspaceInvitations
@@ -42,9 +44,15 @@ public class DeleteWorkspaceCommandHandler(
                 invitation => invitation.WorkspaceId == request.WorkspaceId,
                 cancellationToken);
 
+        var hasProjects = await _dbContext.Projects
+            .AnyAsync(
+                project => project.WorkspaceId == request.WorkspaceId,
+                cancellationToken);
+
         var canHardDelete =
-            memberCount == 1 &&
-            !hasInvitations;
+            !hasAdditionalMembers &&
+            !hasInvitations &&
+            !hasProjects;
 
         if (canHardDelete)
         {

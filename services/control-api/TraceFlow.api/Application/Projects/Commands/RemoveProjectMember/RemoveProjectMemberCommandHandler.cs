@@ -2,13 +2,14 @@ namespace TraceFlow.Api.Application.Projects.Commands.RemoveProjectMember;
 
 public class RemoveProjectMemberCommandHandler(
         AppDbContext dbContext,
-        ProjectAccessService projectAccess)
+        ProjectAccessService projectAccess,
+        TimeProvider timeProvider)
     : IRequestHandler<RemoveProjectMemberCommand, RemoveProjectMemberResponse>
 {
 
     private readonly AppDbContext _dbContext = dbContext;
-
     private readonly ProjectAccessService _projectAccess = projectAccess;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<RemoveProjectMemberResponse> Handle(
            RemoveProjectMemberCommand request,
@@ -38,6 +39,12 @@ public class RemoveProjectMemberCommandHandler(
             throw new NotFoundException("Project member not found.");
         }
 
+        if (request.ActorUserId == targetMember.UserId)
+        {
+            throw new ConflictException(
+                "Use leave project to remove your own project membership.");
+        }
+
         if (targetMember.Role == ProjectMemberRoles.Manager)
         {
             var managerCount = await _dbContext.ProjectMembers
@@ -54,15 +61,13 @@ public class RemoveProjectMemberCommandHandler(
             }
         }
 
-        var response = new RemoveProjectMemberResponse(
-            targetMember.Id,
-            targetMember.ProjectId,
-            targetMember.UserId);
-
-        _dbContext.ProjectMembers.Remove(targetMember);
+        targetMember.Remove(_timeProvider.GetUtcNow());
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        return response;
+        return new RemoveProjectMemberResponse(
+            targetMember.Id,
+            targetMember.ProjectId,
+            targetMember.UserId);
     }
 }

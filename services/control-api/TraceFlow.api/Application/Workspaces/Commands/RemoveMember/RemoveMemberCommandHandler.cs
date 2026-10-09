@@ -2,17 +2,17 @@ namespace TraceFlow.Api.Application.Workspaces.Commands.RemoveMember;
 
 public class RemoveMemberCommandHandler(
         AppDbContext dbContext,
-        WorkspaceAccessService workspaceAccess)
+        WorkspaceAccessService workspaceAccess,
+        TimeProvider timeProvider)
     : IRequestHandler<RemoveMemberCommand, RemoveMemberResponse>
 {
-
     private readonly AppDbContext _dbContext = dbContext;
-
     private readonly WorkspaceAccessService _workspaceAccess = workspaceAccess;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<RemoveMemberResponse> Handle(
-           RemoveMemberCommand request,
-           CancellationToken cancellationToken)
+        RemoveMemberCommand request,
+        CancellationToken cancellationToken)
     {
         var actorMembership = await _workspaceAccess.GetActiveMembershipAsync(
             request.WorkspaceId,
@@ -41,43 +41,41 @@ public class RemoveMemberCommandHandler(
             throw new NotFoundException("Workspace member not found.");
         }
 
-        if (actorMembership.Role == WorkspaceMemberRoles.Admin &&
-            targetMember.Role == WorkspaceMemberRoles.Owner)
+        var isTargetPrimaryOwner = targetMember.UserId == actorMembership.Workspace.OwnerUserId;
+
+        if (isTargetPrimaryOwner)
         {
-            throw new ForbiddenException("Admin cannot remove workspace owner.");
+            throw new ConflictException(
+                "Workspace primary owner cannot be removed.");
         }
 
-        if (targetMember.Role == WorkspaceMemberRoles.Owner)
+        if (targetMember.Role == WorkspaceMemberRoles.Owner &&
+            actorMembership.Role != WorkspaceMemberRoles.Owner)
         {
-            var ownerCount = await _dbContext.WorkspaceMembers
-                .CountAsync(
-                    member =>
-                        member.WorkspaceId == request.WorkspaceId &&
-                        member.Role == WorkspaceMemberRoles.Owner &&
-                        member.Status == MembershipStatuses.Active,
-                    cancellationToken);
-
-            if (ownerCount <= 1)
-            {
-                throw new ConflictException("Workspace must have at least one owner.");
-            }
+            throw new ForbiddenException(
+                "Only workspace owner can remove another workspace owner.");
         }
 
-        await _dbContext.ProjectMembers
+        var utcNow = _timeProvider.GetUtcNow();
+
+        var projectMemberships = await _dbContext.ProjectMembers
             .Where(projectMember =>
                 projectMember.UserId == targetMember.UserId &&
                 projectMember.Project.WorkspaceId == request.WorkspaceId)
-            .ExecuteDeleteAsync(cancellationToken);
+            .ToListAsync(cancellationToken);
 
-        var response = new RemoveMemberResponse(
-            targetMember.Id,
-            targetMember.WorkspaceId,
-            targetMember.UserId);
+        foreach (var projectMembership in projectMemberships)
+        {
+            projectMembership.Remove(utcNow);
+        }
 
-        _dbContext.WorkspaceMembers.Remove(targetMember);
+        targetMember.Remove(utcNow);
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        return response;
+        return new RemoveMemberResponse(
+            targetMember.Id,
+            targetMember.WorkspaceId,
+            targetMember.UserId);
     }
 }

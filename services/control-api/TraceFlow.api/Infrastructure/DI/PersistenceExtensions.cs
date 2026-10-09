@@ -11,9 +11,22 @@ public static class PersistenceExtensions
             ?? throw new InvalidOperationException(
                 "Postgres connection string is not configured.");
 
+        var databaseOptions = configuration
+            .GetSection(DatabaseOptions.SectionName)
+            .Get<DatabaseOptions>() ?? throw new InvalidOperationException("Database options are not configured.");
+
         services.AddDbContextPool<AppDbContext>(
             options =>
-                options.UseNpgsql(postgresConnectionString));
+                options.UseNpgsql(
+                    postgresConnectionString,
+                    npgsqlOptions =>
+                    {
+                        npgsqlOptions.EnableRetryOnFailure(
+                            maxRetryCount: databaseOptions.MaxRetryCount,
+                            maxRetryDelay: TimeSpan.FromSeconds(databaseOptions.MaxRetryDelaySeconds),
+                            errorCodesToAdd: null
+                        );
+                    }));
 
         services
             .AddHealthChecks()

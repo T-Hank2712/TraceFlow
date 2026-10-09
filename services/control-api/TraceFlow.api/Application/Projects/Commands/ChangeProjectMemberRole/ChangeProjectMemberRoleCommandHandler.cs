@@ -6,9 +6,7 @@ public class ChangeProjectMemberRoleCommandHandler(
         TimeProvider timeProvider)
     : IRequestHandler<ChangeProjectMemberRoleCommand, ChangeProjectMemberRoleResponse>
 {
-
     private readonly AppDbContext _dbContext = dbContext;
-
     private readonly ProjectAccessService _projectAccess = projectAccess;
     private readonly TimeProvider _timeProvider = timeProvider;
 
@@ -38,6 +36,12 @@ public class ChangeProjectMemberRoleCommandHandler(
         if (targetMember is null)
         {
             throw new NotFoundException("Project member not found.");
+        }
+
+        if (targetMember.UserId == request.ActorUserId)
+        {
+            throw new ConflictException(
+                "You cannot change your own project role.");
         }
 
         var newRole = request.Role.Trim().ToLowerInvariant();
