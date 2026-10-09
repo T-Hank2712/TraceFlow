@@ -95,7 +95,7 @@ public sealed class KafkaLogProducer : ILogEventPublisher, IDisposable
                     ex,
                     "Unexpected error publishing batch log event. EventId: {EventId}",
                     eventId);
-                    
+
                 results.Add(new BatchLogItemResult(
                     Index: item.Index,
                     Accepted: false,

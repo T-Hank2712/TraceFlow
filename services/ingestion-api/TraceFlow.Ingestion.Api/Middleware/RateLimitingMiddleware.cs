@@ -37,7 +37,7 @@ public sealed class RateLimitingMiddleware
 
             return;
         }
-        
+
         RateLimitResult result;
 
         try
