@@ -21,7 +21,7 @@ global using TraceFlow.Ingestion.Api.Contracts.Log;
 global using TraceFlow.Ingestion.Api.Contracts.RateLimiting;
 global using TraceFlow.Ingestion.Api.Endpoints;
 global using TraceFlow.Ingestion.Api.Errors;
-global using TraceFlow.Ingestion.Api.Extensions;
+global using TraceFlow.Ingestion.Api.Infrastructure.Extensions;
 global using TraceFlow.Ingestion.Api.Kafka;
 global using TraceFlow.Ingestion.Api.Middleware;
 global using TraceFlow.Ingestion.Api.Security;
