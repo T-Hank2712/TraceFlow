@@ -9,4 +9,5 @@ public static class ErrorCodes
     public const string ControlApiUnavailable = "control_api_unavailable";
     public const string KafkaPublishFailed = "kafka_publish_failed";
     public const string ValidateError = "validate_error";
+    public const string RateLimitUnavailable = "rate_limit_unavailable";
 }
