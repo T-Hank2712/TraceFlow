@@ -6,17 +6,20 @@ public sealed class IngestLogService : IIngestLogService
     private readonly ILogEventPublisher _publisher;
     private readonly IValidator<IngestLogRequest> _logValidator;
     private readonly IValidator<BatchLogRequest> _batchValidator;
+    private readonly TimeProvider _timeProvider;
 
     public IngestLogService(
         EnrichedLogEventFactory eventFactory,
         ILogEventPublisher publisher,
         IValidator<IngestLogRequest> logValidator,
-        IValidator<BatchLogRequest> batchValidator)
+        IValidator<BatchLogRequest> batchValidator,
+        TimeProvider timeProvider)
     {
         _eventFactory = eventFactory;
         _publisher = publisher;
         _logValidator = logValidator;
         _batchValidator = batchValidator;
+        _timeProvider = timeProvider;
     }
 
     public async Task<Result<IngestLogResponse>> IngestAsync(
@@ -52,7 +55,7 @@ public sealed class IngestLogService : IIngestLogService
         var response = new IngestLogResponse(
             eventId,
             true,
-            DateTimeOffset.UtcNow
+            _timeProvider.GetUtcNow()
         );
         return Result<IngestLogResponse>.Ok(response);
     }
