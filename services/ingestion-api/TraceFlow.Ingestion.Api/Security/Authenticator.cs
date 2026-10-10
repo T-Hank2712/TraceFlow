@@ -145,6 +145,8 @@ public sealed class Authenticator
     }
     private static string CreateMemoryCacheKey(string apiKey)
     {
-        return $"tenant-context:l1:{apiKey}";
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(apiKey));
+        var identifier = Convert.ToHexString(hash).ToLowerInvariant();
+        return $"tenant-context:l1:{identifier}";
     }
 }
