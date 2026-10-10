@@ -16,6 +16,13 @@ public sealed class IngestLogRequestValidator
             .MaximumLength(config.MaxMessageLength);
 
         RuleFor(x => x.Level)
-            .NotEqual(LogLevel.None);
+            .Must(level =>
+                level is LogLevel.Trace
+                    or LogLevel.Debug
+                    or LogLevel.Information
+                    or LogLevel.Warning
+                    or LogLevel.Error
+                    or LogLevel.Critical)
+            .WithMessage("Log level must be Trace, Debug, Information, Warning, Error, or Critical.");
     }
 }
