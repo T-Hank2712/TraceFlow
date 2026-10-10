@@ -43,6 +43,8 @@ public static class OptionsExtensions
             .Validate(options => options.MaxMetadataKeyLength > 0, "Ingestion__MaxMetadataKeyLength must be greater than 0.")
             .Validate(options => options.MaxMetadataStringValueLength > 0, "Ingestion__MaxMetadataStringValueLength must be greater than 0.")
             .Validate(options => options.MaxMetadataArrayLength > 0, "Ingestion__MaxMetadataArrayLength must be greater than 0.")
+            .Validate(options => options.MaxPastTimestampDays > 0, "Ingestion__MaxPastTimestampDays must be greater than 0.")
+            .Validate(options => options.MaxFutureTimestampMinutes >= 0, "Ingestion__MaxFutureTimestampMinutes must be greater than or equal to 0.")
             .ValidateOnStart();
 
         services

@@ -197,6 +197,8 @@ services:
       Ingestion__MaxMetadataKeyLength: ${Ingestion__MaxMetadataKeyLength}
       Ingestion__MaxMetadataStringValueLength: ${Ingestion__MaxMetadataStringValueLength}
       Ingestion__MaxMetadataArrayLength: ${Ingestion__MaxMetadataArrayLength}
+      Ingestion__MaxPastTimestampDays: ${Ingestion__MaxPastTimestampDays}
+      Ingestion__MaxFutureTimestampMinutes: ${Ingestion__MaxFutureTimestampMinutes}
       Redis__SectionName: ${Redis__SectionName}
       Redis__ConnectionString: redis:6379,password=${REDIS_PASSWORD}
       Redis__TenantContextCacheTtlSeconds: ${Redis__TenantContextCacheTtlSeconds}

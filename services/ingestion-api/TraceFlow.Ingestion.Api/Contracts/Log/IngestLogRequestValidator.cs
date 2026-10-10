@@ -3,7 +3,7 @@ namespace TraceFlow.Ingestion.Api.Contracts.Log;
 public sealed class IngestLogRequestValidator
     : AbstractValidator<IngestLogRequest>
 {
-    public IngestLogRequestValidator(IOptions<IngestionOptions> options)
+    public IngestLogRequestValidator(IOptions<IngestionOptions> options, TimeProvider timeProvider)
     {
         var config = options.Value;
 
@@ -24,6 +24,23 @@ public sealed class IngestLogRequestValidator
                     or LogLevel.Error
                     or LogLevel.Critical)
             .WithMessage("Log level must be Trace, Debug, Information, Warning, Error, or Critical.");
+        
+        RuleFor(x => x.Timestamp)
+            .Must(timestamp =>
+            {
+                if (timestamp is null)
+                {
+                    return true;
+                }
+
+                var utcNow = timeProvider.GetUtcNow();
+                var minTimestamp = utcNow.AddDays(-config.MaxPastTimestampDays);
+                var maxTimestamp = utcNow.AddMinutes(config.MaxFutureTimestampMinutes);
+
+                return timestamp >= minTimestamp && timestamp <= maxTimestamp;
+            })
+            .WithMessage(
+                $"Timestamp must be within the last {config.MaxPastTimestampDays} days and no more than {config.MaxFutureTimestampMinutes} minutes in the future.");
 
         RuleFor(x => x.TraceId)
             .MaximumLength(config.MaxTraceIdLength)
