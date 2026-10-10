@@ -87,6 +87,17 @@ public sealed class IngestLogService : IIngestLogService
         for (var index = 0; index < totalLogs; index++)
         {
             var log = request.Logs[index];
+            if (log is null)
+            {
+                results[index] = new BatchLogItemResult(
+                    Index: index,
+                    Accepted: false,
+                    EventId: null,
+                    Error: "Batch log item cannot be null.");
+
+                continue;
+            }
+            
             var validationResult = _logValidator.Validate(log);
 
             if (!validationResult.IsValid)

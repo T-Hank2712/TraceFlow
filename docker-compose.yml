@@ -221,7 +221,7 @@ services:
     networks:
       - traceflow-network
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:5100/health > /dev/null 2>&1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:5100/health/live > /dev/null 2>&1"]
       interval: 10s
       timeout: 5s
       retries: 5
