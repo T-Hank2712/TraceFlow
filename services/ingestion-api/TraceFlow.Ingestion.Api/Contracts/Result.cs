@@ -20,4 +20,15 @@ public sealed record Result<T>(
             default,
             new ErrorResponse(code, message),
             statusCode);
+
+    public static Result<T> Fail(
+        string code,
+        string message,
+        int statusCode,
+        IReadOnlyDictionary<string, string[]>? details)
+        => new(
+            false,
+            default,
+            new ErrorResponse(code, message, details),
+            statusCode);
 }

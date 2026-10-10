@@ -15,8 +15,11 @@ public static class LogIngestionEndpoints
 
             if (authentication is null)
             {
-                return Results.StatusCode(
-                    StatusCodes.Status500InternalServerError);
+                return Results.Json(
+                    new ErrorResponse(
+                        ErrorCodes.InternalServerError,
+                        "Internal server error."),
+                    statusCode: StatusCodes.Status500InternalServerError);
             }
 
             var result = await service.IngestAsync(
@@ -43,8 +46,11 @@ public static class LogIngestionEndpoints
 
             if (authentication is null)
             {
-                return Results.StatusCode(
-                    StatusCodes.Status500InternalServerError);
+                return Results.Json(
+                    new ErrorResponse(
+                        ErrorCodes.InternalServerError,
+                        "Internal server error."),
+                    statusCode: StatusCodes.Status500InternalServerError);
             }
 
             var result = await service.BatchLogAsync(

@@ -33,8 +33,9 @@ public sealed class IngestLogService : IIngestLogService
         {
             return Result<IngestLogResponse>.Fail(
                 ErrorCodes.ValidateError,
-                validationResult.Errors.First().ErrorMessage,
-                StatusCodes.Status400BadRequest);
+                "Request validation failed.",
+                StatusCodes.Status400BadRequest,
+                ValidationErrorMapper.ToDetails(validationResult.Errors));
         }
 
         var tenant = authentication.Tenant;
@@ -49,7 +50,11 @@ public sealed class IngestLogService : IIngestLogService
         }
         catch
         {
-            return Result<IngestLogResponse>.Fail(ErrorCodes.KafkaPublishFailed, "Failed to publish log event to Kafka.", StatusCodes.Status503ServiceUnavailable);
+            return Result<IngestLogResponse>.Fail(
+                ErrorCodes.KafkaPublishFailed, 
+                "Failed to publish log event to Kafka.", 
+                StatusCodes.Status503ServiceUnavailable,
+                ValidationErrorMapper.ToDetails(validationResult.Errors));
         }
 
         var response = new IngestLogResponse(
@@ -74,7 +79,8 @@ public sealed class IngestLogService : IIngestLogService
             return Result<BatchLogResponse>.Fail(
                 ErrorCodes.ValidateError,
                 validationBatch.Errors.First().ErrorMessage,
-                StatusCodes.Status400BadRequest);
+                StatusCodes.Status400BadRequest,
+                ValidationErrorMapper.ToDetails(validationBatch.Errors));
         }
 
         var batchId = Ulid.NewUlid();
@@ -97,7 +103,7 @@ public sealed class IngestLogService : IIngestLogService
 
                 continue;
             }
-            
+
             var validationResult = _logValidator.Validate(log);
 
             if (!validationResult.IsValid)

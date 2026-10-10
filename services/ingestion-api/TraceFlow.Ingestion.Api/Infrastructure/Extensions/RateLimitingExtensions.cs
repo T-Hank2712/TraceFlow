@@ -13,6 +13,18 @@ public static class RateLimitingExtensions
             rateLimiterOptions.RejectionStatusCode =
                 StatusCodes.Status429TooManyRequests;
 
+            rateLimiterOptions.OnRejected = async (context, cancellationToken) =>
+            {
+                context.HttpContext.Response.StatusCode =
+                    StatusCodes.Status429TooManyRequests;
+
+                await context.HttpContext.Response.WriteAsJsonAsync(
+                    new ErrorResponse(
+                        ErrorCodes.RateLimitExceeded,
+                        "Too many requests."),
+                    cancellationToken);
+            };
+
             rateLimiterOptions.AddPolicy(PreAuthPolicy, httpContext =>
             {
                 var partitionKey = GetClientPartitionKey(httpContext);
