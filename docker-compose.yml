@@ -195,6 +195,7 @@ services:
       Redis__TenantContextCacheTtlSeconds: ${Redis__TenantContextCacheTtlSeconds}
       Redis__TenantContextCacheKeyPrefix: ${Redis__TenantContextCacheKeyPrefix}
       Redis__TenantContextMemoryCacheTtlSeconds: ${Redis__TenantContextMemoryCacheTtlSeconds}
+      Redis__TenantContextMemoryCacheKeyPrefix: ${Redis__TenantContextMemoryCacheKeyPrefix}
       RateLimiting__PermitLimit: ${RateLimiting__PermitLimit}
       RateLimiting__WindowSeconds: ${RateLimiting__WindowSeconds}
       RateLimiting__RateLimitKeyPrefix: ${RateLimiting__RateLimitKeyPrefix}

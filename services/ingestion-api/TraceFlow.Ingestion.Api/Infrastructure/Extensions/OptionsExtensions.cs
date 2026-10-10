@@ -45,6 +45,9 @@ public static class OptionsExtensions
             .Validate(options => !string.IsNullOrWhiteSpace(options.TenantContextCacheKeyPrefix), "Redis__TenantContextCacheKeyPrefix is required.")
             .Validate(options => options.TenantContextCacheTtlSeconds > 0, "Redis__TenantContextCacheTtlSeconds must be greater than 0.")
             .Validate(options => options.TenantContextMemoryCacheTtlSeconds > 0, "Redis__TenantContextMemoryCacheTtlSeconds must be greater than 0.")
+            .Validate(
+                options => !string.IsNullOrWhiteSpace(options.TenantContextMemoryCacheKeyPrefix),
+                "Redis__TenantContextMemoryCacheKeyPrefix is required.")
             .ValidateOnStart();
 
         services
