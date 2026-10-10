@@ -38,6 +38,11 @@ public static class OptionsExtensions
             .Validate(options => options.MaxServiceLength > 0, "Ingestion__MaxServiceLength must be greater than 0.")
             .Validate(options => options.MaxTraceIdLength > 0, "Ingestion__MaxTraceIdLength must be greater than 0.")
             .Validate(options => options.MaxCorrelationIdLength > 0, "Ingestion__MaxCorrelationIdLength must be greater than 0.")
+            .Validate(options => options.MaxMetadataKeys > 0, "Ingestion__MaxMetadataKeys must be greater than 0.")
+            .Validate(options => options.MaxMetadataDepth > 0, "Ingestion__MaxMetadataDepth must be greater than 0.")
+            .Validate(options => options.MaxMetadataKeyLength > 0, "Ingestion__MaxMetadataKeyLength must be greater than 0.")
+            .Validate(options => options.MaxMetadataStringValueLength > 0, "Ingestion__MaxMetadataStringValueLength must be greater than 0.")
+            .Validate(options => options.MaxMetadataArrayLength > 0, "Ingestion__MaxMetadataArrayLength must be greater than 0.")
             .ValidateOnStart();
 
         services

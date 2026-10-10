@@ -192,6 +192,11 @@ services:
       Ingestion__MaxServiceLength: ${Ingestion__MaxServiceLength}
       Ingestion__MaxTraceIdLength: ${Ingestion__MaxTraceIdLength}
       Ingestion__MaxCorrelationIdLength: ${Ingestion__MaxCorrelationIdLength}
+      Ingestion__MaxMetadataKeys: ${Ingestion__MaxMetadataKeys}
+      Ingestion__MaxMetadataDepth: ${Ingestion__MaxMetadataDepth}
+      Ingestion__MaxMetadataKeyLength: ${Ingestion__MaxMetadataKeyLength}
+      Ingestion__MaxMetadataStringValueLength: ${Ingestion__MaxMetadataStringValueLength}
+      Ingestion__MaxMetadataArrayLength: ${Ingestion__MaxMetadataArrayLength}
       Redis__SectionName: ${Redis__SectionName}
       Redis__ConnectionString: redis:6379,password=${REDIS_PASSWORD}
       Redis__TenantContextCacheTtlSeconds: ${Redis__TenantContextCacheTtlSeconds}

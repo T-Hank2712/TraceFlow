@@ -32,5 +32,9 @@ public sealed class IngestLogRequestValidator
         RuleFor(x => x.CorrelationId)
             .MaximumLength(config.MaxCorrelationIdLength)
             .When(x => !string.IsNullOrWhiteSpace(x.CorrelationId));
+
+        RuleFor(x => x.Metadata)
+            .Must(metadata => MetadataValidator.IsValid(metadata, config))
+            .WithMessage("Metadata exceeds allowed limits.");
     }
 }
