@@ -27,6 +27,7 @@ public static class OptionsExtensions
             .Validate(options => options.QueueBufferingMaxMessages > 0, "QueueBufferingMaxMessages must be greater than 0.")
             .Validate(options => options.QueueBufferingMaxKbytes > 0, "QueueBufferingMaxKbytes must be greater than 0.")
             .Validate(options => options.LingerMs >= 0, "LingerMs must be greater than or equal to 0.")
+            .Validate(options => options.BatchPublishConcurrency > 0, "Kafka__BatchPublishConcurrency must be greater than 0.")
             .ValidateOnStart();
 
         services

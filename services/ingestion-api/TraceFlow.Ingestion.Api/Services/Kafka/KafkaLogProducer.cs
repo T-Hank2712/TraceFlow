@@ -56,55 +56,20 @@ public sealed class KafkaLogProducer : ILogEventPublisher, IDisposable
             return Array.Empty<BatchLogItemResult>();
         }
 
-        var results = new List<BatchLogItemResult>(logEvents.Count);
+        var concurrency = Math.Min(
+            _options.BatchPublishConcurrency,
+            logEvents.Count);
 
-        foreach (var item in logEvents)
-        {
-            var eventId = item.Event.EventId;
+        using var inFlight = new SemaphoreSlim(concurrency);
 
-            try
-            {
-                await _producer.ProduceAsync(
-                    _options.Topic,
-                    CreateMessage(item.Event),
-                    cancellationToken);
+        var tasks = logEvents.Select(item =>
+            ProduceBatchItemAsync(
+                item.Index,
+                item.Event,
+                inFlight,
+                cancellationToken));
 
-                results.Add(new BatchLogItemResult(
-                    Index: item.Index,
-                    Accepted: true,
-                    EventId: eventId,
-                    Error: null));
-            }
-            catch (ProduceException<string, string> ex)
-            {
-                _logger.LogError(
-                    ex,
-                    "Kafka delivery failed. EventId: {EventId}, Error: {Error}",
-                    eventId,
-                    ex.Error.Reason);
-
-                results.Add(new BatchLogItemResult(
-                    Index: item.Index,
-                    Accepted: false,
-                    EventId: eventId,
-                    Error: "Failed to publish log event to Kafka."));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(
-                    ex,
-                    "Unexpected error publishing batch log event. EventId: {EventId}",
-                    eventId);
-
-                results.Add(new BatchLogItemResult(
-                    Index: item.Index,
-                    Accepted: false,
-                    EventId: eventId,
-                    Error: "Kafka publish failed."));
-            }
-        }
-
-        return results;
+        return await Task.WhenAll(tasks);
     }
     private static Message<string, string> CreateMessage(
         EnrichedLogEvent logEvent)
@@ -120,5 +85,105 @@ public sealed class KafkaLogProducer : ILogEventPublisher, IDisposable
     {
         _producer.Flush(TimeSpan.FromSeconds(5));
         _producer.Dispose();
+    }
+    
+    private async Task<BatchLogItemResult> ProduceBatchItemAsync(
+        int index,
+        EnrichedLogEvent logEvent,
+        SemaphoreSlim inFlight,
+        CancellationToken cancellationToken)
+    {
+        await inFlight.WaitAsync(cancellationToken);
+
+        var eventId = logEvent.EventId;
+        var released = 0;
+
+        void ReleaseSlot()
+        {
+            if (Interlocked.Exchange(ref released, 1) == 0)
+            {
+                inFlight.Release();
+            }
+        }
+
+        var completion =
+            new TaskCompletionSource<BatchLogItemResult>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+
+        using var cancellationRegistration = cancellationToken.Register(() =>
+        {
+            ReleaseSlot();
+            completion.TrySetCanceled(cancellationToken);
+        });
+
+        try
+        {
+            _producer.Produce(
+                _options.Topic,
+                CreateMessage(logEvent),
+                deliveryReport =>
+                {
+                    ReleaseSlot();
+
+                    if (deliveryReport.Error.IsError)
+                    {
+                        _logger.LogError(
+                            "Kafka delivery failed. EventId: {EventId}, Error: {Error}",
+                            eventId,
+                            deliveryReport.Error.Reason);
+
+                        completion.TrySetResult(
+                            new BatchLogItemResult(
+                                Index: index,
+                                Accepted: false,
+                                EventId: eventId,
+                                Error: "Failed to publish log event to Kafka."));
+
+                        return;
+                    }
+
+                    completion.TrySetResult(
+                        new BatchLogItemResult(
+                            Index: index,
+                            Accepted: true,
+                            EventId: eventId,
+                            Error: null));
+                });
+        }
+        catch (ProduceException<string, string> ex)
+        {
+            ReleaseSlot();
+
+            _logger.LogError(
+                ex,
+                "Kafka produce failed before delivery callback. EventId: {EventId}, Error: {Error}",
+                eventId,
+                ex.Error.Reason);
+
+            completion.TrySetResult(
+                new BatchLogItemResult(
+                    Index: index,
+                    Accepted: false,
+                    EventId: eventId,
+                    Error: "Failed to publish log event to Kafka."));
+        }
+        catch (Exception ex)
+        {
+            ReleaseSlot();
+
+            _logger.LogError(
+                ex,
+                "Unexpected error enqueueing Kafka message. EventId: {EventId}",
+                eventId);
+
+            completion.TrySetResult(
+                new BatchLogItemResult(
+                    Index: index,
+                    Accepted: false,
+                    EventId: eventId,
+                    Error: "Kafka publish failed."));
+        }
+
+        return await completion.Task;
     }
 }

@@ -186,6 +186,7 @@ services:
       Kafka__QueueBufferingMaxMessages: ${Kafka__QueueBufferingMaxMessages}
       Kafka__QueueBufferingMaxKbytes: ${Kafka__QueueBufferingMaxKbytes}
       Kafka__LingerMs: ${Kafka__LingerMs}
+      Kafka__BatchPublishConcurrency: ${Kafka__BatchPublishConcurrency}
       Ingestion__MaxBatchSize: ${Ingestion__MaxBatchSize}
       Ingestion__MaxRequestBodyBytes: ${Ingestion__MaxRequestBodyBytes}
       Ingestion__MaxMessageLength: ${Ingestion__MaxMessageLength}
