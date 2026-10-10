@@ -143,8 +143,10 @@ public sealed class Authenticator
                 apiKey,
                 tenant));
     }
-    private static string CreateMemoryCacheKey(string apiKey)
+    private string CreateMemoryCacheKey(string apiKey)
     {
-        return $"tenant-context:l1:{apiKey}";
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(apiKey));
+        var identifier = Convert.ToHexString(hash).ToLowerInvariant();
+        return $"{_redisOptions.TenantContextMemoryCacheKeyPrefix}:{identifier}";
     }
 }

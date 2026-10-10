@@ -36,6 +36,15 @@ public static class OptionsExtensions
             .Validate(options => options.MaxRequestBodyBytes > 0, "Ingestion__MaxRequestBodyBytes must be greater than 0.")
             .Validate(options => options.MaxMessageLength > 0, "Ingestion__MaxMessageLength must be greater than 0.")
             .Validate(options => options.MaxServiceLength > 0, "Ingestion__MaxServiceLength must be greater than 0.")
+            .Validate(options => options.MaxTraceIdLength > 0, "Ingestion__MaxTraceIdLength must be greater than 0.")
+            .Validate(options => options.MaxCorrelationIdLength > 0, "Ingestion__MaxCorrelationIdLength must be greater than 0.")
+            .Validate(options => options.MaxMetadataKeys > 0, "Ingestion__MaxMetadataKeys must be greater than 0.")
+            .Validate(options => options.MaxMetadataDepth > 0, "Ingestion__MaxMetadataDepth must be greater than 0.")
+            .Validate(options => options.MaxMetadataKeyLength > 0, "Ingestion__MaxMetadataKeyLength must be greater than 0.")
+            .Validate(options => options.MaxMetadataStringValueLength > 0, "Ingestion__MaxMetadataStringValueLength must be greater than 0.")
+            .Validate(options => options.MaxMetadataArrayLength > 0, "Ingestion__MaxMetadataArrayLength must be greater than 0.")
+            .Validate(options => options.MaxPastTimestampDays > 0, "Ingestion__MaxPastTimestampDays must be greater than 0.")
+            .Validate(options => options.MaxFutureTimestampMinutes >= 0, "Ingestion__MaxFutureTimestampMinutes must be greater than or equal to 0.")
             .ValidateOnStart();
 
         services
@@ -45,6 +54,9 @@ public static class OptionsExtensions
             .Validate(options => !string.IsNullOrWhiteSpace(options.TenantContextCacheKeyPrefix), "Redis__TenantContextCacheKeyPrefix is required.")
             .Validate(options => options.TenantContextCacheTtlSeconds > 0, "Redis__TenantContextCacheTtlSeconds must be greater than 0.")
             .Validate(options => options.TenantContextMemoryCacheTtlSeconds > 0, "Redis__TenantContextMemoryCacheTtlSeconds must be greater than 0.")
+            .Validate(
+                options => !string.IsNullOrWhiteSpace(options.TenantContextMemoryCacheKeyPrefix),
+                "Redis__TenantContextMemoryCacheKeyPrefix is required.")
             .ValidateOnStart();
 
         services
@@ -53,6 +65,14 @@ public static class OptionsExtensions
             .Validate(options => options.PermitLimit > 0, "RateLimiting__PermitLimit must be greater than 0.")
             .Validate(options => options.WindowSeconds > 0, "RateLimiting__WindowSeconds must be greater than 0.")
             .Validate(options => !string.IsNullOrWhiteSpace(options.RateLimitKeyPrefix), "RateLimiting__RateLimitKeyPrefix is required.")
+            .ValidateOnStart();
+
+        services
+            .AddOptions<PreAuthRateLimitOptions>()
+            .Bind(configuration.GetSection(PreAuthRateLimitOptions.SectionName))
+            .Validate(options => options.PermitLimit > 0, "PreAuthRateLimiting__PermitLimit must be greater than 0.")
+            .Validate(options => options.WindowSeconds > 0, "PreAuthRateLimiting__WindowSeconds must be greater than 0.")
+            .Validate(options => options.QueueLimit >= 0, "PreAuthRateLimiting__QueueLimit must not be negative.")
             .ValidateOnStart();
 
         return services;

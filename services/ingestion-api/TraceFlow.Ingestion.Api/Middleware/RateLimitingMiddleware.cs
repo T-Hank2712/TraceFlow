@@ -35,6 +35,12 @@ public sealed class RateLimitingMiddleware
             context.Response.StatusCode =
                 StatusCodes.Status500InternalServerError;
 
+            await context.Response.WriteAsJsonAsync(
+                new ErrorResponse(
+                    ErrorCodes.InternalServerError,
+                    "Internal server error."),
+                context.RequestAborted);
+
             return;
         }
 
@@ -73,14 +79,15 @@ public sealed class RateLimitingMiddleware
                 result.RetryAfterSeconds.ToString();
 
             await context.Response.WriteAsJsonAsync(
-                new
-                {
-                    error = "rate_limit_exceeded",
-                    message = "Too many requests.",
-                    limit = result.Limit,
-                    remaining = result.Remaining,
-                    retryAfterSeconds = result.RetryAfterSeconds
-                },
+                new ErrorResponse(
+                    ErrorCodes.RateLimitExceeded,
+                    "Too many requests.",
+                    new Dictionary<string, string[]>
+                    {
+                        ["limit"] = [result.Limit.ToString()],
+                        ["remaining"] = [result.Remaining.ToString()],
+                        ["retryAfterSeconds"] = [result.RetryAfterSeconds.ToString()]
+                    }),
                 context.RequestAborted);
 
             return;

@@ -15,8 +15,11 @@ public static class LogIngestionEndpoints
 
             if (authentication is null)
             {
-                return Results.StatusCode(
-                    StatusCodes.Status500InternalServerError);
+                return Results.Json(
+                    new ErrorResponse(
+                        ErrorCodes.InternalServerError,
+                        "Internal server error."),
+                    statusCode: StatusCodes.Status500InternalServerError);
             }
 
             var result = await service.IngestAsync(
@@ -27,7 +30,7 @@ public static class LogIngestionEndpoints
             return result.Success
                 ? Results.Json(result.Data, statusCode: result.StatusCode)
                 : Results.Json(result.Error, statusCode: result.StatusCode);
-        });
+        }).RequireRateLimiting(RateLimitingExtensions.PreAuthPolicy);
 
         return app;
     }
@@ -43,8 +46,11 @@ public static class LogIngestionEndpoints
 
             if (authentication is null)
             {
-                return Results.StatusCode(
-                    StatusCodes.Status500InternalServerError);
+                return Results.Json(
+                    new ErrorResponse(
+                        ErrorCodes.InternalServerError,
+                        "Internal server error."),
+                    statusCode: StatusCodes.Status500InternalServerError);
             }
 
             var result = await service.BatchLogAsync(
@@ -55,7 +61,7 @@ public static class LogIngestionEndpoints
             return result.Success
                 ? Results.Json(result.Data, statusCode: result.StatusCode)
                 : Results.Json(result.Error, statusCode: result.StatusCode);
-        });
+        }).RequireRateLimiting(RateLimitingExtensions.PreAuthPolicy);
 
         return app;
     }

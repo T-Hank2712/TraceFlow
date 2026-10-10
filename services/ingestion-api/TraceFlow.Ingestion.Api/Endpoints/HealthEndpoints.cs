@@ -6,7 +6,8 @@ public static class HealthEndpoints
         this IEndpointRouteBuilder app)
     {
         app.MapGet("/", () => Results.Redirect("/health/live"))
-            .AllowAnonymous();
+            .AllowAnonymous()
+            .RequireRateLimiting(RateLimitingExtensions.PreAuthPolicy);
 
         app.MapHealthChecks(
             "/health/live",
@@ -14,7 +15,8 @@ public static class HealthEndpoints
             {
                 Predicate = check => check.Tags.Contains("live")
             })
-            .AllowAnonymous();
+            .AllowAnonymous()
+            .RequireRateLimiting(RateLimitingExtensions.PreAuthPolicy);
 
         app.MapHealthChecks(
             "/health/ready",
@@ -22,7 +24,8 @@ public static class HealthEndpoints
             {
                 Predicate = check => check.Tags.Contains("ready")
             })
-            .AllowAnonymous();
+            .AllowAnonymous()
+            .RequireRateLimiting(RateLimitingExtensions.PreAuthPolicy);
 
         return app;
     }

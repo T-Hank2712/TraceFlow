@@ -8,4 +8,5 @@ public sealed class RedisOptions
     public int TenantContextCacheTtlSeconds { get; init; }
     public required string TenantContextCacheKeyPrefix { get; init; }
     public int TenantContextMemoryCacheTtlSeconds { get; init; }
+    public required string TenantContextMemoryCacheKeyPrefix { get; init; }
 }

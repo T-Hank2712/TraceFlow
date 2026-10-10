@@ -190,14 +190,27 @@ services:
       Ingestion__MaxRequestBodyBytes: ${Ingestion__MaxRequestBodyBytes}
       Ingestion__MaxMessageLength: ${Ingestion__MaxMessageLength}
       Ingestion__MaxServiceLength: ${Ingestion__MaxServiceLength}
+      Ingestion__MaxTraceIdLength: ${Ingestion__MaxTraceIdLength}
+      Ingestion__MaxCorrelationIdLength: ${Ingestion__MaxCorrelationIdLength}
+      Ingestion__MaxMetadataKeys: ${Ingestion__MaxMetadataKeys}
+      Ingestion__MaxMetadataDepth: ${Ingestion__MaxMetadataDepth}
+      Ingestion__MaxMetadataKeyLength: ${Ingestion__MaxMetadataKeyLength}
+      Ingestion__MaxMetadataStringValueLength: ${Ingestion__MaxMetadataStringValueLength}
+      Ingestion__MaxMetadataArrayLength: ${Ingestion__MaxMetadataArrayLength}
+      Ingestion__MaxPastTimestampDays: ${Ingestion__MaxPastTimestampDays}
+      Ingestion__MaxFutureTimestampMinutes: ${Ingestion__MaxFutureTimestampMinutes}
       Redis__SectionName: ${Redis__SectionName}
       Redis__ConnectionString: redis:6379,password=${REDIS_PASSWORD}
       Redis__TenantContextCacheTtlSeconds: ${Redis__TenantContextCacheTtlSeconds}
       Redis__TenantContextCacheKeyPrefix: ${Redis__TenantContextCacheKeyPrefix}
       Redis__TenantContextMemoryCacheTtlSeconds: ${Redis__TenantContextMemoryCacheTtlSeconds}
+      Redis__TenantContextMemoryCacheKeyPrefix: ${Redis__TenantContextMemoryCacheKeyPrefix}
       RateLimiting__PermitLimit: ${RateLimiting__PermitLimit}
       RateLimiting__WindowSeconds: ${RateLimiting__WindowSeconds}
       RateLimiting__RateLimitKeyPrefix: ${RateLimiting__RateLimitKeyPrefix}
+      PreAuthRateLimiting__PermitLimit: ${PreAuthRateLimiting__PermitLimit}
+      PreAuthRateLimiting__WindowSeconds: ${PreAuthRateLimiting__WindowSeconds}
+      PreAuthRateLimiting__QueueLimit: ${PreAuthRateLimiting__QueueLimit}
     depends_on:
       kafka:
         condition: service_healthy
@@ -210,7 +223,7 @@ services:
     networks:
       - traceflow-network
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:5100/health > /dev/null 2>&1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:5100/health/live > /dev/null 2>&1"]
       interval: 10s
       timeout: 5s
       retries: 5
