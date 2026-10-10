@@ -1,4 +1,5 @@
 namespace TraceFlow.Ingestion.Api.Infrastructure.Extensions;
+
 public static class RateLimitingExtensions
 {
     public const string PreAuthPolicy = "pre-auth";

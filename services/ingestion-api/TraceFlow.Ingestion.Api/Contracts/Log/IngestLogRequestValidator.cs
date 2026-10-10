@@ -24,7 +24,7 @@ public sealed class IngestLogRequestValidator
                     or LogLevel.Error
                     or LogLevel.Critical)
             .WithMessage("Log level must be Trace, Debug, Information, Warning, Error, or Critical.");
-        
+
         RuleFor(x => x.Timestamp)
             .Must(timestamp =>
             {

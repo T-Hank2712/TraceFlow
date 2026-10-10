@@ -51,8 +51,8 @@ public sealed class IngestLogService : IIngestLogService
         catch
         {
             return Result<IngestLogResponse>.Fail(
-                ErrorCodes.KafkaPublishFailed, 
-                "Failed to publish log event to Kafka.", 
+                ErrorCodes.KafkaPublishFailed,
+                "Failed to publish log event to Kafka.",
                 StatusCodes.Status503ServiceUnavailable,
                 ValidationErrorMapper.ToDetails(validationResult.Errors));
         }
