@@ -190,6 +190,8 @@ services:
       Ingestion__MaxRequestBodyBytes: ${Ingestion__MaxRequestBodyBytes}
       Ingestion__MaxMessageLength: ${Ingestion__MaxMessageLength}
       Ingestion__MaxServiceLength: ${Ingestion__MaxServiceLength}
+      Ingestion__MaxTraceIdLength: ${Ingestion__MaxTraceIdLength}
+      Ingestion__MaxCorrelationIdLength: ${Ingestion__MaxCorrelationIdLength}
       Redis__SectionName: ${Redis__SectionName}
       Redis__ConnectionString: redis:6379,password=${REDIS_PASSWORD}
       Redis__TenantContextCacheTtlSeconds: ${Redis__TenantContextCacheTtlSeconds}

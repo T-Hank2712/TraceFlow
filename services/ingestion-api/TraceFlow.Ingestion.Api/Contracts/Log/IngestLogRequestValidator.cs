@@ -24,5 +24,13 @@ public sealed class IngestLogRequestValidator
                     or LogLevel.Error
                     or LogLevel.Critical)
             .WithMessage("Log level must be Trace, Debug, Information, Warning, Error, or Critical.");
+
+        RuleFor(x => x.TraceId)
+            .MaximumLength(config.MaxTraceIdLength)
+            .When(x => !string.IsNullOrWhiteSpace(x.TraceId));
+
+        RuleFor(x => x.CorrelationId)
+            .MaximumLength(config.MaxCorrelationIdLength)
+            .When(x => !string.IsNullOrWhiteSpace(x.CorrelationId));
     }
 }

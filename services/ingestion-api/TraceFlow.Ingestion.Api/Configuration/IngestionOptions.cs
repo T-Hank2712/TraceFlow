@@ -6,4 +6,6 @@ public sealed class IngestionOptions
     public int MaxServiceLength { get; init; }
     public int MaxBatchSize { get; init; }
     public long MaxRequestBodyBytes { get; init; }
+    public int MaxTraceIdLength { get; init; }
+    public int MaxCorrelationIdLength { get; init; }
 }

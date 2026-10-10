@@ -36,6 +36,8 @@ public static class OptionsExtensions
             .Validate(options => options.MaxRequestBodyBytes > 0, "Ingestion__MaxRequestBodyBytes must be greater than 0.")
             .Validate(options => options.MaxMessageLength > 0, "Ingestion__MaxMessageLength must be greater than 0.")
             .Validate(options => options.MaxServiceLength > 0, "Ingestion__MaxServiceLength must be greater than 0.")
+            .Validate(options => options.MaxTraceIdLength > 0, "Ingestion__MaxTraceIdLength must be greater than 0.")
+            .Validate(options => options.MaxCorrelationIdLength > 0, "Ingestion__MaxCorrelationIdLength must be greater than 0.")
             .ValidateOnStart();
 
         services
