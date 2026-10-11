@@ -111,8 +111,7 @@ public sealed class IngestLogService : IIngestLogService
                 var error = string.Join(
                     "; ",
                     validationResult.Errors
-                        .Select(x => x.ErrorMessage)
-                        .Distinct());
+                        .Select(x => x.ErrorMessage));
 
                 results[index] = new BatchLogItemResult(
                     Index: index,

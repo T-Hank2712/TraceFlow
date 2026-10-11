@@ -15,9 +15,5 @@ public sealed class BatchLogRequestValidator
             .WithMessage("Batch must contain at least one log.")
             .Must(logs => logs.Count <= maxBatchSize)
             .WithMessage($"Batch cannot contain more than {maxBatchSize} logs.");
-
-        RuleForEach(x => x.Logs)
-            .NotNull()
-            .WithMessage("Batch log item cannot be null.");
     }
 }
