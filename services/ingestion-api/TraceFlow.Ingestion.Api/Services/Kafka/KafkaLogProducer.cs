@@ -60,16 +60,39 @@ public sealed class KafkaLogProducer : ILogEventPublisher, IDisposable
             _options.BatchPublishConcurrency,
             logEvents.Count);
 
-        using var inFlight = new SemaphoreSlim(concurrency);
+        var results = new BatchLogItemResult[logEvents.Count];
+        var workers = new Task[concurrency];
 
-        var tasks = logEvents.Select(item =>
-            ProduceBatchItemAsync(
-                item.Index,
-                item.Event,
-                inFlight,
-                cancellationToken));
+        int nextPosition = -1;
 
-        return await Task.WhenAll(tasks);
+        for (var workerIndex = 0; workerIndex < concurrency; workerIndex++)
+        {
+            workers[workerIndex] = PublishWorkerAsync();
+        }
+
+        await Task.WhenAll(workers);
+
+        return results;
+
+        async Task PublishWorkerAsync()
+        {
+            while (true)
+            {
+                var position = Interlocked.Increment(ref nextPosition);
+
+                if (position >= logEvents.Count)
+                {
+                    break;
+                }
+
+                var item = logEvents[position];
+
+                results[position] = await ProduceBatchItemAsync(
+                    item.Index,
+                    item.Event,
+                    cancellationToken);
+            }
+        }
     }
     private static Message<string, string> CreateMessage(
         EnrichedLogEvent logEvent)
@@ -90,21 +113,10 @@ public sealed class KafkaLogProducer : ILogEventPublisher, IDisposable
     private async Task<BatchLogItemResult> ProduceBatchItemAsync(
         int index,
         EnrichedLogEvent logEvent,
-        SemaphoreSlim inFlight,
         CancellationToken cancellationToken)
     {
-        await inFlight.WaitAsync(cancellationToken);
 
         var eventId = logEvent.EventId;
-        var released = 0;
-
-        void ReleaseSlot()
-        {
-            if (Interlocked.Exchange(ref released, 1) == 0)
-            {
-                inFlight.Release();
-            }
-        }
 
         var completion =
             new TaskCompletionSource<BatchLogItemResult>(
@@ -112,7 +124,6 @@ public sealed class KafkaLogProducer : ILogEventPublisher, IDisposable
 
         using var cancellationRegistration = cancellationToken.Register(() =>
         {
-            ReleaseSlot();
             completion.TrySetCanceled(cancellationToken);
         });
 
@@ -123,8 +134,6 @@ public sealed class KafkaLogProducer : ILogEventPublisher, IDisposable
                 CreateMessage(logEvent),
                 deliveryReport =>
                 {
-                    ReleaseSlot();
-
                     if (deliveryReport.Error.IsError)
                     {
                         _logger.LogError(
@@ -152,8 +161,6 @@ public sealed class KafkaLogProducer : ILogEventPublisher, IDisposable
         }
         catch (ProduceException<string, string> ex)
         {
-            ReleaseSlot();
-
             _logger.LogError(
                 ex,
                 "Kafka produce failed before delivery callback. EventId: {EventId}, Error: {Error}",
@@ -169,8 +176,6 @@ public sealed class KafkaLogProducer : ILogEventPublisher, IDisposable
         }
         catch (Exception ex)
         {
-            ReleaseSlot();
-
             _logger.LogError(
                 ex,
                 "Unexpected error enqueueing Kafka message. EventId: {EventId}",
