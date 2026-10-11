@@ -16,7 +16,7 @@ public static class RedisExtensions
 
         services.AddSingleton<IRedisCache, RedisCache>();
         services.AddSingleton<IRateLimiter, RedisRateLimiter>();
-        services.AddSingleton<TenantContextCacheKey>();
+        services.AddSingleton<TenantContextCacheKeyFactory>();
         services.AddMemoryCache();
 
         return services;

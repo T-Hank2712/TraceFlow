@@ -6,7 +6,7 @@ public sealed class Authenticator
     private readonly IApiKeyValidator _apiKeyValidator;
     private readonly IRedisCache _redisCache;
     private readonly RedisOptions _redisOptions;
-    private readonly TenantContextCacheKey _tenantContextCacheKey;
+    private readonly TenantContextCacheKeyFactory _tenantContextCacheKey;
     private readonly ILogger<Authenticator> _logger;
     private readonly IMemoryCache _memoryCache;
 
@@ -15,7 +15,7 @@ public sealed class Authenticator
         IApiKeyValidator apiKeyValidator,
         IRedisCache redisCache,
         IOptions<RedisOptions> redisOptions,
-        TenantContextCacheKey tenantContextCacheKey,
+        TenantContextCacheKeyFactory tenantContextCacheKey,
         ILogger<Authenticator> logger,
         IMemoryCache memoryCache)
     {
@@ -44,7 +44,8 @@ public sealed class Authenticator
         }
 
         var apiKey = parsedKey.ApiKey;
-        var memoryCacheKey = CreateMemoryCacheKey(apiKey);
+        var apiKeyFingerprint = ApiKeyFingerprint.Create(apiKey);
+        var memoryCacheKey = _tenantContextCacheKey.CreateMemoryKey(apiKeyFingerprint);
 
         if (_memoryCache.TryGetValue<ApiKeyValidationResult>(
                 memoryCacheKey,
@@ -53,11 +54,11 @@ public sealed class Authenticator
         {
             return Result<AuthenticatedContext>.Ok(
                 new AuthenticatedContext(
-                    apiKey,
+                    apiKeyFingerprint,
                     cachedTenant));
         }
 
-        var cacheKey = _tenantContextCacheKey.Create(apiKey);
+        var cacheKey = _tenantContextCacheKey.CreateRedisKey(apiKeyFingerprint);
 
         ApiKeyValidationResult? tenant = null;
 
@@ -140,13 +141,7 @@ public sealed class Authenticator
 
         return Result<AuthenticatedContext>.Ok(
             new AuthenticatedContext(
-                apiKey,
+                apiKeyFingerprint,
                 tenant));
-    }
-    private string CreateMemoryCacheKey(string apiKey)
-    {
-        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(apiKey));
-        var identifier = Convert.ToHexString(hash).ToLowerInvariant();
-        return $"{_redisOptions.TenantContextMemoryCacheKeyPrefix}:{identifier}";
     }
 }
