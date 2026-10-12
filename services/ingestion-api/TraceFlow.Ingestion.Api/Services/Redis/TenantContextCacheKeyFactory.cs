@@ -9,10 +9,10 @@ public sealed class TenantContextCacheKeyFactory
     }
     public string CreateRedisKey(string apiKeyFingerprint)
     {
-        return $"{_redisOptions.TenantContextCacheKeyPrefix}:{apiKeyFingerprint}:tenant-context";
+        return $"{_redisOptions.TenantContextRedisCacheKeyPrefix}:{apiKeyFingerprint}:tenant-context";
     }
     public string CreateMemoryKey(string apiKeyFingerprint)
     {
-        return $"{_redisOptions.TenantContextMemoryCacheKeyPrefix}:{apiKeyFingerprint}";
+        return $"{_redisOptions.TenantContextLocalCacheKeyPrefix}:{apiKeyFingerprint}";
     }
 }

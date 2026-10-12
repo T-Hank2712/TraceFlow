@@ -49,7 +49,7 @@ public sealed class IngestionApiFactory : WebApplicationFactory<Program>
 
         Environment.SetEnvironmentVariable("Redis__ConnectionString", _redis.ConnectionString);
         Environment.SetEnvironmentVariable("Redis__TenantContextRedisCacheTtlSeconds", "3600");
-        Environment.SetEnvironmentVariable("Redis__TenantContextCacheKeyPrefix", "traceflow:test:apikey");
+        Environment.SetEnvironmentVariable("Redis__TenantContextRedisCacheTtlSeconds", "traceflow:test:apikey");
 
         Environment.SetEnvironmentVariable("RateLimiting__PermitLimit", "100");
         Environment.SetEnvironmentVariable("RateLimiting__WindowSeconds", "60");

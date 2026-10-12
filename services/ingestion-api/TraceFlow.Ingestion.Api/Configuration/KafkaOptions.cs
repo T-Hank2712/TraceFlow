@@ -18,4 +18,6 @@ public sealed class KafkaOptions
 
     public int LingerMs { get; init; }
     public int BatchPublishConcurrency { get; init; }
+    public int FlushTimeoutSeconds { get; init; }
+    public int HealthCheckTimeoutSeconds { get; init; }
 }

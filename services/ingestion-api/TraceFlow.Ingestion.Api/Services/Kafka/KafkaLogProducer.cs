@@ -106,7 +106,7 @@ public sealed class KafkaLogProducer : ILogEventPublisher, IDisposable
 
     public void Dispose()
     {
-        _producer.Flush(TimeSpan.FromSeconds(5));
+        _producer.Flush(TimeSpan.FromSeconds(_options.FlushTimeoutSeconds));
         _producer.Dispose();
     }
     

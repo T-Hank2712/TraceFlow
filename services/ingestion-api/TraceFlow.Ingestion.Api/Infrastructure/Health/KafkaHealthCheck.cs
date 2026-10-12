@@ -21,7 +21,7 @@ public sealed class KafkaHealthCheck(
 
             adminClient.GetMetadata(
                 _options.Topic,
-                TimeSpan.FromSeconds(3));
+                TimeSpan.FromSeconds(_options.HealthCheckTimeoutSeconds));
 
             return Task.FromResult(
                 HealthCheckResult.Healthy());
