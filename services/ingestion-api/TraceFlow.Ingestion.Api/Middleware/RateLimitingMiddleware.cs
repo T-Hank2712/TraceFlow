@@ -49,7 +49,7 @@ public sealed class RateLimitingMiddleware
         try
         {
             result = await _rateLimiter.CheckAsync(
-                authenticationContext.ApiKey,
+                authenticationContext.ApiKeyFingerprint,
                 context.RequestAborted);
         }
         catch (RedisException ex)

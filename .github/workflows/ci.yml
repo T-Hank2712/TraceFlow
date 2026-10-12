@@ -1,14 +1,6 @@
 name: TraceFlow CI
 
 on:
-  push:
-    branches:
-      - main
-      - develop
-      - "feature/**"
-      - "fix/**"
-      - "chore/**"
-      - "feat/**"
   pull_request:
     branches:
       - main

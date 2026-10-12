@@ -6,18 +6,20 @@ public sealed class Authenticator
     private readonly IApiKeyValidator _apiKeyValidator;
     private readonly IRedisCache _redisCache;
     private readonly RedisOptions _redisOptions;
-    private readonly TenantContextCacheKey _tenantContextCacheKey;
+    private readonly TenantContextCacheKeyFactory _tenantContextCacheKey;
     private readonly ILogger<Authenticator> _logger;
     private readonly IMemoryCache _memoryCache;
+    private readonly ApiKeyValidationFlightStore _validationFlights;
 
     public Authenticator(
         ApiKeyHeaderParser apiKeyParser,
         IApiKeyValidator apiKeyValidator,
         IRedisCache redisCache,
         IOptions<RedisOptions> redisOptions,
-        TenantContextCacheKey tenantContextCacheKey,
+        TenantContextCacheKeyFactory tenantContextCacheKey,
         ILogger<Authenticator> logger,
-        IMemoryCache memoryCache)
+        IMemoryCache memoryCache,
+        ApiKeyValidationFlightStore validationFlights)
     {
         _apiKeyParser = apiKeyParser;
         _apiKeyValidator = apiKeyValidator;
@@ -26,6 +28,7 @@ public sealed class Authenticator
         _tenantContextCacheKey = tenantContextCacheKey;
         _logger = logger;
         _memoryCache = memoryCache;
+        _validationFlights = validationFlights;
     }
 
     public async Task<Result<AuthenticatedContext>> AuthenticateAsync(
@@ -44,37 +47,94 @@ public sealed class Authenticator
         }
 
         var apiKey = parsedKey.ApiKey;
-        var memoryCacheKey = CreateMemoryCacheKey(apiKey);
+        var apiKeyFingerprint = ApiKeyFingerprint.Create(apiKey);
+        var memoryCacheKey = _tenantContextCacheKey.CreateMemoryKey(apiKeyFingerprint);
+        var redisCacheKey = _tenantContextCacheKey.CreateRedisKey(apiKeyFingerprint);
 
-        if (_memoryCache.TryGetValue<ApiKeyValidationResult>(
-                memoryCacheKey,
-                out var cachedTenant) &&
-            cachedTenant is not null)
+        var tenant = await TryGetTenantFromCacheAsync(memoryCacheKey, redisCacheKey, cancellationToken);
+
+        if (tenant is not null)
         {
-            return Result<AuthenticatedContext>.Ok(
-                new AuthenticatedContext(
-                    apiKey,
-                    cachedTenant));
+            return Result<AuthenticatedContext>.Ok(new AuthenticatedContext(apiKeyFingerprint, tenant));
         }
-
-        var cacheKey = _tenantContextCacheKey.Create(apiKey);
-
-        ApiKeyValidationResult? tenant = null;
 
         try
         {
-            tenant = await _redisCache.GetAsync<ApiKeyValidationResult>(
-                cacheKey,
-                cancellationToken);
+            tenant = await _validationFlights.RunAsync(
+                apiKeyFingerprint,
+                async () =>
+                {
+                    var cachedTenant = await TryGetTenantFromCacheAsync(
+                        memoryCacheKey,
+                        redisCacheKey,
+                        CancellationToken.None);
 
+                    if (cachedTenant is not null)
+                    {
+                        return cachedTenant;
+                    }
+
+                    var validatedTenant = await _apiKeyValidator.ValidateAsync(
+                        apiKey,
+                        CancellationToken.None);
+
+                    if (validatedTenant.Valid)
+                    {
+                        await CacheTenantAsync(
+                            redisCacheKey,
+                            memoryCacheKey,
+                            validatedTenant,
+                            CancellationToken.None);
+                    }
+
+                    return validatedTenant;
+                },
+                cancellationToken);
+        }
+        catch (ControlApiUnavailableException ex)
+        {
+            _logger.LogError(
+                ex,
+                "Control API unavailable while validating API key.");
+
+            return Result<AuthenticatedContext>.Fail(
+                ErrorCodes.ControlApiUnavailable,
+                "API key validation service is unavailable.",
+                StatusCodes.Status503ServiceUnavailable);
+        }
+
+        if (!tenant.Valid)
+        {
+            return Result<AuthenticatedContext>.Fail(
+                ErrorCodes.InvalidApiKey,
+                "API key is invalid, revoked, or expired.",
+                StatusCodes.Status401Unauthorized);
+        }
+
+        return Result<AuthenticatedContext>.Ok(
+            new AuthenticatedContext(
+                apiKeyFingerprint,
+                tenant));
+    }
+    private async Task<ApiKeyValidationResult?> TryGetTenantFromCacheAsync(
+        string memoryCacheKey,
+        string redisCacheKey,
+        CancellationToken cancellationToken
+    )
+    {
+        if (_memoryCache.TryGetValue<ApiKeyValidationResult>(memoryCacheKey, out var cachedTenant) && cachedTenant is not null)
+        {
+            return cachedTenant;
+        }
+
+        try
+        {
+            var tenant = await _redisCache.GetAsync<ApiKeyValidationResult>(redisCacheKey, cancellationToken);
             if (tenant is not null)
             {
-                _memoryCache.Set(
-                    memoryCacheKey,
-                    tenant,
-                    TimeSpan.FromSeconds(
-                        _redisOptions.TenantContextMemoryCacheTtlSeconds));
+                _memoryCache.Set(memoryCacheKey, tenant, TimeSpan.FromSeconds(_redisOptions.TenantContextLocalCacheTtlSeconds));
             }
+            return tenant;
         }
         catch (RedisException ex)
         {
@@ -82,71 +142,34 @@ public sealed class Authenticator
                 ex,
                 "Redis cache unavailable while reading tenant context. " +
                 "Falling back to Control API.");
+            return null;
         }
-
-        if (tenant is null)
-        {
-            _logger.LogInformation(
-                "Tenant context cache miss. Validating API key through Control API.");
-
-            try
-            {
-                tenant = await _apiKeyValidator.ValidateAsync(
-                    apiKey,
-                    cancellationToken);
-            }
-            catch (ControlApiUnavailableException ex)
-            {
-                _logger.LogError(
-                    ex,
-                    "Control API unavailable while validating API key.");
-
-                return Result<AuthenticatedContext>.Fail(
-                    ErrorCodes.ControlApiUnavailable,
-                    "API key validation service is unavailable.",
-                    StatusCodes.Status503ServiceUnavailable);
-            }
-
-            if (!tenant.Valid)
-            {
-                return Result<AuthenticatedContext>.Fail(
-                    ErrorCodes.InvalidApiKey,
-                    "API key is invalid, revoked, or expired.",
-                    StatusCodes.Status401Unauthorized);
-            }
-
-            try
-            {
-                await _redisCache.SetAsync(
-                    cacheKey,
-                    tenant,
-                    TimeSpan.FromSeconds(
-                        _redisOptions.TenantContextCacheTtlSeconds),
-                    cancellationToken);
-            }
-            catch (RedisException ex)
-            {
-                _logger.LogWarning(
-                    ex,
-                    "Redis cache unavailable while storing tenant context.");
-            }
-
-            _memoryCache.Set(
-                memoryCacheKey,
-                tenant,
-                TimeSpan.FromSeconds(
-                    _redisOptions.TenantContextMemoryCacheTtlSeconds));
-        }
-
-        return Result<AuthenticatedContext>.Ok(
-            new AuthenticatedContext(
-                apiKey,
-                tenant));
     }
-    private string CreateMemoryCacheKey(string apiKey)
+    private async Task CacheTenantAsync(
+        string redisCacheKey,
+        string memoryCacheKey,
+        ApiKeyValidationResult tenant,
+        CancellationToken cancellationToken)
     {
-        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(apiKey));
-        var identifier = Convert.ToHexString(hash).ToLowerInvariant();
-        return $"{_redisOptions.TenantContextMemoryCacheKeyPrefix}:{identifier}";
+        try
+        {
+            await _redisCache.SetAsync(
+                redisCacheKey,
+                tenant,
+                TimeSpan.FromSeconds(_redisOptions.TenantContextRedisCacheTtlSeconds),
+                cancellationToken
+            );
+        }
+        catch (RedisException ex)
+        {
+            _logger.LogWarning(
+                ex,
+                "Redis cache unavailable while storing tenant context.");
+        }
+        _memoryCache.Set(
+            memoryCacheKey,
+            tenant,
+            TimeSpan.FromSeconds(
+                _redisOptions.TenantContextLocalCacheTtlSeconds));
     }
 }

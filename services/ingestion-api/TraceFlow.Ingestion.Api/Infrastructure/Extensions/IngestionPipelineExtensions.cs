@@ -7,8 +7,8 @@ public static class IngestionPipelineExtensions
     {
         app.UseRateLimiter();
 
-        app.UseMiddleware<MalformedPayloadMiddleware>();
         app.UseRequestBodySizeLimit();
+        app.UseMiddleware<MalformedPayloadMiddleware>();
         app.UseMiddleware<AuthenticationMiddleware>();
         app.UseMiddleware<RateLimitingMiddleware>();
 

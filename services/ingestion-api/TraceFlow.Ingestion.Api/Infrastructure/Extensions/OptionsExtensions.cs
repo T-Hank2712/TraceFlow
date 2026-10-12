@@ -27,6 +27,9 @@ public static class OptionsExtensions
             .Validate(options => options.QueueBufferingMaxMessages > 0, "QueueBufferingMaxMessages must be greater than 0.")
             .Validate(options => options.QueueBufferingMaxKbytes > 0, "QueueBufferingMaxKbytes must be greater than 0.")
             .Validate(options => options.LingerMs >= 0, "LingerMs must be greater than or equal to 0.")
+            .Validate(options => options.BatchPublishConcurrency > 0, "Kafka__BatchPublishConcurrency must be greater than 0.")
+            .Validate(options => options.FlushTimeoutSeconds > 0, "Kafka__FlushTimeoutSeconds must be greater than 0.")
+            .Validate(options => options.HealthCheckTimeoutSeconds > 0, "Kafka__HealthCheckTimeoutSeconds must be greater than 0.")
             .ValidateOnStart();
 
         services
@@ -51,12 +54,10 @@ public static class OptionsExtensions
             .AddOptions<RedisOptions>()
             .Bind(configuration.GetSection(RedisOptions.SectionName))
             .Validate(options => !string.IsNullOrWhiteSpace(options.ConnectionString), "Redis__ConnectionString is required.")
-            .Validate(options => !string.IsNullOrWhiteSpace(options.TenantContextCacheKeyPrefix), "Redis__TenantContextCacheKeyPrefix is required.")
-            .Validate(options => options.TenantContextCacheTtlSeconds > 0, "Redis__TenantContextCacheTtlSeconds must be greater than 0.")
-            .Validate(options => options.TenantContextMemoryCacheTtlSeconds > 0, "Redis__TenantContextMemoryCacheTtlSeconds must be greater than 0.")
-            .Validate(
-                options => !string.IsNullOrWhiteSpace(options.TenantContextMemoryCacheKeyPrefix),
-                "Redis__TenantContextMemoryCacheKeyPrefix is required.")
+            .Validate(options => !string.IsNullOrWhiteSpace(options.TenantContextRedisCacheKeyPrefix), "Redis__TenantContextRedisCacheKeyPrefix is required.")
+            .Validate(options => options.TenantContextRedisCacheTtlSeconds > 0, "Redis__TenantContextRedisCacheTtlSeconds must be greater than 0.")
+            .Validate(options => options.TenantContextLocalCacheTtlSeconds > 0, "Redis__TenantContextLocalCacheTtlSeconds must be greater than 0.")
+            .Validate(options => !string.IsNullOrWhiteSpace(options.TenantContextLocalCacheKeyPrefix), "Redis__TenantContextLocalCacheKeyPrefix is required.")
             .ValidateOnStart();
 
         services
