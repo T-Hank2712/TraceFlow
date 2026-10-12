@@ -9,7 +9,7 @@ public sealed class Authenticator
     private readonly TenantContextCacheKeyFactory _tenantContextCacheKey;
     private readonly ILogger<Authenticator> _logger;
     private readonly IMemoryCache _memoryCache;
-    private readonly ApiKeyValidationLockProvider _lockProvider;
+    private readonly ApiKeyValidationFlightStore _validationFlights;
 
     public Authenticator(
         ApiKeyHeaderParser apiKeyParser,
@@ -19,7 +19,7 @@ public sealed class Authenticator
         TenantContextCacheKeyFactory tenantContextCacheKey,
         ILogger<Authenticator> logger,
         IMemoryCache memoryCache,
-        ApiKeyValidationLockProvider lockProvider)
+        ApiKeyValidationFlightStore validationFlights)
     {
         _apiKeyParser = apiKeyParser;
         _apiKeyValidator = apiKeyValidator;
@@ -28,7 +28,7 @@ public sealed class Authenticator
         _tenantContextCacheKey = tenantContextCacheKey;
         _logger = logger;
         _memoryCache = memoryCache;
-        _lockProvider = lockProvider;
+        _validationFlights = validationFlights;
     }
 
     public async Task<Result<AuthenticatedContext>> AuthenticateAsync(
@@ -58,61 +58,63 @@ public sealed class Authenticator
             return Result<AuthenticatedContext>.Ok(new AuthenticatedContext(apiKeyFingerprint, tenant));
         }
 
-        var validationLock = _lockProvider.GetLock(apiKeyFingerprint);
-
-        await validationLock.WaitAsync(cancellationToken);
-
         try
         {
-            tenant = await TryGetTenantFromCacheAsync(memoryCacheKey, redisCacheKey, cancellationToken);
-
-            if (tenant is not null)
-            {
-                return Result<AuthenticatedContext>.Ok(new AuthenticatedContext(apiKeyFingerprint, tenant));
-            }
-
-            try
-            {
-                tenant = await _apiKeyValidator.ValidateAsync(apiKey, cancellationToken);
-            }
-            catch (ControlApiUnavailableException ex)
-            {
-                _logger.LogError(
-                    ex,
-                    "Control API unavailable while validating API key.");
-
-                return Result<AuthenticatedContext>.Fail(
-                    ErrorCodes.ControlApiUnavailable,
-                    "API key validation service is unavailable.",
-                    StatusCodes.Status503ServiceUnavailable);
-            }
-
-            if (!tenant.Valid)
-            {
-                return Result<AuthenticatedContext>.Fail(
-                    ErrorCodes.InvalidApiKey,
-                    "API key is invalid, revoked, or expired.",
-                    StatusCodes.Status401Unauthorized);
-            }
-            await CacheTenantAsync(
-                redisCacheKey,
-                memoryCacheKey,
-                tenant,
-                cancellationToken);
-
-            return Result<AuthenticatedContext>.Ok(
-                new AuthenticatedContext(
-                    apiKeyFingerprint,
-                    tenant));
-        }
-        finally
-        {
-            validationLock.Release();
-
-            _lockProvider.ReleaseLockIfIdle(
+            tenant = await _validationFlights.RunAsync(
                 apiKeyFingerprint,
-                validationLock);
+                async () =>
+                {
+                    var cachedTenant = await TryGetTenantFromCacheAsync(
+                        memoryCacheKey,
+                        redisCacheKey,
+                        CancellationToken.None);
+
+                    if (cachedTenant is not null)
+                    {
+                        return cachedTenant;
+                    }
+
+                    var validatedTenant = await _apiKeyValidator.ValidateAsync(
+                        apiKey,
+                        CancellationToken.None);
+
+                    if (validatedTenant.Valid)
+                    {
+                        await CacheTenantAsync(
+                            redisCacheKey,
+                            memoryCacheKey,
+                            validatedTenant,
+                            CancellationToken.None);
+                    }
+
+                    return validatedTenant;
+                },
+                cancellationToken);
         }
+        catch (ControlApiUnavailableException ex)
+        {
+            _logger.LogError(
+                ex,
+                "Control API unavailable while validating API key.");
+
+            return Result<AuthenticatedContext>.Fail(
+                ErrorCodes.ControlApiUnavailable,
+                "API key validation service is unavailable.",
+                StatusCodes.Status503ServiceUnavailable);
+        }
+
+        if (!tenant.Valid)
+        {
+            return Result<AuthenticatedContext>.Fail(
+                ErrorCodes.InvalidApiKey,
+                "API key is invalid, revoked, or expired.",
+                StatusCodes.Status401Unauthorized);
+        }
+
+        return Result<AuthenticatedContext>.Ok(
+            new AuthenticatedContext(
+                apiKeyFingerprint,
+                tenant));
     }
     private async Task<ApiKeyValidationResult?> TryGetTenantFromCacheAsync(
         string memoryCacheKey,
