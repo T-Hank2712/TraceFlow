@@ -130,7 +130,7 @@ public sealed class Authenticator
             var tenant = await _redisCache.GetAsync<ApiKeyValidationResult>(redisCacheKey, cancellationToken);
             if (tenant is not null)
             {
-                _memoryCache.Set(memoryCacheKey, tenant, TimeSpan.FromSeconds(_redisOptions.TenantContextMemoryCacheTtlSeconds));
+                _memoryCache.Set(memoryCacheKey, tenant, TimeSpan.FromSeconds(_redisOptions.TenantContextLocalCacheTtlSeconds));
             }
             return tenant;
         }
@@ -154,7 +154,7 @@ public sealed class Authenticator
             await _redisCache.SetAsync(
                 redisCacheKey,
                 tenant,
-                TimeSpan.FromSeconds(_redisOptions.TenantContextMemoryCacheTtlSeconds),
+                TimeSpan.FromSeconds(_redisOptions.TenantContextRedisCacheTtlSeconds),
                 cancellationToken
             );
         }
@@ -168,6 +168,6 @@ public sealed class Authenticator
             memoryCacheKey,
             tenant,
             TimeSpan.FromSeconds(
-                _redisOptions.TenantContextMemoryCacheTtlSeconds));
+                _redisOptions.TenantContextLocalCacheTtlSeconds));
     }
 }

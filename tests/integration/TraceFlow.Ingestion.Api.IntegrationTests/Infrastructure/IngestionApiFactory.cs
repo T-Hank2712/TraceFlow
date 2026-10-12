@@ -48,7 +48,7 @@ public sealed class IngestionApiFactory : WebApplicationFactory<Program>
         Environment.SetEnvironmentVariable("Kafka__LingerMs", "0");
 
         Environment.SetEnvironmentVariable("Redis__ConnectionString", _redis.ConnectionString);
-        Environment.SetEnvironmentVariable("Redis__TenantContextCacheTtlSeconds", "3600");
+        Environment.SetEnvironmentVariable("Redis__TenantContextRedisCacheTtlSeconds", "3600");
         Environment.SetEnvironmentVariable("Redis__TenantContextCacheKeyPrefix", "traceflow:test:apikey");
 
         Environment.SetEnvironmentVariable("RateLimiting__PermitLimit", "100");

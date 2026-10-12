@@ -227,9 +227,9 @@ services:
       Ingestion__MaxFutureTimestampMinutes: ${Ingestion__MaxFutureTimestampMinutes}
       Redis__SectionName: ${Redis__SectionName}
       Redis__ConnectionString: redis:6379,password=${REDIS_PASSWORD}
-      Redis__TenantContextCacheTtlSeconds: ${Redis__TenantContextCacheTtlSeconds}
+      Redis__TenantContextRedisCacheTtlSeconds: ${Redis__TenantContextRedisCacheTtlSeconds}
       Redis__TenantContextCacheKeyPrefix: ${Redis__TenantContextCacheKeyPrefix}
-      Redis__TenantContextMemoryCacheTtlSeconds: ${Redis__TenantContextMemoryCacheTtlSeconds}
+      Redis__TenantContextLocalCacheTtlSeconds: ${Redis__TenantContextLocalCacheTtlSeconds}
       Redis__TenantContextMemoryCacheKeyPrefix: ${Redis__TenantContextMemoryCacheKeyPrefix}
       RateLimiting__PermitLimit: ${RateLimiting__PermitLimit}
       RateLimiting__WindowSeconds: ${RateLimiting__WindowSeconds}

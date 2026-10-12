@@ -53,8 +53,8 @@ public static class OptionsExtensions
             .Bind(configuration.GetSection(RedisOptions.SectionName))
             .Validate(options => !string.IsNullOrWhiteSpace(options.ConnectionString), "Redis__ConnectionString is required.")
             .Validate(options => !string.IsNullOrWhiteSpace(options.TenantContextCacheKeyPrefix), "Redis__TenantContextCacheKeyPrefix is required.")
-            .Validate(options => options.TenantContextCacheTtlSeconds > 0, "Redis__TenantContextCacheTtlSeconds must be greater than 0.")
-            .Validate(options => options.TenantContextMemoryCacheTtlSeconds > 0, "Redis__TenantContextMemoryCacheTtlSeconds must be greater than 0.")
+            .Validate(options => options.TenantContextRedisCacheTtlSeconds > 0, "Redis__TenantContextRedisCacheTtlSeconds must be greater than 0.")
+            .Validate(options => options.TenantContextLocalCacheTtlSeconds > 0, "Redis__TenantContextLocalCacheTtlSeconds must be greater than 0.")
             .Validate(
                 options => !string.IsNullOrWhiteSpace(options.TenantContextMemoryCacheKeyPrefix),
                 "Redis__TenantContextMemoryCacheKeyPrefix is required.")
