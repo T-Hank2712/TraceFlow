@@ -1,6 +1,3 @@
-using TraceFlow.Ingestion.Api.Extensions;
-using TraceFlow.Ingestion.Api.Security;
-
 namespace TraceFlow.Ingestion.Api.Middleware;
 
 public sealed class AuthenticationMiddleware
@@ -29,7 +26,7 @@ public sealed class AuthenticationMiddleware
         if (!result.Success)
         {
             context.Response.StatusCode = result.StatusCode;
-            await context.Response.WriteAsJsonAsync(result);
+            await context.Response.WriteAsJsonAsync(result.Error, context.RequestAborted);
 
             return;
         }

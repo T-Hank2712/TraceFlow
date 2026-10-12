@@ -9,6 +9,6 @@ public record InvitationInboxResponse(
     string InvitedByUserName,
     string Role,
     string Status,
-    DateTime ExpiresAt,
-    DateTime CreatedAt
+    DateTimeOffset ExpiresAt,
+    DateTimeOffset CreatedAt
     );

@@ -1,5 +1,3 @@
-using MediatR;
-
 namespace TraceFlow.Api.Application.ApiKeys.Commands.RevokeApiKey;
 
 public sealed record RevokeApiKeyCommand(

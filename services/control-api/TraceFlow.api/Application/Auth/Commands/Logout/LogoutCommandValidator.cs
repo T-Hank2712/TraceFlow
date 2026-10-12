@@ -1,5 +1,3 @@
-using FluentValidation;
-
 namespace TraceFlow.Api.Application.Auth.Commands.Logout;
 
 public class LogoutCommandValidator

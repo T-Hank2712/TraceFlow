@@ -1,29 +1,13 @@
-using MediatR;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using TraceFlow.Api.Application.Projects.Commands.InviteProjectMember;
-using TraceFlow.Api.Domain.Common.Extensions;
-using TraceFlow.Api.Domain.Dtos.Projects;
-using TraceFlow.Api.Application.Projects.Queries.ProjectInvitationInbox;
-using TraceFlow.Api.Application.Projects.Queries.ProjectInvitationSent;
-using TraceFlow.Api.Application.Projects.Commands.AcceptProjectInvitation;
-using TraceFlow.Api.Application.Projects.Commands.DeclineProjectInvitation;
-using TraceFlow.Api.Application.Projects.Commands.CancelProjectInvitation;
-using Asp.Versioning;
-
 namespace TraceFlow.Api.Controllers;
 
 [ApiController]
 [ApiVersion(1.0)]
 [Authorize]
-public class ProjectInvitationsController : ControllerBase
+public class ProjectInvitationsController(ISender sender) : ControllerBase
 {
-    private readonly ISender _sender;
+    private readonly ISender _sender = sender;
 
-    public ProjectInvitationsController(ISender sender)
-    {
-        _sender = sender;
-    }
+
     [HttpPost("api/v{version:apiVersion}/workspaces/{workspaceId}/projects/{projectId}/invitations")]
     public async Task<IActionResult> InviteProjectMember(
         Ulid workspaceId,

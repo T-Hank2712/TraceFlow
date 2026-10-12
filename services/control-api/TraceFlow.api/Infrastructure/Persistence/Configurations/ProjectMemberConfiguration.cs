@@ -1,7 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using TraceFlow.Api.Domain.Entities;
-
 namespace TraceFlow.Api.Infrastructure.Persistence.Configurations;
 
 public class ProjectMemberConfiguration
@@ -32,9 +28,6 @@ public class ProjectMemberConfiguration
         builder.Property(member => member.Status)
             .IsRequired()
             .HasMaxLength(20);
-
-        builder.Property(member => member.JoinedAt)
-            .IsRequired();
 
         builder.Property(member => member.CreatedAt)
             .IsRequired();

@@ -1,5 +1,3 @@
-using Microsoft.AspNetCore.Identity;
-
 namespace TraceFlow.Api.Application.Common.Security;
 
 public class PasswordHasher
@@ -11,8 +9,18 @@ public class PasswordHasher
     }
     public bool Verify(string password, string passwordHash)
     {
-        var result = _hasher.VerifyHashedPassword(null!, passwordHash, password);
+        var result = VerifyDetailed(password, passwordHash);
+
         return result == PasswordVerificationResult.Success ||
-                result == PasswordVerificationResult.SuccessRehashNeeded;
+            result == PasswordVerificationResult.SuccessRehashNeeded;
+    }
+    public PasswordVerificationResult VerifyDetailed(
+        string password,
+        string passwordHash)
+    {
+        return _hasher.VerifyHashedPassword(
+            null!,
+            passwordHash,
+            password);
     }
 }

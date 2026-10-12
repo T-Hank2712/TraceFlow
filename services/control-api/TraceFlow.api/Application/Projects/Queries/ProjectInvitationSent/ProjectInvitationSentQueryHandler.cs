@@ -1,28 +1,19 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Application.Common.AccessControl;
-using TraceFlow.Api.Application.Common.Exceptions;
-using TraceFlow.Api.Infrastructure.Persistence;
-
 namespace TraceFlow.Api.Application.Projects.Queries.ProjectInvitationSent;
 
-public class ProjectInvitationSentQueryHandler
+public class ProjectInvitationSentQueryHandler(
+        AppDbContext dbContext,
+        ProjectAccessService projectAccess,
+        InvitationExpirationService invitationExpiration)
     : IRequestHandler<ProjectInvitationSentQuery, IReadOnlyList<ProjectInvitationSentResponse>>
 {
-    private readonly AppDbContext _dbContext;
-    private readonly ProjectAccessService _projectAccess;
 
-    public ProjectInvitationSentQueryHandler(
-        AppDbContext dbContext,
-        ProjectAccessService projectAccess)
-    {
-        _dbContext = dbContext;
-        _projectAccess = projectAccess;
-    }
+    private readonly AppDbContext _dbContext = dbContext;
+    private readonly ProjectAccessService _projectAccess = projectAccess;
+    private readonly InvitationExpirationService _invitationExpiration = invitationExpiration;
 
     public async Task<IReadOnlyList<ProjectInvitationSentResponse>> Handle(
-        ProjectInvitationSentQuery request,
-        CancellationToken cancellationToken)
+           ProjectInvitationSentQuery request,
+           CancellationToken cancellationToken)
     {
         var access = await _projectAccess.GetProjectAccessAsync(
             request.WorkspaceId,
@@ -35,6 +26,10 @@ public class ProjectInvitationSentQueryHandler
         _projectAccess.EnsureProjectManager(
             access,
             "You do not have permission to view project invitations.");
+
+        await _invitationExpiration.ExpireProjectInvitationsAsync(
+            request.ProjectId,
+            cancellationToken);
 
         return await _dbContext.ProjectInvitations
             .AsNoTracking()

@@ -1,5 +1,3 @@
-using MediatR;
-
 namespace TraceFlow.Api.Application.TraceApplications.Queries.ListTraceApplications;
 
 public record ListTraceApplicationsQuery(

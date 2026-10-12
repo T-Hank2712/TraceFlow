@@ -1,11 +1,3 @@
-using TraceFlow.Ingestion.Api.Contracts;
-using TraceFlow.Ingestion.Api.Contracts.Authentication;
-using TraceFlow.Ingestion.Api.Contracts.Log;
-using TraceFlow.Ingestion.Api.Contracts.BatchLog;
-using TraceFlow.Ingestion.Api.Errors;
-using TraceFlow.Ingestion.Api.Kafka;
-using FluentValidation;
-
 namespace TraceFlow.Ingestion.Api.Services.Ingestion;
 
 public sealed class IngestLogService : IIngestLogService
@@ -14,17 +6,20 @@ public sealed class IngestLogService : IIngestLogService
     private readonly ILogEventPublisher _publisher;
     private readonly IValidator<IngestLogRequest> _logValidator;
     private readonly IValidator<BatchLogRequest> _batchValidator;
+    private readonly TimeProvider _timeProvider;
 
     public IngestLogService(
         EnrichedLogEventFactory eventFactory,
         ILogEventPublisher publisher,
         IValidator<IngestLogRequest> logValidator,
-        IValidator<BatchLogRequest> batchValidator)
+        IValidator<BatchLogRequest> batchValidator,
+        TimeProvider timeProvider)
     {
         _eventFactory = eventFactory;
         _publisher = publisher;
         _logValidator = logValidator;
         _batchValidator = batchValidator;
+        _timeProvider = timeProvider;
     }
 
     public async Task<Result<IngestLogResponse>> IngestAsync(
@@ -38,8 +33,9 @@ public sealed class IngestLogService : IIngestLogService
         {
             return Result<IngestLogResponse>.Fail(
                 ErrorCodes.ValidateError,
-                validationResult.Errors.First().ErrorMessage,
-                StatusCodes.Status400BadRequest);
+                "Request validation failed.",
+                StatusCodes.Status400BadRequest,
+                ValidationErrorMapper.ToDetails(validationResult.Errors));
         }
 
         var tenant = authentication.Tenant;
@@ -54,13 +50,17 @@ public sealed class IngestLogService : IIngestLogService
         }
         catch
         {
-            return Result<IngestLogResponse>.Fail(ErrorCodes.KafkaPublishFailed, "Failed to publish log event to Kafka.", StatusCodes.Status503ServiceUnavailable);
+            return Result<IngestLogResponse>.Fail(
+                ErrorCodes.KafkaPublishFailed,
+                "Failed to publish log event to Kafka.",
+                StatusCodes.Status503ServiceUnavailable,
+                ValidationErrorMapper.ToDetails(validationResult.Errors));
         }
 
         var response = new IngestLogResponse(
             eventId,
             true,
-            DateTimeOffset.UtcNow
+            _timeProvider.GetUtcNow()
         );
         return Result<IngestLogResponse>.Ok(response);
     }
@@ -79,7 +79,8 @@ public sealed class IngestLogService : IIngestLogService
             return Result<BatchLogResponse>.Fail(
                 ErrorCodes.ValidateError,
                 validationBatch.Errors.First().ErrorMessage,
-                StatusCodes.Status400BadRequest);
+                StatusCodes.Status400BadRequest,
+                ValidationErrorMapper.ToDetails(validationBatch.Errors));
         }
 
         var batchId = Ulid.NewUlid();
@@ -92,6 +93,17 @@ public sealed class IngestLogService : IIngestLogService
         for (var index = 0; index < totalLogs; index++)
         {
             var log = request.Logs[index];
+            if (log is null)
+            {
+                results[index] = new BatchLogItemResult(
+                    Index: index,
+                    Accepted: false,
+                    EventId: null,
+                    Error: "Batch log item cannot be null.");
+
+                continue;
+            }
+
             var validationResult = _logValidator.Validate(log);
 
             if (!validationResult.IsValid)
@@ -99,8 +111,7 @@ public sealed class IngestLogService : IIngestLogService
                 var error = string.Join(
                     "; ",
                     validationResult.Errors
-                        .Select(x => x.ErrorMessage)
-                        .Distinct());
+                        .Select(x => x.ErrorMessage));
 
                 results[index] = new BatchLogItemResult(
                     Index: index,
@@ -123,7 +134,7 @@ public sealed class IngestLogService : IIngestLogService
 
         if (validEvents.Count > 0)
         {
-            var publishResults = _publisher.Publish(validEvents);
+            var publishResults = await _publisher.PublishAsync(validEvents, cancellationToken);
 
             foreach (var publishResult in publishResults)
             {

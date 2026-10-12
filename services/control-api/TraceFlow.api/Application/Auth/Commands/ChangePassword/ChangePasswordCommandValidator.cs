@@ -1,5 +1,3 @@
-using FluentValidation;
-
 namespace TraceFlow.Api.Application.Auth.Commands.ChangePassword;
 
 public class ChangePasswordCommandValidator

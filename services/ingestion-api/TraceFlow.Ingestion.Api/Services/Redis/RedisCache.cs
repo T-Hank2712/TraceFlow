@@ -1,6 +1,3 @@
-using System.Text.Json;
-using StackExchange.Redis;
-
 namespace TraceFlow.Ingestion.Api.Services.Redis;
 
 public sealed class RedisCache(

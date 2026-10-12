@@ -6,5 +6,5 @@ public sealed record RevokeApiKeyResponse(
     string Environment,
     string KeyPrefix,
     string Status,
-    DateTime? RevokedAt,
-    DateTime UpdatedAt);
+    DateTimeOffset RevokedAt,
+    DateTimeOffset UpdatedAt);

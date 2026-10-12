@@ -7,5 +7,5 @@ public record WorkspaceSummaryResponse(
     string? Description,
     string Role,
     string Status,
-    DateTime CreatedAt
+    DateTimeOffset CreatedAt
 );

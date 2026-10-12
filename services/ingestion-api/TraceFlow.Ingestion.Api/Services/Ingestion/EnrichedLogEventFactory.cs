@@ -1,9 +1,6 @@
-using TraceFlow.Ingestion.Api.Contracts.Authentication;
-using TraceFlow.Ingestion.Api.Contracts.Log;
-
 namespace TraceFlow.Ingestion.Api.Services.Ingestion;
 
-public sealed class EnrichedLogEventFactory
+public sealed class EnrichedLogEventFactory(TimeProvider timeProvider)
 {
     public EnrichedLogEvent Create(IngestLogRequest request, ApiKeyValidationResult tenant, Ulid EventId, Ulid BatchId)
     {
@@ -16,6 +13,8 @@ public sealed class EnrichedLogEventFactory
                 "Tenant context is missing required resource identifiers.");
         }
 
+        var utcNow = timeProvider.GetUtcNow();
+
         return new EnrichedLogEvent(
             EventId: EventId,
             BatchID: BatchId,
@@ -23,14 +22,14 @@ public sealed class EnrichedLogEventFactory
             ProjectId: projectId,
             ApplicationId: applicationId,
             Environment: tenant.Environment,
-            Timestamp: request.Timestamp ?? DateTimeOffset.UtcNow,
+            Timestamp: request.Timestamp ?? utcNow,
             Level: request.Level,
             Service: request.Service.Trim(),
             Message: request.Message.Trim(),
             TraceId: request.TraceId,
             CorrelationId: request.CorrelationId,
             Metadata: request.Metadata,
-            ReceivedAt: DateTimeOffset.UtcNow
+            ReceivedAt: utcNow
         );
     }
 }

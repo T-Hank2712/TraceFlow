@@ -8,4 +8,4 @@ public record UpdateProjectResponse(
     string Slug,
     string? Description,
     string Status,
-    DateTime UpdatedAt);
+    DateTimeOffset UpdatedAt);

@@ -5,4 +5,4 @@ public record CancelProjectInvitationResponse(
     Ulid WorkspaceId,
     Ulid ProjectId,
     string Status,
-    DateTime UpdatedAt);
+    DateTimeOffset UpdatedAt);

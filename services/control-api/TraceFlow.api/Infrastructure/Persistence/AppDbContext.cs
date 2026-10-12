@@ -1,6 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Domain.Entities;
-
 namespace TraceFlow.Api.Infrastructure.Persistence;
 
 public class AppDbContext : DbContext

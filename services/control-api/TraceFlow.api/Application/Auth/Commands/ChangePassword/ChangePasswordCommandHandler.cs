@@ -1,65 +1,97 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Application.Common.Exceptions;
-using TraceFlow.Api.Application.Common.Security;
-using TraceFlow.Api.Infrastructure.Persistence;
-using TraceFlow.Api.Domain.Constants;
-
 namespace TraceFlow.Api.Application.Auth.Commands.ChangePassword;
 
-public class ChangePasswordCommandHandler : IRequestHandler<ChangePasswordCommand, ChangePasswordResponse>
+public class ChangePasswordCommandHandler(
+    AppDbContext dbContext,
+    PasswordHasher passwordHasher,
+    TimeProvider timeProvider
+) : IRequestHandler<ChangePasswordCommand, ChangePasswordResponse>
 {
-    private readonly AppDbContext _dbContext;
-    private readonly PasswordHasher _passwordHasher;
-    public ChangePasswordCommandHandler(AppDbContext dbContext, PasswordHasher passwordHasher)
-    {
-        _dbContext = dbContext;
-        _passwordHasher = passwordHasher;
-    }
-    public async Task<ChangePasswordResponse> Handle(ChangePasswordCommand request, CancellationToken cancellationToken)
-    {
-        var user = await _dbContext.Users
-        .FirstOrDefaultAsync(
-            user => user.Id == request.UserId, cancellationToken
-        );
 
-        if (user is null)
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly PasswordHasher _passwordHasher = passwordHasher;
+    private readonly TimeProvider _timeProvider = timeProvider;
+
+    public async Task<ChangePasswordResponse> Handle(
+    ChangePasswordCommand request,
+    CancellationToken cancellationToken)
+    {
+        var userSnapshot = await _dbContext.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(
+                user => user.Id == request.UserId,
+                cancellationToken);
+
+        if (userSnapshot is null)
         {
             throw new NotFoundException("User not found.");
         }
 
-        if (user.Status != UserStatuses.Active)
+        if (userSnapshot.Status != UserStatuses.Active)
         {
             throw new UnauthorizedException(
                 "User account is not active.");
         }
 
-        var currentPasswordValid = _passwordHasher.Verify(request.CurrentPassword, user.PasswordHash);
+        var currentPasswordValid = _passwordHasher.Verify(
+            request.CurrentPassword,
+            userSnapshot.PasswordHash);
+
         if (!currentPasswordValid)
         {
             throw new UnauthorizedException(
                 "Current password is incorrect.");
         }
 
-        var newPasswordHash = _passwordHasher.Hash(request.NewPassword);
+        var oldPasswordHash = userSnapshot.PasswordHash;
 
-        user.ChangePassword(newPasswordHash);
+        var newPasswordHash = _passwordHasher.Hash(
+            request.NewPassword);
 
-        var activeRefreshTokens = await _dbContext.RefreshTokens
-            .Where(token =>
-                token.UserId == user.Id &&
-                token.RevokedAt == null &&
-                token.ExpiresAt > DateTime.UtcNow)
-            .ToListAsync(cancellationToken);
+        var strategy = _dbContext.Database.CreateExecutionStrategy();
 
-        foreach (var refreshToken in activeRefreshTokens)
+        return await strategy.ExecuteAsync(async () =>
         {
-            refreshToken.Revoke();
-        }
 
-        await _dbContext.SaveChangesAsync(cancellationToken);
+            var utcNow = _timeProvider.GetUtcNow();
 
-        return new ChangePasswordResponse(
-            "Password changed successfully.");
+            await using var transaction =
+                await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+
+            var user = await _dbContext.Users
+                .FirstOrDefaultAsync(
+                    user =>
+                        user.Id == request.UserId &&
+                        user.Status == UserStatuses.Active &&
+                        user.PasswordHash == oldPasswordHash,
+                    cancellationToken);
+
+            if (user is null)
+            {
+                throw new ConflictException(
+                    "Password was changed by another request. Please try again.");
+            }
+
+            user.ChangePassword(newPasswordHash, utcNow);
+
+            var activeRefreshTokens = await _dbContext.RefreshTokens
+                .Where(token =>
+                    token.UserId == user.Id &&
+                    token.RevokedAt == null &&
+                    token.ExpiresAt > utcNow)
+                .ToListAsync(cancellationToken);
+
+            foreach (var token in activeRefreshTokens)
+            {
+                token.Revoke(utcNow);
+            }
+
+            await _dbContext.SaveChangesAsync(cancellationToken);
+
+            await transaction.CommitAsync(cancellationToken);
+
+            return new ChangePasswordResponse(
+                "Password changed successfully.");
+        });
     }
 }

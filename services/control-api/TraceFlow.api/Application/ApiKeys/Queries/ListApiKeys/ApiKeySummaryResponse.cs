@@ -6,7 +6,7 @@ public sealed record ApiKeySummaryResponse(
     string Environment,
     string KeyPrefix,
     string Status,
-    DateTime? ExpiresAt,
-    DateTime? RevokedAt,
-    DateTime? LastUsedAt,
-    DateTime CreatedAt);
+    DateTimeOffset? ExpiresAt,
+    DateTimeOffset? RevokedAt,
+    DateTimeOffset? LastUsedAt,
+    DateTimeOffset CreatedAt);

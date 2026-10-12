@@ -1,6 +1,6 @@
 using TraceFlow.LogProcessor.Contracts;
-using TraceFlow.LogProcessor.Services.Batching;
 using TraceFlow.LogProcessor.Services.Kafka;
+using TraceFlow.LogProcessor.Services.Queue;
 
 namespace TraceFlow.LogProcessor.Workers;
 
@@ -8,36 +8,38 @@ public sealed class LogConsumerWorker : BackgroundService
 {
     private readonly IKafkaConsumer _kafkaConsumer;
     private readonly ILogger<LogConsumerWorker> _logger;
-    private readonly IBatchProcessor _batchProcessor;
+    private readonly IPendingLogEventQueue _queue;
 
     public LogConsumerWorker(
         IKafkaConsumer kafkaConsumer,
         ILogger<LogConsumerWorker> logger,
-        IBatchProcessor batchProcessor)
+        IPendingLogEventQueue queue)
     {
         _kafkaConsumer = kafkaConsumer;
         _logger = logger;
-        _batchProcessor = batchProcessor;
+        _queue = queue;
     }
 
     protected override async Task ExecuteAsync(
         CancellationToken stoppingToken)
     {
-        _logger.LogInformation("TraceFlow Log Processor started.");
+        _logger.LogInformation("TraceFlow Kafka consumer started.");
 
         await _kafkaConsumer.ConsumeAsync(
-            ProcessAsync,
+            EnqueueAsync,
             stoppingToken);
 
-        _logger.LogInformation("TraceFlow Log Processor stopped.");
+        _logger.LogInformation("TraceFlow Kafka consumer stopped.");
     }
 
-    private async Task<BatchProcessResult> ProcessAsync(
+    private async Task<BatchProcessResult> EnqueueAsync(
         PendingLogEvent pendingEvent,
         CancellationToken cancellationToken)
     {
-        return await _batchProcessor.AddAsync(
+        await _queue.WriteAsync(
             pendingEvent,
             cancellationToken);
+
+        return new BatchProcessResult([]);
     }
 }

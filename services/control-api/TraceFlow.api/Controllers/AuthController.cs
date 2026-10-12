@@ -1,30 +1,15 @@
-using MediatR;
-using Microsoft.AspNetCore.Mvc;
-using TraceFlow.Api.Application.Auth.Commands.Register;
-using TraceFlow.Api.Application.Auth.Commands.Login;
-using System.Security.Claims;
-using Microsoft.AspNetCore.Authorization;
-using TraceFlow.Api.Application.Auth.Queries.GetCurrentUser;
-using TraceFlow.Api.Application.Auth.Commands.RefreshSession;
-using TraceFlow.Api.Application.Auth.Commands.ChangePassword;
-using TraceFlow.Api.Domain.Dtos.Auth;
-using TraceFlow.Api.Application.Auth.Commands.Logout;
-using Asp.Versioning;
-
 namespace TraceFlow.Api.Controllers;
 
 [ApiController]
 [ApiVersion(1.0)]
+[RequestBodyLimitPolicy(RequestBodyLimitPolicies.Auth)]
 [Route("api/v{version:apiVersion}/auth")]
-public class AuthController : ControllerBase
+public class AuthController(ISender sender) : ControllerBase
 {
-    private readonly ISender _sender;
+    private readonly ISender _sender = sender;
 
-    public AuthController(ISender sender)
-    {
-        _sender = sender;
-    }
-
+    [AllowAnonymous]
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
     [HttpPost("register")]
     public async Task<IActionResult> Register(
         RegisterCommand command,
@@ -34,6 +19,8 @@ public class AuthController : ControllerBase
         return CreatedAtAction(nameof(Register), new { email = result.Email }, result);
     }
 
+    [AllowAnonymous]
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginCommand command, CancellationToken cancellationToken)
     {
@@ -60,6 +47,9 @@ public class AuthController : ControllerBase
 
         return Ok(result);
     }
+
+    [AllowAnonymous]
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
     [HttpPost("refresh-token")]
     public async Task<IActionResult> RefreshToken(RefreshSessionCommand command, CancellationToken cancellationToken)
     {

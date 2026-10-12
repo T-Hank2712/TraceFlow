@@ -1,26 +1,14 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Application.Common.AccessControl;
-using TraceFlow.Api.Application.Common.Exceptions;
-using TraceFlow.Api.Infrastructure.Persistence;
-using TraceFlow.Api.Domain.Constants;
-using TraceFlow.Api.Domain.Entities;
-
 namespace TraceFlow.Api.Application.Workspaces.Commands.ChangeMemberRole;
 
-public class ChangeMemberRoleCommandHandler
+public class ChangeMemberRoleCommandHandler(
+        AppDbContext dbContext,
+        WorkspaceAccessService workspaceAccess,
+        TimeProvider timeProvider)
     : IRequestHandler<ChangeMemberRoleCommand, ChangeMemberRoleResponse>
 {
-    private readonly AppDbContext _dbContext;
-    private readonly WorkspaceAccessService _workspaceAccess;
-
-    public ChangeMemberRoleCommandHandler(
-        AppDbContext dbContext,
-        WorkspaceAccessService workspaceAccess)
-    {
-        _dbContext = dbContext;
-        _workspaceAccess = workspaceAccess;
-    }
+    private readonly AppDbContext _dbContext = dbContext;
+    private readonly WorkspaceAccessService _workspaceAccess = workspaceAccess;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<ChangeMemberRoleResponse> Handle(
         ChangeMemberRoleCommand request,
@@ -55,71 +43,89 @@ public class ChangeMemberRoleCommandHandler
 
         var newRole = request.Role.Trim().ToLowerInvariant();
 
-        if (targetMember.Role == WorkspaceMemberRoles.Owner && newRole != WorkspaceMemberRoles.Owner)
-        {
-            var ownerCount = await _dbContext.WorkspaceMembers
-                .CountAsync(
-                    member =>
-                        member.WorkspaceId == request.WorkspaceId &&
-                        member.Role == WorkspaceMemberRoles.Owner &&
-                        member.Status == MembershipStatuses.Active,
-                    cancellationToken);
-
-            if (ownerCount <= 1)
-            {
-                throw new ConflictException("Workspace must have at least one owner.");
-            }
-        }
-
-        if (actorMembership.Role == WorkspaceMemberRoles.Admin && targetMember.Role == WorkspaceMemberRoles.Owner)
-        {
-            throw new ForbiddenException("Admin cannot change owner role.");
-        }
-
         if (targetMember.Role == newRole)
         {
             throw new ConflictException("Member already has this role.");
         }
 
-        targetMember.ChangeRole(newRole);
+        var isTargetPrimaryOwner =
+            targetMember.UserId == actorMembership.Workspace.OwnerUserId;
+
+        if (isTargetPrimaryOwner && newRole != WorkspaceMemberRoles.Owner)
+        {
+            throw new ConflictException(
+                "Workspace primary owner role cannot be changed.");
+        }
+
+        if (targetMember.Role == WorkspaceMemberRoles.Owner &&
+            actorMembership.Role != WorkspaceMemberRoles.Owner)
+        {
+            throw new ForbiddenException(
+                "Only workspace owner can change another workspace owner's role.");
+        }
+
+        if (newRole == WorkspaceMemberRoles.Owner &&
+            actorMembership.Role != WorkspaceMemberRoles.Owner)
+        {
+            throw new ForbiddenException(
+                "Only workspace owner can promote members to owner.");
+        }
+
+        var utcNow = _timeProvider.GetUtcNow();
+
+        targetMember.ChangeRole(newRole, utcNow);
 
         if (newRole == WorkspaceMemberRoles.Admin)
         {
-            var activeProjects = await _dbContext.Projects
+            var activeProjectIds = await _dbContext.Projects
                 .Where(project =>
                     project.WorkspaceId == request.WorkspaceId &&
                     project.Status == ResourceStatuses.Active)
-                .ToListAsync(cancellationToken);
-
-            var activeProjectIds = activeProjects
                 .Select(project => project.Id)
-                .ToList();
+                .ToListAsync(cancellationToken);
 
             var existingProjectMembers = await _dbContext.ProjectMembers
                 .Where(member =>
                     member.UserId == targetMember.UserId &&
-                    activeProjectIds.Contains(member.ProjectId))
+                    member.Project.WorkspaceId == request.WorkspaceId &&
+                    member.Project.Status == ResourceStatuses.Active)
                 .ToListAsync(cancellationToken);
 
             foreach (var existingProjectMember in existingProjectMembers)
             {
-                existingProjectMember.ChangeRole(ProjectMemberRoles.Manager);
-                existingProjectMember.Activate();
+                existingProjectMember.ChangeRole(ProjectMemberRoles.Manager, utcNow);
+                existingProjectMember.Activate(utcNow);
             }
 
             var existingProjectIds = existingProjectMembers
                 .Select(member => member.ProjectId)
                 .ToHashSet();
 
-            var missingProjectMembers = activeProjects
-                .Where(project => !existingProjectIds.Contains(project.Id))
-                .Select(project => new ProjectMember(
-                    project.Id,
+            var missingProjectMembers = activeProjectIds
+                .Where(projectId => !existingProjectIds.Contains(projectId))
+                .Select(projectId => new ProjectMember(
+                    projectId,
                     targetMember.UserId,
-                    ProjectMemberRoles.Manager))
+                    ProjectMemberRoles.Manager,
+                    utcNow))
                 .ToList();
 
             _dbContext.ProjectMembers.AddRange(missingProjectMembers);
+        }
+        else if (newRole == WorkspaceMemberRoles.Member)
+        {
+            var activeProjectMembers = await _dbContext.ProjectMembers
+                .Where(member =>
+                    member.UserId == targetMember.UserId &&
+                    member.Status == MembershipStatuses.Active &&
+                    member.Project.WorkspaceId == request.WorkspaceId &&
+                    member.Project.Status == ResourceStatuses.Active)
+                .ToListAsync(cancellationToken);
+
+            foreach (var projectMember in activeProjectMembers)
+            {
+                projectMember.Remove(utcNow);
+            }
         }
 
         await _dbContext.SaveChangesAsync(cancellationToken);

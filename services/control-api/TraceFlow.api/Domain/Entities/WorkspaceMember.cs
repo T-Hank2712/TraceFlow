@@ -1,6 +1,3 @@
-using TraceFlow.Api.Domain.Common;
-using TraceFlow.Api.Domain.Constants;
-
 namespace TraceFlow.Api.Domain.Entities;
 
 public class WorkspaceMember : Entity
@@ -11,32 +8,34 @@ public class WorkspaceMember : Entity
     public Workspace Workspace { get; private set; } = null!;
     public string Role { get; private set; } = WorkspaceMemberRoles.Member;
     public string Status { get; private set; } = MembershipStatuses.Active;
-    public DateTime JoinedAt { get; private set; }
     private WorkspaceMember() { }
-    public WorkspaceMember(Ulid WorkspaceId, Ulid UserId, string Role)
+    public WorkspaceMember(
+        Ulid workspaceId,
+        Ulid userId,
+        string role,
+        DateTimeOffset createdAt)
     {
         Id = Ulid.NewUlid();
-        this.WorkspaceId = WorkspaceId;
-        this.UserId = UserId;
-        this.Role = Role.Trim().ToLower();
+        WorkspaceId = workspaceId;
+        UserId = userId;
+        Role = role.Trim().ToLower();
         Status = MembershipStatuses.Active;
-        JoinedAt = DateTime.UtcNow;
-        CreatedAt = DateTime.UtcNow;
-        UpdatedAt = DateTime.UtcNow;
+        CreatedAt = createdAt;
+        UpdatedAt = createdAt;
     }
-    public void ChangeRole(string role)
+    public void ChangeRole(string role, DateTimeOffset updatedAt)
     {
         Role = role.Trim().ToLowerInvariant();
-        UpdatedAt = DateTime.UtcNow;
+        UpdatedAt = updatedAt;
     }
-    public void Remove()
+    public void Remove(DateTimeOffset removedAt)
     {
         Status = MembershipStatuses.Removed;
-        UpdatedAt = DateTime.UtcNow;
+        UpdatedAt = removedAt;
     }
-    public void Activate()
+    public void Activate(DateTimeOffset activatedAt)
     {
         Status = MembershipStatuses.Active;
-        UpdatedAt = DateTime.UtcNow;
+        UpdatedAt = activatedAt;
     }
 }

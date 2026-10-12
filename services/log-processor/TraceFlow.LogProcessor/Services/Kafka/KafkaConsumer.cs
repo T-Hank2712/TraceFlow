@@ -49,10 +49,6 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
         Func<PendingLogEvent, CancellationToken, Task<BatchProcessResult>> handler,
         CancellationToken cancellationToken)
     {
-        _logger.LogInformation(
-            "Kafka consumer started. Topic: {Topic}, GroupId: {GroupId}",
-            _options.Topic,
-            _options.GroupId);
 
         try
         {
@@ -196,10 +192,6 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
         }
 
         _consumer.Commit(offsets);
-
-        _logger.LogInformation(
-            "Committed Kafka offsets. Count: {Count}",
-            offsets.Count);
     }
 
     public void Dispose()

@@ -1,29 +1,18 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Application.Common.AccessControl;
-using TraceFlow.Api.Application.Common.Exceptions;
-using TraceFlow.Api.Domain.Constants;
-using TraceFlow.Api.Infrastructure.Persistence;
-
 namespace TraceFlow.Api.Application.TraceApplications.Queries.GetApplicationDetail;
 
-public class GetApplicationDetailQueryHandler
-    : IRequestHandler<GetApplicationDetailQuery, ApplicationDetailResponse>
-{
-    private readonly AppDbContext _dbContext;
-    private readonly ProjectAccessService _projectAccess;
-
-    public GetApplicationDetailQueryHandler(
+public class GetApplicationDetailQueryHandler(
         AppDbContext dbContext,
         ProjectAccessService projectAccess)
-    {
-        _dbContext = dbContext;
-        _projectAccess = projectAccess;
-    }
+    : IRequestHandler<GetApplicationDetailQuery, ApplicationDetailResponse>
+{
+
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly ProjectAccessService _projectAccess = projectAccess;
 
     public async Task<ApplicationDetailResponse> Handle(
-        GetApplicationDetailQuery request,
-        CancellationToken cancellationToken)
+           GetApplicationDetailQuery request,
+           CancellationToken cancellationToken)
     {
         var access = await _projectAccess.GetProjectAccessAsync(
             request.WorkspaceId,
@@ -39,6 +28,7 @@ public class GetApplicationDetailQueryHandler
         }
 
         var application = await _dbContext.TraceApplications
+            .AsNoTracking()
             .FirstOrDefaultAsync(x =>
                 x.Id == request.ApplicationId &&
                 x.ProjectId == request.ProjectId &&

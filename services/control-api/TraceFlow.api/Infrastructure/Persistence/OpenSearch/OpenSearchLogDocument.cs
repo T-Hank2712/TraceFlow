@@ -1,6 +1,4 @@
-using System.Text.Json.Serialization;
-
-namespace TraceFlow.Api.Infrastructure.OpenSearch;
+namespace TraceFlow.Api.Infrastructure.Persistence.OpenSearch;
 
 public sealed class OpenSearchLogDocument
 {
@@ -8,10 +6,10 @@ public sealed class OpenSearchLogDocument
     public string EventId { get; init; } = string.Empty;
 
     [JsonPropertyName("timestamp")]
-    public DateTime Timestamp { get; init; }
+    public DateTimeOffset Timestamp { get; init; }
 
     [JsonPropertyName("receivedAt")]
-    public DateTime ReceivedAt { get; init; }
+    public DateTimeOffset ReceivedAt { get; init; }
 
     [JsonPropertyName("workspaceId")]
     public Ulid WorkspaceId { get; init; }

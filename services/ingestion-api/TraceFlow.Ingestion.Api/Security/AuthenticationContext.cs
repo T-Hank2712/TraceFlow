@@ -1,5 +1,3 @@
-using TraceFlow.Ingestion.Api.Contracts.Authentication;
-
 namespace TraceFlow.Ingestion.Api.Security;
 
 public static class AuthenticationContext

@@ -1,5 +1,3 @@
-using System.Security.Claims;
-
 namespace TraceFlow.Api.Domain.Common.Extensions;
 
 public static class ClaimsPrincipalExtensions

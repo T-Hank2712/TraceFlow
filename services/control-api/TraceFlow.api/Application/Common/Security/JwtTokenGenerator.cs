@@ -1,26 +1,17 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
-using Microsoft.IdentityModel.Tokens;
-using TraceFlow.Api.Domain.Entities;
-
 namespace TraceFlow.Api.Application.Common.Security;
 
-public class JwtTokenGenerator
+public class JwtTokenGenerator(
+    IOptions<JwtOptions> options,
+    TimeProvider timeProvider)
 {
-    private readonly IConfiguration _configuration;
-    public JwtTokenGenerator(IConfiguration configuration)
-    {
-        _configuration = configuration;
-    }
-    public (string Token, DateTime ExpiresAt) Generate(User user)
-    {
-        var issuer = _configuration["Jwt:Issuer"];
-        var audience = _configuration["Jwt:Audience"]!;
-        var secret = _configuration["Jwt:Secret"]!;
 
-        var minutes = int.Parse(_configuration["Jwt:AccessTokenExpirationMinutes"] ?? "15");
-        var expiresAt = DateTime.UtcNow.AddMinutes(minutes);
+    private readonly JwtOptions _options = options.Value;
+    private readonly TimeProvider _timeProvider = timeProvider;
+
+
+    public (string Token, DateTimeOffset ExpiresAt) Generate(User user)
+    {
+        var expiresAt = _timeProvider.GetUtcNow().AddMinutes(_options.AccessTokenExpirationMinutes);
 
         var claims = new List<Claim>
         {
@@ -32,17 +23,17 @@ public class JwtTokenGenerator
         };
 
         var key = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(secret));
+            Encoding.UTF8.GetBytes(_options.Secret));
 
         var credentials = new SigningCredentials(
             key,
             SecurityAlgorithms.HmacSha256);
 
         var token = new JwtSecurityToken(
-            issuer,
-            audience,
+            _options.Issuer,
+            _options.Audience,
             claims,
-            expires: expiresAt,
+            expires: expiresAt.UtcDateTime,
             signingCredentials: credentials);
 
         return (

@@ -1,6 +1,4 @@
-using FluentValidation;
-
-namespace TraceFlow.Api.Application.Logs.Queries.SearchLogs;
+namespace TraceFlow.Api.Application.TraceLogs.Queries.SearchLogs;
 
 public sealed class SearchLogsQueryValidator : AbstractValidator<SearchLogsQuery>
 {

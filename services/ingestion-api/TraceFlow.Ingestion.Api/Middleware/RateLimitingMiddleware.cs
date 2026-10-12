@@ -1,7 +1,3 @@
-using TraceFlow.Ingestion.Api.Extensions;
-using TraceFlow.Ingestion.Api.Security;
-using TraceFlow.Ingestion.Api.Services.RateLimiting;
-
 namespace TraceFlow.Ingestion.Api.Middleware;
 
 public sealed class RateLimitingMiddleware
@@ -39,12 +35,40 @@ public sealed class RateLimitingMiddleware
             context.Response.StatusCode =
                 StatusCodes.Status500InternalServerError;
 
+            await context.Response.WriteAsJsonAsync(
+                new ErrorResponse(
+                    ErrorCodes.InternalServerError,
+                    "Internal server error."),
+                context.RequestAborted);
+
             return;
         }
 
-        var result = await _rateLimiter.CheckAsync(
-            authenticationContext.ApiKey,
-            context.RequestAborted);
+        RateLimitResult result;
+
+        try
+        {
+            result = await _rateLimiter.CheckAsync(
+                authenticationContext.ApiKeyFingerprint,
+                context.RequestAborted);
+        }
+        catch (RedisException ex)
+        {
+            _logger.LogError(
+                ex,
+                "Redis unavailable while checking ingestion rate limit.");
+
+            context.Response.StatusCode =
+                StatusCodes.Status503ServiceUnavailable;
+
+            await context.Response.WriteAsJsonAsync(
+                new ErrorResponse(
+                    ErrorCodes.RateLimitUnavailable,
+                    "Rate limit service is unavailable."),
+                context.RequestAborted);
+
+            return;
+        }
 
         if (!result.Allowed)
         {
@@ -55,14 +79,15 @@ public sealed class RateLimitingMiddleware
                 result.RetryAfterSeconds.ToString();
 
             await context.Response.WriteAsJsonAsync(
-                new
-                {
-                    error = "rate_limit_exceeded",
-                    message = "Too many requests.",
-                    limit = result.Limit,
-                    remaining = result.Remaining,
-                    retryAfterSeconds = result.RetryAfterSeconds
-                },
+                new ErrorResponse(
+                    ErrorCodes.RateLimitExceeded,
+                    "Too many requests.",
+                    new Dictionary<string, string[]>
+                    {
+                        ["limit"] = [result.Limit.ToString()],
+                        ["remaining"] = [result.Remaining.ToString()],
+                        ["retryAfterSeconds"] = [result.RetryAfterSeconds.ToString()]
+                    }),
                 context.RequestAborted);
 
             return;

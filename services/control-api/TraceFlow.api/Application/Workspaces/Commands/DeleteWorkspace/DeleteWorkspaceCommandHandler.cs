@@ -1,28 +1,20 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Application.Common.AccessControl;
-using TraceFlow.Api.Domain.Constants;
-using TraceFlow.Api.Infrastructure.Persistence;
-
 namespace TraceFlow.Api.Application.Workspaces.Commands.DeleteWorkspace;
 
-public class DeleteWorkspaceCommandHandler
+public class DeleteWorkspaceCommandHandler(
+        AppDbContext dbContext,
+        WorkspaceAccessService workspaceAccess,
+        TimeProvider timeProvider)
     : IRequestHandler<DeleteWorkspaceCommand, DeleteWorkspaceResponse>
 {
-    private readonly AppDbContext _dbContext;
-    private readonly WorkspaceAccessService _workspaceAccess;
 
-    public DeleteWorkspaceCommandHandler(
-        AppDbContext dbContext,
-        WorkspaceAccessService workspaceAccess)
-    {
-        _dbContext = dbContext;
-        _workspaceAccess = workspaceAccess;
-    }
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly WorkspaceAccessService _workspaceAccess = workspaceAccess;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<DeleteWorkspaceResponse> Handle(
-        DeleteWorkspaceCommand request,
-        CancellationToken cancellationToken)
+           DeleteWorkspaceCommand request,
+           CancellationToken cancellationToken)
     {
         var membership = await _workspaceAccess.GetActiveMembershipAsync(
             request.WorkspaceId,
@@ -40,9 +32,11 @@ public class DeleteWorkspaceCommandHandler
             workspace,
             "Workspace is already archived.");
 
-        var memberCount = await _dbContext.WorkspaceMembers
-            .CountAsync(
-                member => member.WorkspaceId == request.WorkspaceId,
+        var hasAdditionalMembers = await _dbContext.WorkspaceMembers
+            .AnyAsync(
+                member =>
+                    member.WorkspaceId == request.WorkspaceId &&
+                    member.UserId != request.UserId,
                 cancellationToken);
 
         var hasInvitations = await _dbContext.WorkspaceInvitations
@@ -50,9 +44,15 @@ public class DeleteWorkspaceCommandHandler
                 invitation => invitation.WorkspaceId == request.WorkspaceId,
                 cancellationToken);
 
+        var hasProjects = await _dbContext.Projects
+            .AnyAsync(
+                project => project.WorkspaceId == request.WorkspaceId,
+                cancellationToken);
+
         var canHardDelete =
-            memberCount == 1 &&
-            !hasInvitations;
+            !hasAdditionalMembers &&
+            !hasInvitations &&
+            !hasProjects;
 
         if (canHardDelete)
         {
@@ -66,7 +66,7 @@ public class DeleteWorkspaceCommandHandler
                 "Workspace permanently deleted.");
         }
 
-        workspace.Archive();
+        workspace.Archive(_timeProvider.GetUtcNow());
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 

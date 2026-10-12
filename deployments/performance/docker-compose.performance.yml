@@ -143,13 +143,33 @@ services:
       Jwt__Secret: ${Jwt__Secret}
       Jwt__AccessTokenExpirationMinutes: ${Jwt__AccessTokenExpirationMinutes}
       Jwt__RefreshTokenExpirationDays: ${Jwt__RefreshTokenExpirationDays}
-      API_KEY_PEPPER: ${API_KEY_PEPPER}
-      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET}
+      ApiKeySecurity__Pepper: ${ApiKeySecurity__Pepper}
+      InternalService__Secret: ${InternalService__Secret}
+      RefreshTokenSecurity__Pepper: ${RefreshTokenSecurity__Pepper}
       OpenSearch__Url: ${OpenSearch__Url}
       OpenSearch__Username: ${OpenSearch__Username}
       OpenSearch__Password: ${OpenSearch__Password}
       OpenSearch__Index: ${OpenSearch__Index}
       OpenSearch__SkipTlsVerify: ${OpenSearch__SkipTlsVerify}
+      RateLimit__Global__PermitLimit: ${RateLimit__Global__PermitLimit}
+      RateLimit__Global__WindowSeconds: ${RateLimit__Global__WindowSeconds}
+      RateLimit__Global__QueueLimit: ${RateLimit__Global__QueueLimit}
+      RateLimit__Auth__PermitLimit: ${RateLimit__Auth__PermitLimit}
+      RateLimit__Auth__WindowSeconds: ${RateLimit__Auth__WindowSeconds}
+      RateLimit__Auth__QueueLimit: ${RateLimit__Auth__QueueLimit}
+      RateLimit__Internal__PermitLimit: ${RateLimit__Internal__PermitLimit}
+      RateLimit__Internal__WindowSeconds: ${RateLimit__Internal__WindowSeconds}
+      RateLimit__Internal__QueueLimit: ${RateLimit__Internal__QueueLimit}
+      RateLimit__Search__PermitLimit: ${RateLimit__Search__PermitLimit}
+      RateLimit__Search__WindowSeconds: ${RateLimit__Search__WindowSeconds}
+      RateLimit__Search__QueueLimit: ${RateLimit__Search__QueueLimit}
+      Database__MaxRetryCount: ${Database__MaxRetryCount}
+      Database__MaxRetryDelaySeconds: ${Database__MaxRetryDelaySeconds}
+      TrustedProxies__KnownNetworks__0: ${TrustedProxies__KnownNetworks__0}
+      RequestBodyLimits__DefaultBytes: ${RequestBodyLimits__DefaultBytes}
+      RequestBodyLimits__AuthBytes: ${RequestBodyLimits__AuthBytes}
+      RequestBodyLimits__InternalBytes: ${RequestBodyLimits__InternalBytes}
+      RequestBodyLimits__SearchBytes: ${RequestBodyLimits__SearchBytes}
     depends_on:
       postgres:
         condition: service_healthy
@@ -191,17 +211,34 @@ services:
       Kafka__QueueBufferingMaxMessages: ${Kafka__QueueBufferingMaxMessages}
       Kafka__QueueBufferingMaxKbytes: ${Kafka__QueueBufferingMaxKbytes}
       Kafka__LingerMs: ${Kafka__LingerMs}
+      Kafka__BatchPublishConcurrency: ${Kafka__BatchPublishConcurrency}
+      Kafka__FlushTimeoutSeconds: ${Kafka__FlushTimeoutSeconds}
+      Kafka__HealthCheckTimeoutSeconds: ${Kafka__HealthCheckTimeoutSeconds}
       Ingestion__MaxBatchSize: ${Ingestion__MaxBatchSize}
       Ingestion__MaxRequestBodyBytes: ${Ingestion__MaxRequestBodyBytes}
       Ingestion__MaxMessageLength: ${Ingestion__MaxMessageLength}
       Ingestion__MaxServiceLength: ${Ingestion__MaxServiceLength}
+      Ingestion__MaxTraceIdLength: ${Ingestion__MaxTraceIdLength}
+      Ingestion__MaxCorrelationIdLength: ${Ingestion__MaxCorrelationIdLength}
+      Ingestion__MaxMetadataKeys: ${Ingestion__MaxMetadataKeys}
+      Ingestion__MaxMetadataDepth: ${Ingestion__MaxMetadataDepth}
+      Ingestion__MaxMetadataKeyLength: ${Ingestion__MaxMetadataKeyLength}
+      Ingestion__MaxMetadataStringValueLength: ${Ingestion__MaxMetadataStringValueLength}
+      Ingestion__MaxMetadataArrayLength: ${Ingestion__MaxMetadataArrayLength}
+      Ingestion__MaxPastTimestampDays: ${Ingestion__MaxPastTimestampDays}
+      Ingestion__MaxFutureTimestampMinutes: ${Ingestion__MaxFutureTimestampMinutes}
       Redis__SectionName: ${Redis__SectionName}
       Redis__ConnectionString: redis:6379,password=${REDIS_PASSWORD}
-      Redis__TenantContextCacheTtlSeconds: ${Redis__TenantContextCacheTtlSeconds}
-      Redis__TenantContextCacheKeyPrefix: ${Redis__TenantContextCacheKeyPrefix}
-      Redis__RateLimitKeyPrefix: ${Redis__RateLimitKeyPrefix}
+      Redis__TenantContextRedisCacheTtlSeconds: ${Redis__TenantContextRedisCacheTtlSeconds}
+      Redis__TenantContextRedisCacheKeyPrefix: ${Redis__TenantContextRedisCacheKeyPrefix}
+      Redis__TenantContextLocalCacheTtlSeconds: ${Redis__TenantContextLocalCacheTtlSeconds}
+      Redis__TenantContextLocalCacheKeyPrefix: ${Redis__TenantContextLocalCacheKeyPrefix}
       RateLimiting__PermitLimit: ${RateLimiting__PermitLimit}
       RateLimiting__WindowSeconds: ${RateLimiting__WindowSeconds}
+      RateLimiting__RateLimitKeyPrefix: ${RateLimiting__RateLimitKeyPrefix}
+      PreAuthRateLimiting__PermitLimit: ${PreAuthRateLimiting__PermitLimit}
+      PreAuthRateLimiting__WindowSeconds: ${PreAuthRateLimiting__WindowSeconds}
+      PreAuthRateLimiting__QueueLimit: ${PreAuthRateLimiting__QueueLimit}
     depends_on:
       kafka:
         condition: service_healthy
@@ -214,7 +251,7 @@ services:
     networks:
       - traceflow-performance-network
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:5100/health > /dev/null 2>&1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:5100/health/live > /dev/null 2>&1"]
       interval: 10s
       timeout: 5s
       retries: 5

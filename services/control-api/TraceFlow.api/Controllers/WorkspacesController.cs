@@ -1,35 +1,13 @@
-using System.Security.Claims;
-using MediatR;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using TraceFlow.Api.Application.Workspaces.Commands.CreateWorkspace;
-using TraceFlow.Api.Domain.Dtos.Workspaces;
-using TraceFlow.Api.Domain.Common.Extensions;
-using TraceFlow.Api.Application.Workspaces.Queries.GetWorkspaces;
-using TraceFlow.Api.Application.Workspaces.Queries.GetWorkspaceById;
-using TraceFlow.Api.Application.Workspaces.Commands.UpdateWorkspace;
-using TraceFlow.Api.Application.Workspaces.Queries.ListMembers;
-using TraceFlow.Api.Application.Workspaces.Commands.ChangeMemberRole;
-using TraceFlow.Api.Application.Workspaces.Commands.DeleteWorkspace;
-using TraceFlow.Api.Application.Workspaces.Commands.RemoveMember;
-using TraceFlow.Api.Application.Workspaces.Commands.LeaveWorkspace;
-using TraceFlow.Api.Application.Workspaces.Commands.TransferOwnership;
-using Asp.Versioning;
-
 namespace TraceFlow.Api.Controllers;
 
 [ApiController]
 [ApiVersion(1.0)]
 [Authorize]
 [Route("api/v{version:apiVersion}/workspaces")]
-public class WorkspacesController : ControllerBase
+public class WorkspacesController(ISender sender) : ControllerBase
 {
-    private readonly ISender _sender;
+    private readonly ISender _sender = sender;
 
-    public WorkspacesController(ISender sender)
-    {
-        _sender = sender;
-    }
 
     [HttpPost]
     public async Task<IActionResult> CreateWorkspace(

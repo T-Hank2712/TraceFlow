@@ -1,30 +1,13 @@
-using MediatR;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using TraceFlow.Api.Domain.Common.Extensions;
-using TraceFlow.Api.Application.Workspaces.Commands.InviteWorkspaceMember;
-using TraceFlow.Api.Domain.Dtos.Workspaces;
-using TraceFlow.Api.Application.Workspaces.Queries.InvitationSent;
-using TraceFlow.Api.Application.Workspaces.Queries.InvitationInbox;
-using TraceFlow.Api.Application.Workspaces.Commands.AcceptWorkspaceInvitation;
-using TraceFlow.Api.Application.Workspaces.Commands.DeclineWorkspaceInvitation;
-using TraceFlow.Api.Application.Workspaces.Commands.CancelInvitation;
-using Asp.Versioning;
-
 namespace TraceFlow.Api.Controllers;
 
 [ApiController]
 [ApiVersion(1.0)]
 [Authorize]
 [Route("api/v{version:apiVersion}/workspace-invitations")]
-public class WorkspaceInvitationsController : ControllerBase
+public class WorkspaceInvitationsController(ISender sender) : ControllerBase
 {
-    private readonly ISender _sender;
+    private readonly ISender _sender = sender;
 
-    public WorkspaceInvitationsController(ISender sender)
-    {
-        _sender = sender;
-    }
 
     [HttpPost("{workspaceId}/invitations")]
     public async Task<IActionResult> InviteWorkspaceMember(

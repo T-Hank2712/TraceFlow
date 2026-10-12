@@ -1,29 +1,19 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Application.Common.AccessControl;
-using TraceFlow.Api.Application.Common.Exceptions;
-using TraceFlow.Api.Domain.Constants;
-using TraceFlow.Api.Infrastructure.Persistence;
-
 namespace TraceFlow.Api.Application.Projects.Commands.RemoveProjectMember;
 
-public class RemoveProjectMemberCommandHandler
+public class RemoveProjectMemberCommandHandler(
+        AppDbContext dbContext,
+        ProjectAccessService projectAccess,
+        TimeProvider timeProvider)
     : IRequestHandler<RemoveProjectMemberCommand, RemoveProjectMemberResponse>
 {
-    private readonly AppDbContext _dbContext;
-    private readonly ProjectAccessService _projectAccess;
 
-    public RemoveProjectMemberCommandHandler(
-        AppDbContext dbContext,
-        ProjectAccessService projectAccess)
-    {
-        _dbContext = dbContext;
-        _projectAccess = projectAccess;
-    }
+    private readonly AppDbContext _dbContext = dbContext;
+    private readonly ProjectAccessService _projectAccess = projectAccess;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<RemoveProjectMemberResponse> Handle(
-        RemoveProjectMemberCommand request,
-        CancellationToken cancellationToken)
+           RemoveProjectMemberCommand request,
+           CancellationToken cancellationToken)
     {
         var access = await _projectAccess.GetProjectAccessAsync(
             request.WorkspaceId,
@@ -49,6 +39,12 @@ public class RemoveProjectMemberCommandHandler
             throw new NotFoundException("Project member not found.");
         }
 
+        if (request.ActorUserId == targetMember.UserId)
+        {
+            throw new ConflictException(
+                "Use leave project to remove your own project membership.");
+        }
+
         if (targetMember.Role == ProjectMemberRoles.Manager)
         {
             var managerCount = await _dbContext.ProjectMembers
@@ -65,15 +61,13 @@ public class RemoveProjectMemberCommandHandler
             }
         }
 
-        var response = new RemoveProjectMemberResponse(
-            targetMember.Id,
-            targetMember.ProjectId,
-            targetMember.UserId);
-
-        _dbContext.ProjectMembers.Remove(targetMember);
+        targetMember.Remove(_timeProvider.GetUtcNow());
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        return response;
+        return new RemoveProjectMemberResponse(
+            targetMember.Id,
+            targetMember.ProjectId,
+            targetMember.UserId);
     }
 }

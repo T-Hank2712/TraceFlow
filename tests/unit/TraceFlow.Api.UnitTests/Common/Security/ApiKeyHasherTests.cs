@@ -1,7 +1,8 @@
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using TraceFlow.Api.Application.Common.Security;
-using Xunit;
+using Microsoft.Extensions.Options;
+using TraceFlow.Api.Infrastructure.Options;
 
 namespace TraceFlow.Api.UnitTests.Common.Security;
 
@@ -13,14 +14,12 @@ public class ApiKeyHasherTests
 
     public ApiKeyHasherTests()
     {
-        var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["API_KEY_PEPPER"] = Pepper
-            })
-            .Build();
+        var options = Options.Create(new ApiKeySecurityOptions
+        {
+            Pepper = Pepper
+        });
 
-        _hasher = new ApiKeyHasher(configuration);
+       _hasher = new ApiKeyHasher(options);
     }
 
     [Fact]
@@ -130,11 +129,12 @@ public class ApiKeyHasherTests
     public void Hash_Should_Throw_When_Pepper_Is_Not_Configured()
     {
         // Arrange
-        var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection()
-            .Build();
+        var options = Options.Create(new ApiKeySecurityOptions
+        {
+            Pepper = string.Empty
+        });
 
-        var hasher = new ApiKeyHasher(configuration);
+        var hasher = new ApiKeyHasher(options);
 
         // Act
         var act = () => hasher.Hash("tfk_live_secret");
@@ -149,11 +149,12 @@ public class ApiKeyHasherTests
     public void Verify_Should_Throw_When_Pepper_Is_Not_Configured()
     {
         // Arrange
-        var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection()
-            .Build();
+        var options = Options.Create(new ApiKeySecurityOptions
+        {
+            Pepper = string.Empty
+        });
 
-        var hasher = new ApiKeyHasher(configuration);
+        var hasher = new ApiKeyHasher(options);
 
         // Act
         var act = () => hasher.Verify(

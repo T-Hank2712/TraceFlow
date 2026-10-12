@@ -1,11 +1,10 @@
-using Microsoft.AspNetCore.Mvc;
-
 namespace TraceFlow.Api.Controllers;
 
 [ApiController]
 [Route("api/system")]
 public class SystemController : ControllerBase
 {
+    [AllowAnonymous]
     [HttpGet("status")]
     public IActionResult GetStatus()
     {

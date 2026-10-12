@@ -1,25 +1,15 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Application.Common.AccessControl;
-using TraceFlow.Api.Application.Common.Exceptions;
-using TraceFlow.Api.Domain.Constants;
-using TraceFlow.Api.Infrastructure.Persistence;
-
 namespace TraceFlow.Api.Application.ApiKeys.Queries.ListApiKeys;
 
-public class ListApiKeysQueryHandler
+public class ListApiKeysQueryHandler(
+    AppDbContext dbContext,
+    ProjectAccessService projectAccess
+)
     : IRequestHandler<ListApiKeysQuery, IReadOnlyList<ApiKeySummaryResponse>>
 {
-    private readonly AppDbContext _dbContext;
-    private readonly ProjectAccessService _projectAccess;
 
-    public ListApiKeysQueryHandler(
-        AppDbContext dbContext,
-        ProjectAccessService projectAccess)
-    {
-        _dbContext = dbContext;
-        _projectAccess = projectAccess;
-    }
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly ProjectAccessService _projectAccess = projectAccess;
 
     public async Task<IReadOnlyList<ApiKeySummaryResponse>> Handle(
         ListApiKeysQuery request,

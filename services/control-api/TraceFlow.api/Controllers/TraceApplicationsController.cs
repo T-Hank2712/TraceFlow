@@ -1,29 +1,13 @@
-using MediatR;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using TraceFlow.Api.Application.TraceApplications.Commands.CreateTraceApplication;
-using TraceFlow.Api.Domain.Common.Extensions;
-using TraceFlow.Api.Domain.Dtos.TraceApplications;
-using TraceFlow.Api.Application.TraceApplications.Queries.ListTraceApplications;
-using TraceFlow.Api.Application.TraceApplications.Queries.GetApplicationDetail;
-using TraceFlow.Api.Application.TraceApplications.Commands.UpdateApplication;
-using TraceFlow.Api.Application.TraceApplications.Commands.DeleteApplication;
-using Asp.Versioning;
-
 namespace TraceFlow.Api.Controllers;
 
 [ApiController]
 [ApiVersion(1.0)]
 [Authorize]
 [Route("api/v{version:apiVersion}/workspaces/{workspaceId}/projects/{projectId}/applications")]
-public class TraceApplicationsController : ControllerBase
+public class TraceApplicationsController(ISender sender) : ControllerBase
 {
-    private readonly ISender _sender;
+    private readonly ISender _sender = sender;
 
-    public TraceApplicationsController(ISender sender)
-    {
-        _sender = sender;
-    }
 
     [HttpPost]
     public async Task<IActionResult> CreateTraceApplication(

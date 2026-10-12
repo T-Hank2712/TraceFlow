@@ -8,4 +8,4 @@ public record InviteWorkspaceMemberResponse(
     string InvitedUserEmail,
     string Role,
     string Status,
-    DateTime ExpiresAt);
+    DateTimeOffset ExpiresAt);

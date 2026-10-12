@@ -1,27 +1,18 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Application.Common.Security;
-using TraceFlow.Api.Domain.Constants;
-using TraceFlow.Api.Infrastructure.Persistence;
-
 namespace TraceFlow.Api.Application.ApiKeys.Commands.ValidateApiKey;
 
-public class ValidateApiKeyCommandHandler
+public class ValidateApiKeyCommandHandler(
+    AppDbContext dbContext,
+    ApiKeyParser apiKeyParser,
+    ApiKeyHasher apiKeyHasher,
+    TimeProvider timeProvider
+)
     : IRequestHandler<ValidateApiKeyCommand, ValidateApiKeyResponse>
 {
-    private readonly AppDbContext _dbContext;
-    private readonly ApiKeyParser _apiKeyParser;
-    private readonly ApiKeyHasher _apiKeyHasher;
-
-    public ValidateApiKeyCommandHandler(
-        AppDbContext dbContext,
-        ApiKeyParser apiKeyParser,
-        ApiKeyHasher apiKeyHasher)
-    {
-        _dbContext = dbContext;
-        _apiKeyParser = apiKeyParser;
-        _apiKeyHasher = apiKeyHasher;
-    }
+    private static readonly TimeSpan MinimumLastUsedUpdateInterval = TimeSpan.FromMinutes(1);
+    private readonly AppDbContext _dbContext = dbContext;
+    private readonly ApiKeyParser _apiKeyParser = apiKeyParser;
+    private readonly ApiKeyHasher _apiKeyHasher = apiKeyHasher;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<ValidateApiKeyResponse> Handle(
         ValidateApiKeyCommand request,
@@ -52,7 +43,7 @@ public class ValidateApiKeyCommandHandler
             return Invalid();
         }
 
-        var utcNow = DateTime.UtcNow;
+        var utcNow = _timeProvider.GetUtcNow();
 
         if (!apiKey.IsUsable(utcNow))
         {
@@ -66,9 +57,13 @@ public class ValidateApiKeyCommandHandler
             return Invalid();
         }
 
-        apiKey.MarkUsed();
+        if (apiKey.LastUsedAt is null ||
+            utcNow - apiKey.LastUsedAt.Value >= MinimumLastUsedUpdateInterval)
+        {
+            apiKey.MarkUsed(utcNow);
 
-        await _dbContext.SaveChangesAsync(cancellationToken);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
 
         return new ValidateApiKeyResponse(
             true,

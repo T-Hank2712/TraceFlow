@@ -1,28 +1,19 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Application.Common.AccessControl;
-using TraceFlow.Api.Domain.Constants;
-using TraceFlow.Api.Infrastructure.Persistence;
-
 namespace TraceFlow.Api.Application.Projects.Commands.DeleteProject;
 
-public class DeleteProjectCommandHandler
+public class DeleteProjectCommandHandler(
+        AppDbContext dbContext,
+        ProjectAccessService projectAccess,
+        TimeProvider timeProvider)
     : IRequestHandler<DeleteProjectCommand, DeleteProjectResponse>
 {
-    private readonly AppDbContext _dbContext;
-    private readonly ProjectAccessService _projectAccess;
 
-    public DeleteProjectCommandHandler(
-        AppDbContext dbContext,
-        ProjectAccessService projectAccess)
-    {
-        _dbContext = dbContext;
-        _projectAccess = projectAccess;
-    }
+    private readonly AppDbContext _dbContext = dbContext;
+    private readonly ProjectAccessService _projectAccess = projectAccess;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<DeleteProjectResponse> Handle(
-        DeleteProjectCommand request,
-        CancellationToken cancellationToken)
+           DeleteProjectCommand request,
+           CancellationToken cancellationToken)
     {
         var access = await _projectAccess.GetProjectAccessAsync(
             request.WorkspaceId,
@@ -37,9 +28,21 @@ public class DeleteProjectCommandHandler
 
         var project = access.Project;
 
-        var hasBusinessDependencies = false;
+        var hasInvitations = await _dbContext.ProjectInvitations
+            .AnyAsync(
+                invitation => invitation.ProjectId == request.ProjectId,
+                cancellationToken);
 
-        if (!hasBusinessDependencies)
+        var hasTraceApplications = await _dbContext.TraceApplications
+            .AnyAsync(
+                application => application.ProjectId == request.ProjectId,
+                cancellationToken);
+
+        var canHardDelete =
+            !hasInvitations &&
+            !hasTraceApplications;
+
+        if (canHardDelete)
         {
             _dbContext.Projects.Remove(project);
 
@@ -52,7 +55,7 @@ public class DeleteProjectCommandHandler
                 "Project permanently deleted.");
         }
 
-        project.Archive();
+        project.Archive(_timeProvider.GetUtcNow());
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 

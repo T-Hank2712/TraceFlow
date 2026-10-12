@@ -7,4 +7,4 @@ public record UpdateApplicationResponse(
     string Slug,
     string? Description,
     string Status,
-    DateTime UpdatedAt);
+    DateTimeOffset UpdatedAt);

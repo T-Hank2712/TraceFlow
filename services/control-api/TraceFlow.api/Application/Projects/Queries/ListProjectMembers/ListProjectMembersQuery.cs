@@ -1,5 +1,3 @@
-using MediatR;
-
 namespace TraceFlow.Api.Application.Projects.Queries.ListProjectMembers;
 
 public record ListProjectMembersQuery(

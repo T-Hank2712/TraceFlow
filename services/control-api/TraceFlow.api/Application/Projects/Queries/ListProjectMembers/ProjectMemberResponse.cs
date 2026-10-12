@@ -8,4 +8,4 @@ public record ProjectMemberResponse(
     string Email,
     string Role,
     string Status,
-    DateTime JoinedAt);
+    DateTimeOffset createdAt);

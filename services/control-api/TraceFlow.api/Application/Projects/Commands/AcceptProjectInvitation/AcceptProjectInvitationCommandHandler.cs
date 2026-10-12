@@ -1,21 +1,13 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Application.Common.Exceptions;
-using TraceFlow.Api.Domain.Constants;
-using TraceFlow.Api.Domain.Entities;
-using TraceFlow.Api.Infrastructure.Persistence;
-
 namespace TraceFlow.Api.Application.Projects.Commands.AcceptProjectInvitation;
 
-public class AcceptProjectInvitationCommandHandler
+public class AcceptProjectInvitationCommandHandler(
+    AppDbContext dbContext,
+    TimeProvider timeProvider
+)
     : IRequestHandler<AcceptProjectInvitationCommand, AcceptProjectInvitationResponse>
 {
-    private readonly AppDbContext _dbContext;
-
-    public AcceptProjectInvitationCommandHandler(AppDbContext dbContext)
-    {
-        _dbContext = dbContext;
-    }
+    private readonly AppDbContext _dbContext = dbContext;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<AcceptProjectInvitationResponse> Handle(
         AcceptProjectInvitationCommand request,
@@ -30,14 +22,28 @@ public class AcceptProjectInvitationCommandHandler
                     invitation.InvitedUserId == request.UserId,
                 cancellationToken);
 
+        var utcNow = _timeProvider.GetUtcNow();
+
         if (invitation is null)
         {
             throw new NotFoundException("Invitation not found.");
         }
 
+        if (invitation.Status != InvitationStatuses.Pending ||
+            invitation.ExpiresAt <= utcNow)
+        {
+            throw new ConflictException(
+                "Invitation is no longer valid or has already been processed.");
+        }
+
         if (invitation.Workspace.Status == ResourceStatuses.Archived)
         {
             throw new ConflictException("Archived workspace cannot be joined.");
+        }
+
+        if (invitation.Project.Status == ResourceStatuses.Archived)
+        {
+            throw new ConflictException("Archived project cannot be joined.");
         }
 
         var workspaceMember = await _dbContext.WorkspaceMembers
@@ -52,48 +58,46 @@ public class AcceptProjectInvitationCommandHandler
             workspaceMember = new WorkspaceMember(
                 invitation.WorkspaceId,
                 request.UserId,
-                WorkspaceMemberRoles.Member);
+                WorkspaceMemberRoles.Member,
+                utcNow);
 
             _dbContext.WorkspaceMembers.Add(workspaceMember);
         }
         else if (workspaceMember.Status != MembershipStatuses.Active)
         {
-            workspaceMember.Activate();
-            workspaceMember.ChangeRole(WorkspaceMemberRoles.Member);
+            workspaceMember.Activate(utcNow);
+            workspaceMember.ChangeRole(WorkspaceMemberRoles.Member, utcNow);
         }
 
-        var existingProjectMember = await _dbContext.ProjectMembers
+        var projectMember = await _dbContext.ProjectMembers
             .FirstOrDefaultAsync(
                 member =>
                     member.ProjectId == invitation.ProjectId &&
                     member.UserId == request.UserId,
                 cancellationToken);
 
-        if (existingProjectMember is not null &&
-            existingProjectMember.Status == MembershipStatuses.Active)
+        if (projectMember?.Status == MembershipStatuses.Active)
         {
             throw new ConflictException("User is already a project member.");
         }
 
-        ProjectMember projectMember;
-
-        if (existingProjectMember is null)
+        if (projectMember is null)
         {
             projectMember = new ProjectMember(
                 invitation.ProjectId,
                 request.UserId,
-                invitation.Role);
+                invitation.Role,
+                utcNow);
 
             _dbContext.ProjectMembers.Add(projectMember);
         }
         else
         {
-            existingProjectMember.Activate();
-            existingProjectMember.ChangeRole(invitation.Role);
-            projectMember = existingProjectMember;
+            projectMember.Activate(utcNow);
+            projectMember.ChangeRole(invitation.Role, utcNow);
         }
 
-        invitation.Accept();
+        invitation.Accept(utcNow);
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 

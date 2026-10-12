@@ -7,5 +7,5 @@ public record WorkspaceDetailResponse(
     string? Description,
     string Status,
     string CurrentUserRole,
-    DateTime CreatedAt,
-    DateTime UpdatedAt);
+    DateTimeOffset CreatedAt,
+    DateTimeOffset UpdatedAt);

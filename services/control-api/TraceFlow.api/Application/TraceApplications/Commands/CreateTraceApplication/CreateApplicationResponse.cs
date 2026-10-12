@@ -8,4 +8,4 @@ public record CreateTraceApplicationResponse(
     string Slug,
     string? Description,
     string Status,
-    DateTime CreatedAt);
+    DateTimeOffset CreatedAt);

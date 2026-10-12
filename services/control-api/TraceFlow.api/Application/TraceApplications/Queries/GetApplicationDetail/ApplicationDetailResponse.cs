@@ -8,5 +8,5 @@ public record ApplicationDetailResponse(
     string Slug,
     string? Description,
     string Status,
-    DateTime CreatedAt,
-    DateTime UpdatedAt);
+    DateTimeOffset CreatedAt,
+    DateTimeOffset UpdatedAt);

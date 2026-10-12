@@ -2,8 +2,8 @@ namespace TraceFlow.Api.Domain.Dtos.Logs;
 
 public sealed record LogSearchItemResponse(
     string EventId,
-    DateTime Timestamp,
-    DateTime ReceivedAt,
+    DateTimeOffset Timestamp,
+    DateTimeOffset ReceivedAt,
     Ulid WorkspaceId,
     Ulid ProjectId,
     Ulid ApplicationId,

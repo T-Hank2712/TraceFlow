@@ -1,5 +1,5 @@
 namespace TraceFlow.Ingestion.Api.Contracts.Authentication;
 
 public sealed record AuthenticatedContext(
-    string ApiKey,
+    string ApiKeyFingerprint,
     ApiKeyValidationResult Tenant);

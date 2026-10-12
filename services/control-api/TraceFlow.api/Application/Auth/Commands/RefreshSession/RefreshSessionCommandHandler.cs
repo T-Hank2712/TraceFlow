@@ -1,73 +1,109 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Application.Common.Security;
-using TraceFlow.Api.Domain.Entities;
-using TraceFlow.Api.Infrastructure.Persistence;
-using TraceFlow.Api.Application.Common.Exceptions;
-using TraceFlow.Api.Domain.Constants;
-
 namespace TraceFlow.Api.Application.Auth.Commands.RefreshSession;
 
-public class RefreshSessionCommandHandler : IRequestHandler<RefreshSessionCommand, RefreshSessionResponse>
+public class RefreshSessionCommandHandler(
+    AppDbContext dbContext,
+    JwtTokenGenerator jwtTokenGenerator,
+    RefreshTokenGenerator refreshTokenGenerator,
+    IOptions<JwtOptions> options,
+    TimeProvider timeProvider
+) : IRequestHandler<RefreshSessionCommand, RefreshSessionResponse>
 {
-    private readonly AppDbContext _dbContext;
-    private readonly JwtTokenGenerator _jwtTokenGenerator;
-    private readonly RefreshTokenGenerator _refreshTokenGenerator;
-    private readonly IConfiguration _configuration;
-    public RefreshSessionCommandHandler(AppDbContext dbContext, JwtTokenGenerator jwtTokenGenerator, RefreshTokenGenerator refreshTokenGenerator, IConfiguration configuration)
+    private const string InvalidRefreshTokenMessage = "Invalid refresh token.";
+    private readonly AppDbContext _dbContext = dbContext;
+    private readonly JwtTokenGenerator _jwtTokenGenerator = jwtTokenGenerator;
+    private readonly RefreshTokenGenerator _refreshTokenGenerator = refreshTokenGenerator;
+    private readonly JwtOptions _options = options.Value;
+    private readonly TimeProvider _timeProvider = timeProvider;
+
+    public async Task<RefreshSessionResponse> Handle(
+        RefreshSessionCommand request,
+        CancellationToken cancellationToken)
     {
-        _dbContext = dbContext;
-        _jwtTokenGenerator = jwtTokenGenerator;
-        _refreshTokenGenerator = refreshTokenGenerator;
-        _configuration = configuration;
-    }
-    public async Task<RefreshSessionResponse> Handle(RefreshSessionCommand request, CancellationToken cancellationToken)
-    {
-        var refreshTokenHash = RefreshTokenGenerator.Hash(request.RefreshToken);
+        var refreshTokenHash =
+            _refreshTokenGenerator.Hash(request.RefreshToken);
 
-        var existingRefreshToken = await _dbContext.RefreshTokens
-        .Include(token => token.User)
-        .FirstOrDefaultAsync(
-            token => token.TokenHash == refreshTokenHash, cancellationToken
-        );
+        var strategy = _dbContext.Database.CreateExecutionStrategy();
 
-        if (existingRefreshToken is null)
+        return await strategy.ExecuteAsync(async () =>
         {
-            throw new UnauthorizedException("Invalid refresh token.");
-        }
+            var utcNow = _timeProvider.GetUtcNow();
 
+            var existingRefreshToken = await _dbContext.RefreshTokens
+                .AsNoTracking()
+                .Include(token => token.User)
+                .FirstOrDefaultAsync(
+                    token => token.TokenHash == refreshTokenHash,
+                    cancellationToken);
 
-        if (!existingRefreshToken.IsActive)
-        {
-            throw new UnauthorizedException(
-                "Refresh token is no longer active.");
-        }
+            if (existingRefreshToken is null)
+            {
+                throw new UnauthorizedException(InvalidRefreshTokenMessage);
+            }
 
-        if (existingRefreshToken.User.Status != UserStatuses.Active)
-        {
-            throw new UnauthorizedException(
-                "User account is not active.");
-        }
+            if (existingRefreshToken.IsRevoked)
+            {
+                await _dbContext.RefreshTokens
+                    .Where(token =>
+                        token.UserId == existingRefreshToken.UserId &&
+                        token.RevokedAt == null &&
+                        token.ExpiresAt > utcNow)
+                    .ExecuteUpdateAsync(
+                        setters => setters
+                            .SetProperty(token => token.RevokedAt, utcNow)
+                            .SetProperty(token => token.UpdatedAt, utcNow),
+                        cancellationToken);
 
-        existingRefreshToken.Revoke();
+                throw new UnauthorizedException(InvalidRefreshTokenMessage);
+            }
 
-        var accessToken = _jwtTokenGenerator.Generate(existingRefreshToken.User);
-        var newRefreshToken = _refreshTokenGenerator.Generate();
-        var refreshTokenExpirationDays = int.Parse(_configuration["Jwt:RefreshTokenExpirationDays"] ?? "30");
+            if (existingRefreshToken.IsExpired(utcNow) ||
+                existingRefreshToken.User.Status != UserStatuses.Active)
+            {
+                throw new UnauthorizedException(InvalidRefreshTokenMessage);
+            }
 
-        var newRefreshTokenEntity = new RefreshToken(
-            existingRefreshToken.UserId,
-            newRefreshToken.Hash,
-            DateTime.UtcNow.AddDays(refreshTokenExpirationDays));
+            await using var transaction =
+                await _dbContext.Database.BeginTransactionAsync(cancellationToken);
 
-        _dbContext.RefreshTokens.Add(newRefreshTokenEntity);
+            var revokedRows = await _dbContext.RefreshTokens
+                .Where(token =>
+                    token.Id == existingRefreshToken.Id &&
+                    token.RevokedAt == null &&
+                    token.ExpiresAt > utcNow)
+                .ExecuteUpdateAsync(
+                    setters => setters
+                        .SetProperty(token => token.RevokedAt, utcNow)
+                        .SetProperty(token => token.UpdatedAt, utcNow),
+                    cancellationToken);
 
-        await _dbContext.SaveChangesAsync(cancellationToken);
+            if (revokedRows != 1)
+            {
+                throw new UnauthorizedException(InvalidRefreshTokenMessage);
+            }
 
-        return new RefreshSessionResponse(
-            accessToken.Token,
-            accessToken.ExpiresAt,
-            newRefreshToken.Token,
-            newRefreshTokenEntity.ExpiresAt);
+            var accessToken =
+                _jwtTokenGenerator.Generate(existingRefreshToken.User);
+
+            var newRefreshToken =
+                _refreshTokenGenerator.Generate();
+
+            var newRefreshTokenEntity = new RefreshToken(
+                existingRefreshToken.UserId,
+                newRefreshToken.Hash,
+                utcNow.AddDays(_options.RefreshTokenExpirationDays),
+                utcNow);
+
+            _dbContext.RefreshTokens.Add(newRefreshTokenEntity);
+
+            await _dbContext.SaveChangesAsync(cancellationToken);
+
+            await transaction.CommitAsync(cancellationToken);
+
+            return new RefreshSessionResponse(
+                accessToken.Token,
+                accessToken.ExpiresAt,
+                newRefreshToken.Token,
+                newRefreshTokenEntity.ExpiresAt);
+        });
     }
 }

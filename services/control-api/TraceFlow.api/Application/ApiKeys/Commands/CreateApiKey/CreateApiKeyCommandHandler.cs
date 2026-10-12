@@ -1,36 +1,26 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using TraceFlow.Api.Application.Common.AccessControl;
-using TraceFlow.Api.Application.Common.Exceptions;
-using TraceFlow.Api.Application.Common.Security;
-using TraceFlow.Api.Domain.Constants;
-using TraceFlow.Api.Domain.Entities;
-using TraceFlow.Api.Infrastructure.Persistence;
-
 namespace TraceFlow.Api.Application.ApiKeys.Commands.CreateApiKey;
 
-public class CreateApiKeyCommandHandler
+public class CreateApiKeyCommandHandler(
+    AppDbContext dbContext,
+    ProjectAccessService projectAccess,
+    ApiKeyGenerator apiKeyGenerator,
+    ApiKeyHasher apiKeyHasher,
+    ApiKeyExpirationPolicyResolver expirationPolicyResolver,
+    TimeProvider timeProvider
+)
     : IRequestHandler<CreateApiKeyCommand, CreateApiKeyResponse>
 {
-    private readonly AppDbContext _dbContext;
-    private readonly ProjectAccessService _projectAccess;
-    private readonly ApiKeyGenerator _apiKeyGenerator;
-    private readonly ApiKeyHasher _apiKeyHasher;
-    private readonly ApiKeyExpirationPolicyResolver _expirationPolicyResolver;
 
-    public CreateApiKeyCommandHandler(
-        AppDbContext dbContext,
-        ProjectAccessService projectAccess,
-        ApiKeyGenerator apiKeyGenerator,
-        ApiKeyHasher apiKeyHasher,
-        ApiKeyExpirationPolicyResolver expirationPolicyResolver)
-    {
-        _dbContext = dbContext;
-        _projectAccess = projectAccess;
-        _apiKeyGenerator = apiKeyGenerator;
-        _apiKeyHasher = apiKeyHasher;
-        _expirationPolicyResolver = expirationPolicyResolver;
-    }
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly ProjectAccessService _projectAccess = projectAccess;
+
+    private readonly ApiKeyGenerator _apiKeyGenerator = apiKeyGenerator;
+
+    private readonly ApiKeyHasher _apiKeyHasher = apiKeyHasher;
+
+    private readonly ApiKeyExpirationPolicyResolver _expirationPolicyResolver = expirationPolicyResolver;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<CreateApiKeyResponse> Handle(
         CreateApiKeyCommand request,
@@ -68,6 +58,8 @@ public class CreateApiKeyCommandHandler
         var secretHash = _apiKeyHasher.Hash(generatedKey.Secret);
         var expiresAt = _expirationPolicyResolver.Resolve(expirationPolicy);
 
+        var utcNow = _timeProvider.GetUtcNow();
+
         var apiKey = new ApiKey(
             apiKeyId,
             request.ApplicationId,
@@ -75,7 +67,9 @@ public class CreateApiKeyCommandHandler
             environment,
             generatedKey.KeyPrefix,
             secretHash,
-            expiresAt);
+            expiresAt,
+            utcNow,
+            utcNow);
 
         _dbContext.ApiKeys.Add(apiKey);
 

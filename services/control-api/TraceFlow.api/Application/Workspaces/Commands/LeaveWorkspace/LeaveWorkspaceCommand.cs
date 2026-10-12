@@ -1,5 +1,3 @@
-using MediatR;
-
 namespace TraceFlow.Api.Application.Workspaces.Commands.LeaveWorkspace;
 
 public record LeaveWorkspaceCommand(

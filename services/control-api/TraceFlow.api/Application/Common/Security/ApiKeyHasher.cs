@@ -1,21 +1,14 @@
-using System.Security.Cryptography;
-using System.Text;
-
 namespace TraceFlow.Api.Application.Common.Security;
 
-public class ApiKeyHasher
+public class ApiKeyHasher(IOptions<ApiKeySecurityOptions> options)
 {
-    private readonly IConfiguration _configuration;
 
-    public ApiKeyHasher(IConfiguration configuration)
-    {
-        _configuration = configuration;
-    }
+    ApiKeySecurityOptions _options = options.Value;
+
 
     public string Hash(string secret)
     {
-        var pepper = _configuration["API_KEY_PEPPER"]
-            ?? throw new InvalidOperationException("API key pepper is not configured.");
+        var pepper = _options.Pepper;
 
         using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(pepper));
         var hashBytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(secret));

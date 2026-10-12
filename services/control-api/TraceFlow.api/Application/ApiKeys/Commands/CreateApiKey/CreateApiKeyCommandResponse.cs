@@ -7,5 +7,5 @@ public sealed record CreateApiKeyResponse(
     string KeyPrefix,
     string Secret,
     string Status,
-    DateTime? ExpiresAt,
-    DateTime CreatedAt);
+    DateTimeOffset ExpiresAt,
+    DateTimeOffset CreatedAt);

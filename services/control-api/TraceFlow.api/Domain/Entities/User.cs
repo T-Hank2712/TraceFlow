@@ -1,66 +1,81 @@
-using TraceFlow.Api.Domain.Common;
-using TraceFlow.Api.Domain.Constants;
+namespace TraceFlow.Api.Domain.Entities;
 
-namespace TraceFlow.Api.Domain.Entities
+public class User : Entity
 {
-    public class User : Entity
-    {
-        public string Email { get; private set; } = string.Empty;
-        public string UserName { get; private set; } = string.Empty;
-        public string NormalizedUsername { get; private set; } = string.Empty;
-        public string FirstName { get; private set; } = string.Empty;
-        public string LastName { get; private set; } = string.Empty;
-        public string PasswordHash { get; private set; } = string.Empty;
-        public string Role { get; private set; } = UserRoles.User;
-        public string Status { get; private set; } = UserStatuses.Active;
+    public string Email { get; private set; } = string.Empty;
+    public string UserName { get; private set; } = string.Empty;
+    public string NormalizedUsername { get; private set; } = string.Empty;
+    public string FirstName { get; private set; } = string.Empty;
+    public string LastName { get; private set; } = string.Empty;
+    public string PasswordHash { get; private set; } = string.Empty;
+    public string Role { get; private set; } = UserRoles.User;
+    public string Status { get; private set; } = UserStatuses.Active;
 
-        public ICollection<RefreshToken> RefreshTokens { get; private set; }
+    public ICollection<RefreshToken> RefreshTokens { get; private set; }
         = new List<RefreshToken>();
-        public ICollection<WorkspaceMember> WorkspaceMemberships { get; set; }
-            = new List<WorkspaceMember>();
-        public ICollection<ProjectMember> ProjectMemberships { get; private set; }
+    public ICollection<WorkspaceMember> WorkspaceMemberships { get; set; }
+        = new List<WorkspaceMember>();
+    public ICollection<ProjectMember> ProjectMemberships { get; private set; }
         = new List<ProjectMember>();
-        private User() { }
-        public User(string Email, string UserName, string FirstName, string LastName, string PasswordHash)
-        {
-            this.Id = Ulid.NewUlid();
-            this.Email = Email;
-            this.UserName = UserName;
-            this.NormalizedUsername = NormalizeUsername(UserName);
-            this.FirstName = FirstName;
-            this.LastName = LastName;
-            this.PasswordHash = PasswordHash;
-            this.CreatedAt = DateTime.UtcNow;
-            this.UpdatedAt = DateTime.UtcNow;
-        }
-        public void UpdateProfile(string? UserName, string? FirstName, string? LastName)
-        {
-            if (!string.IsNullOrWhiteSpace(UserName))
-            {
-                this.UserName = UserName.Trim();
-                this.NormalizedUsername = NormalizeUsername(UserName);
-            }
 
-            if (!string.IsNullOrWhiteSpace(FirstName))
-            {
-                this.FirstName = FirstName.Trim();
-            }
+    private User() { }
 
-            if (!string.IsNullOrWhiteSpace(LastName))
-            {
-                this.LastName = LastName.Trim();
-            }
+    public User(
+        string email,
+        string userName,
+        string firstName,
+        string lastName,
+        string passwordHash,
+        DateTimeOffset createdAt)
+    {
+        Id = Ulid.NewUlid();
+        Email = NormalizeEmail(email);
+        UserName = userName;
+        NormalizedUsername = NormalizeUsername(userName);
+        FirstName = firstName;
+        LastName = lastName;
+        PasswordHash = passwordHash;
+        CreatedAt = createdAt;
+        UpdatedAt = createdAt;
+    }
 
-            this.UpdatedAt = DateTime.UtcNow;
-        }
-        public void ChangePassword(string PasswordHash)
+    public void UpdateProfile(
+        string? userName,
+        string? firstName,
+        string? lastName,
+        DateTimeOffset updatedAt)
+    {
+        if (!string.IsNullOrWhiteSpace(userName))
         {
-            this.PasswordHash = PasswordHash;
-            UpdatedAt = DateTime.UtcNow;
+            UserName = userName.Trim();
+            NormalizedUsername = NormalizeUsername(userName);
         }
-        private static string NormalizeUsername(string username)
+
+        if (!string.IsNullOrWhiteSpace(firstName))
         {
-            return username.Trim().ToLowerInvariant();
+            FirstName = firstName.Trim();
         }
+
+        if (!string.IsNullOrWhiteSpace(lastName))
+        {
+            LastName = lastName.Trim();
+        }
+
+        UpdatedAt = updatedAt;
+    }
+
+    public void ChangePassword(string passwordHash, DateTimeOffset updatedAt)
+    {
+        PasswordHash = passwordHash;
+        UpdatedAt = updatedAt;
+    }
+
+    private static string NormalizeUsername(string username)
+    {
+        return username.Trim().ToLowerInvariant();
+    }
+    private static string NormalizeEmail(string email)
+    {
+        return email.Trim().ToLowerInvariant();
     }
 }
