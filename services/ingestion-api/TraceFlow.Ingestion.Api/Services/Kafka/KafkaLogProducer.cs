@@ -109,7 +109,7 @@ public sealed class KafkaLogProducer : ILogEventPublisher, IDisposable
         _producer.Flush(TimeSpan.FromSeconds(_options.FlushTimeoutSeconds));
         _producer.Dispose();
     }
-    
+
     private async Task<BatchLogItemResult> ProduceBatchItemAsync(
         int index,
         EnrichedLogEvent logEvent,

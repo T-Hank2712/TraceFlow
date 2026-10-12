@@ -1,4 +1,5 @@
 namespace TraceFlow.Ingestion.Api.Security;
+
 public static class ApiKeyFingerprint
 {
     public static string Create(string apiKey)
