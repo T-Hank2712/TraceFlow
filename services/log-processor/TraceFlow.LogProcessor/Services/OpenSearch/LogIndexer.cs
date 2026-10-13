@@ -43,11 +43,6 @@ public sealed class LogIndexer : ILogIndexer
                     else
                     {
                         failedEvents.Add(logEvent);
-
-                        _logger.LogWarning(
-                            "OpenSearch failed to index event. EventId: {EventId}, Error: {Error}",
-                            logEvent.EventId,
-                            item.Error);
                     }
                 }
 
