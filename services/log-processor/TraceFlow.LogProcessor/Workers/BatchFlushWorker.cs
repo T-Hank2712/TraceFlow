@@ -12,7 +12,7 @@ public sealed class BatchFlushWorker : BackgroundService
     private readonly ILogger<BatchFlushWorker> _logger;
     private readonly TimeSpan _flushInterval;
     private readonly IOffsetCommitSignal _offsetCommitSignal;
-    private static readonly TimeSpan ShutdownFlushTimeout = TimeSpan.FromSeconds(10);
+    private readonly TimeSpan _shutdownFlushTimeout;
     public BatchFlushWorker(
         IBatchProcessor batchProcessor,
         IOffsetCoordinator offsetCoordinator,
@@ -24,9 +24,8 @@ public sealed class BatchFlushWorker : BackgroundService
         _offsetCoordinator = offsetCoordinator;
         _logger = logger;
         _offsetCommitSignal = offsetCommitSignal;
-
-        _flushInterval = TimeSpan.FromMilliseconds(
-            options.Value.FlushIntervalMs);
+        _flushInterval = TimeSpan.FromMilliseconds(options.Value.FlushIntervalMs);
+        _shutdownFlushTimeout = TimeSpan.FromSeconds(options.Value.ShutdownFlushTimeoutSeconds);
     }
 
     protected override async Task ExecuteAsync(
@@ -85,7 +84,7 @@ public sealed class BatchFlushWorker : BackgroundService
     private async Task FlushRemainingBatchOnShutdownAsync()
     {
         using var timeout = new CancellationTokenSource(
-            ShutdownFlushTimeout);
+            _shutdownFlushTimeout);
 
         try
         {
@@ -99,7 +98,7 @@ public sealed class BatchFlushWorker : BackgroundService
         {
             _logger.LogWarning(
                 "Shutdown batch flush timed out after {TimeoutSeconds} seconds.",
-                ShutdownFlushTimeout.TotalSeconds);
+                _shutdownFlushTimeout.TotalSeconds);
         }
         catch (Exception ex)
         {
