@@ -1,5 +1,3 @@
-using Confluent.Kafka;
-
 namespace TraceFlow.LogProcessor.Services.Offsets;
 
 public sealed class OffsetCoordinator : IOffsetCoordinator

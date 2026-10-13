@@ -1,12 +1,3 @@
-using System.Text.Json;
-using Confluent.Kafka;
-using Microsoft.Extensions.Options;
-using TraceFlow.LogProcessor.Configurations;
-using TraceFlow.LogProcessor.Contracts;
-using TraceFlow.LogProcessor.Processing;
-using TraceFlow.LogProcessor.Services.Batching;
-using TraceFlow.LogProcessor.Services.Offsets;
-
 namespace TraceFlow.LogProcessor.Services.Kafka;
 
 public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
@@ -17,19 +8,22 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
     private readonly ILogEventNormalizer _logEventNormalizer;
     private readonly IOffsetCoordinator _offsetCoordinator;
     private readonly IOffsetCommitSignal _offsetCommitSignal;
+    private readonly IDlqProducer _dlqProducer;
 
     public KafkaConsumer(
         IOptions<KafkaOptions> options,
         ILogger<KafkaConsumer> logger,
         ILogEventNormalizer logEventNormalizer,
         IOffsetCoordinator offsetCoordinator,
-        IOffsetCommitSignal offsetCommitSignal)
+        IOffsetCommitSignal offsetCommitSignal,
+        IDlqProducer dlqProducer)
     {
         _options = options.Value;
         _logger = logger;
         _logEventNormalizer = logEventNormalizer;
         _offsetCoordinator = offsetCoordinator;
         _offsetCommitSignal = offsetCommitSignal;
+        _dlqProducer = dlqProducer;
 
         var config = new ConsumerConfig
         {
@@ -106,13 +100,21 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
         CancellationToken cancellationToken)
     {
 
-        if (string.IsNullOrWhiteSpace(result.Message.Value))
+        var messageValue = result.Message?.Value;
+        if (string.IsNullOrWhiteSpace(messageValue))
         {
             _logger.LogWarning(
                 "Received empty Kafka message. Topic: {Topic}, Partition: {Partition}, Offset: {Offset}",
                 result.Topic,
                 result.Partition,
                 result.Offset);
+
+            await PublishPoisonMessageToDlqAsync(
+                result,
+                "EmptyKafkaMessage",
+                "Kafka message value is empty.",
+                null,
+                cancellationToken);
 
             return;
         }
@@ -122,7 +124,7 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
         try
         {
             logEvent = JsonSerializer.Deserialize<LogEvent>(
-                result.Message.Value);
+                messageValue);
         }
         catch (JsonException ex)
         {
@@ -132,6 +134,13 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
                 result.Topic,
                 result.Partition,
                 result.Offset);
+
+            await PublishPoisonMessageToDlqAsync(
+                result,
+                "InvalidJson",
+                "Kafka message cannot be deserialized into LogEvent.",
+                ex,
+                cancellationToken);
 
             return;
         }
@@ -143,6 +152,13 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
                 result.Topic,
                 result.Partition,
                 result.Offset);
+
+            await PublishPoisonMessageToDlqAsync(
+                result,
+                "NullLogEvent",
+                "Kafka message deserialized to null LogEvent.",
+                null,
+                cancellationToken);
 
             return;
         }
@@ -159,6 +175,13 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
                 result.Topic,
                 result.Partition,
                 result.Offset);
+
+            await PublishPoisonMessageToDlqAsync(
+                result,
+                "InvalidLogEventFormat",
+                "Kafka message contains invalid log event data.",
+                ex,
+                cancellationToken);
 
             return;
         }
@@ -197,5 +220,49 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
     public void Dispose()
     {
         _consumer.Dispose();
+    }
+    private async Task PublishPoisonMessageToDlqAsync(
+        ConsumeResult<Ignore, string> result,
+        string failureType,
+        string failureReason,
+        Exception? exception,
+        CancellationToken cancellationToken)
+    {
+        var rawPayload = result.Message?.Value;
+
+        var dlqEvent = new DlqLogEvent(
+            null,
+            rawPayload,
+            failureType,
+            exception is null
+                ? failureReason
+                : $"{failureReason} {exception.Message}",
+            result.Topic,
+            result.Partition.Value,
+            result.Offset.Value,
+            DateTimeOffset.UtcNow);
+
+        try
+        {
+            await _dlqProducer.PublishAsync(
+                [dlqEvent],
+                cancellationToken);
+
+            _offsetCoordinator.MarkProcessed(
+                [result.TopicPartitionOffset]);
+
+            _offsetCommitSignal.Signal();
+        }
+        catch (Exception dlqException)
+            when (dlqException is not OperationCanceledException)
+        {
+            _logger.LogError(
+                dlqException,
+                "Failed to publish poison Kafka message to DLQ. Topic: {Topic}, Partition: {Partition}, Offset: {Offset}, FailureType: {FailureType}",
+                result.Topic,
+                result.Partition,
+                result.Offset,
+                failureType);
+        }
     }
 }

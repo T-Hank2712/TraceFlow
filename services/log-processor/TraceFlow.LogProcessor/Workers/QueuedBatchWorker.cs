@@ -1,7 +1,3 @@
-using TraceFlow.LogProcessor.Services.Batching;
-using TraceFlow.LogProcessor.Services.Offsets;
-using TraceFlow.LogProcessor.Services.Queue;
-
 namespace TraceFlow.LogProcessor.Workers;
 
 public sealed class QueuedBatchWorker : BackgroundService

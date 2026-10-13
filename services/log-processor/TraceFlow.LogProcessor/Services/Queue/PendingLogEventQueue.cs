@@ -1,15 +1,14 @@
-using System.Threading.Channels;
-using TraceFlow.LogProcessor.Contracts;
-
 namespace TraceFlow.LogProcessor.Services.Queue;
 
 public sealed class PendingLogEventQueue : IPendingLogEventQueue
 {
     private readonly Channel<PendingLogEvent> _channel;
 
-    public PendingLogEventQueue()
+    public PendingLogEventQueue(
+        IOptions<ProcessorOptions> processorOptions)
     {
-        var options = new BoundedChannelOptions(10_000)
+        var options = new BoundedChannelOptions(
+            processorOptions.Value.QueueCapacity)
         {
             FullMode = BoundedChannelFullMode.Wait,
             SingleReader = true,

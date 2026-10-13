@@ -1,7 +1,3 @@
-using TraceFlow.LogProcessor.Contracts;
-using TraceFlow.LogProcessor.Services.Kafka;
-using TraceFlow.LogProcessor.Services.Queue;
-
 namespace TraceFlow.LogProcessor.Workers;
 
 public sealed class LogConsumerWorker : BackgroundService
