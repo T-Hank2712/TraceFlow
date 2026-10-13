@@ -51,6 +51,9 @@ builder.Services
     .Validate(
         options => options.ProducerFlushTimeoutSeconds > 0,
         "Kafka__ProducerFlushTimeoutSeconds must be greater than 0.")
+    .Validate(
+        options => options.DlqPublishConcurrency > 0,
+        "Kafka__DlqPublishConcurrency must be greater than 0.")
     .ValidateOnStart();
 
 builder.Services

@@ -19,10 +19,27 @@ public sealed class DlqProducer : IDlqProducer, IDisposable
     }
     public async Task PublishAsync(IReadOnlyCollection<DlqLogEvent> events, CancellationToken cancellationToken)
     {
+        if (events.Count == 0)
+        {
+            return;
+        }
+
+        using var concurrency = new SemaphoreSlim(
+            _kafkaOptions.DlqPublishConcurrency);
+
+        var tasks = new List<Task>(
+            events.Count);
+
         foreach (var dlqEvent in events)
         {
-            var value = JsonSerializer.Serialize(dlqEvent);
-            await _producer.ProduceAsync(_kafkaOptions.DlqTopic, new Message<Null, string> { Value = value }, cancellationToken);
+            await concurrency.WaitAsync(
+                cancellationToken);
+
+            tasks.Add(
+                PublishOneAsync(
+                    dlqEvent,
+                    concurrency,
+                    cancellationToken));
         }
         _logger.LogInformation("Published failed log events to DLQ. Count: {Count}, Topic: {Topic}",
         events.Count, _kafkaOptions.DlqTopic);
@@ -31,5 +48,28 @@ public sealed class DlqProducer : IDlqProducer, IDisposable
     {
         _producer.Flush(TimeSpan.FromSeconds(_kafkaOptions.ProducerFlushTimeoutSeconds));
         _producer.Dispose();
+    }
+    private async Task PublishOneAsync(
+        DlqLogEvent dlqEvent,
+        SemaphoreSlim concurrency,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var value = JsonSerializer.Serialize(
+                dlqEvent);
+
+            await _producer.ProduceAsync(
+                _kafkaOptions.DlqTopic,
+                new Message<Null, string>
+                {
+                    Value = value
+                },
+                cancellationToken);
+        }
+        finally
+        {
+            concurrency.Release();
+        }
     }
 }
