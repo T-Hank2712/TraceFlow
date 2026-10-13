@@ -29,7 +29,7 @@ public sealed class DlqProducer : IDlqProducer, IDisposable
     }
     public void Dispose()
     {
-        _producer.Flush(TimeSpan.FromSeconds(5));
+        _producer.Flush(TimeSpan.FromSeconds(_kafkaOptions.ProducerFlushTimeoutSeconds));
         _producer.Dispose();
     }
 }
