@@ -78,9 +78,7 @@ public sealed class BatchProcessor : IBatchProcessor
         IReadOnlyList<PendingLogEvent> batch,
         CancellationToken cancellationToken)
     {
-        var events = batch
-            .Select(x => x.Event)
-            .ToList();
+        var events = CreateLogEvents(batch);
 
         BulkIndexResult result;
 
@@ -97,83 +95,36 @@ public sealed class BatchProcessor : IBatchProcessor
                 "OpenSearch full batch indexing failure. Publishing {Count} events to DLQ.",
                 batch.Count);
 
-            var dlqEvents = batch
-                .Select(pendingEvent =>
-                    CreateDlqEvent(
-                        pendingEvent,
-                        "OpenSearchBatchFailure",
-                        "OpenSearch failed to index the full batch."))
-                .ToList();
-
-            await _dlqProducer.PublishAsync(
-                dlqEvents,
+            return await PublishFailedBatchToDlqAsync(
+                batch,
                 cancellationToken);
-
-            var dlqProcessedOffsets = batch
-                .Select(x => x.Offset)
-                .ToList();
-
-            return new BatchProcessResult(
-                dlqProcessedOffsets);
         }
 
-        var succeededEventIds = result.SucceededEvents
-            .Select(x => x.EventId)
-            .ToHashSet();
-
-        var failedEvents = result.FailedEvents
-            .ToList();
-
-        var dlqSucceededEventIds = new HashSet<string>();
-
-        if (failedEvents.Count > 0)
-        {
-            _logger.LogInformation(
-                "OpenSearch partial indexing failure. " +
-                "Publishing {Count}/{Total} failed events to DLQ.",
-                failedEvents.Count,
-                batch.Count);
-
-            var pendingEventByEventId = batch.ToDictionary(
-                x => x.Event.EventId,
-                x => x);
-
-            var dlqEvents = failedEvents
-                .Select(logEvent =>
-                    CreateDlqEvent(
-                        pendingEventByEventId[logEvent.EventId],
-                        "OpenSearchItemFailure",
-                        "OpenSearch failed to index the event."))
-                .ToList();
-
-            await _dlqProducer.PublishAsync(
-                dlqEvents,
-                cancellationToken);
-
-            foreach (var failedEvent in failedEvents)
-            {
-                dlqSucceededEventIds.Add(
-                    failedEvent.EventId);
-            }
-        }
-
-        var processedOffsets = batch
-            .Where(x =>
-                succeededEventIds.Contains(x.Event.EventId) ||
-                dlqSucceededEventIds.Contains(x.Event.EventId))
-            .Select(x => x.Offset)
-            .ToList();
-
-        return new BatchProcessResult(
-            processedOffsets);
+        return await BuildIndexResultAsync(
+            batch,
+            result,
+            cancellationToken);
     }
 
     private List<PendingLogEvent> DrainBuffer()
     {
-        var batch = _buffer.ToList();
+        var batch = new List<PendingLogEvent>(_buffer.Count);
+        batch.AddRange(_buffer);
         _buffer.Clear();
 
         return batch;
+    }
+    private static List<LogEvent> CreateLogEvents(
+        IReadOnlyList<PendingLogEvent> batch)
+    {
+        var events = new List<LogEvent>(batch.Count);
+
+        for (var index = 0; index < batch.Count; index++)
+        {
+            events.Add(batch[index].Event);
+        }
+
+        return events;
     }
     private static DlqLogEvent CreateDlqEvent(
         PendingLogEvent pendingEvent,
@@ -189,5 +140,87 @@ public sealed class BatchProcessor : IBatchProcessor
             pendingEvent.Offset.Partition.Value,
             pendingEvent.Offset.Offset.Value,
             DateTimeOffset.UtcNow);
+    }
+    private async Task<BatchProcessResult> PublishFailedBatchToDlqAsync(
+        IReadOnlyList<PendingLogEvent> batch,
+        CancellationToken cancellationToken)
+    {
+        var dlqEvents = new List<DlqLogEvent>(batch.Count);
+        var processedOffsets = new List<TopicPartitionOffset>(batch.Count);
+
+        for (var index = 0; index < batch.Count; index++)
+        {
+            var pendingEvent = batch[index];
+
+            dlqEvents.Add(
+                CreateDlqEvent(
+                    pendingEvent,
+                    "OpenSearchBatchFailure",
+                    "OpenSearch failed to index the full batch."));
+
+            processedOffsets.Add(
+                pendingEvent.Offset);
+        }
+
+        await _dlqProducer.PublishAsync(
+            dlqEvents,
+            cancellationToken);
+
+        return new BatchProcessResult(
+            processedOffsets);
+    }
+    private async Task<BatchProcessResult> BuildIndexResultAsync(
+        IReadOnlyList<PendingLogEvent> batch,
+        BulkIndexResult result,
+        CancellationToken cancellationToken)
+    {
+        if (result.FailedEvents.Count > 0)
+        {
+            _logger.LogInformation(
+                "OpenSearch partial indexing failure. " +
+                "Publishing {Count}/{Total} failed events to DLQ.",
+                result.FailedEvents.Count,
+                batch.Count);
+
+            var pendingEventByEventId = new Dictionary<string, PendingLogEvent>(
+                batch.Count);
+
+            for (var index = 0; index < batch.Count; index++)
+            {
+                var pendingEvent = batch[index];
+
+                pendingEventByEventId[pendingEvent.Event.EventId] = pendingEvent;
+            }
+
+            var dlqEvents = new List<DlqLogEvent>(
+                result.FailedEvents.Count);
+
+            foreach (var failedEvent in result.FailedEvents)
+            {
+                var pendingEvent = pendingEventByEventId[failedEvent.EventId];
+
+                dlqEvents.Add(
+                    CreateDlqEvent(
+                        pendingEvent,
+                        "OpenSearchItemFailure",
+                        "OpenSearch failed to index the event."));
+            }
+
+            await _dlqProducer.PublishAsync(
+                dlqEvents,
+                cancellationToken);
+        }
+
+        var processedOffsets = new List<TopicPartitionOffset>(
+            batch.Count);
+
+        for (var index = 0; index < batch.Count; index++)
+        {
+            processedOffsets.Add(
+                batch[index].Offset);
+        }
+
+        return new BatchProcessResult(
+            processedOffsets);
     }
 }
