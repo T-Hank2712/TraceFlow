@@ -109,13 +109,25 @@ public sealed class BatchProcessor : IBatchProcessor
                 failedEvents.Count,
                 batch.Count);
 
+            var offsetByEventId = batch.ToDictionary(
+                x => x.Event.EventId,
+                x => x.Offset);
+
             var dlqEvents = failedEvents
                 .Select(logEvent =>
-                    new DlqLogEvent(
+                {
+                    var offset = offsetByEventId[logEvent.EventId];
+
+                    return new DlqLogEvent(
                         logEvent,
+                        null,
                         "OpenSearchItemFailure",
                         "OpenSearch failed to index the event.",
-                        DateTimeOffset.UtcNow))
+                        offset.Topic,
+                        offset.Partition.Value,
+                        offset.Offset.Value,
+                        DateTimeOffset.UtcNow);
+                })
                 .ToList();
 
             await _dlqProducer.PublishAsync(
