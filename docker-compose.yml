@@ -245,6 +245,12 @@ services:
       Kafka__DlqTopic: ${Kafka__DlqTopic}
       Kafka__PollTimeoutMs: ${Kafka__PollTimeoutMs}
       Kafka__ProducerFlushTimeoutSeconds: ${Kafka__ProducerFlushTimeoutSeconds}
+      Kafka__DlqPublishConcurrency: ${Kafka__DlqPublishConcurrency}
+      Kafka__QueuedMinMessages: ${Kafka__QueuedMinMessages}
+      Kafka__QueuedMaxMessagesKbytes: ${Kafka__QueuedMaxMessagesKbytes}
+      Kafka__FetchMinBytes: ${Kafka__FetchMinBytes}
+      Kafka__FetchWaitMaxMs: ${Kafka__FetchWaitMaxMs}
+      Kafka__MaxPartitionFetchBytes: ${Kafka__MaxPartitionFetchBytes}
       Processor__MaxRetries: ${Processor__MaxRetries}
       Processor__RetryBackoffMs: ${Processor__RetryBackoffMs}
       Processor__BatchSize: ${Processor__BatchSize}

@@ -30,7 +30,12 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
             BootstrapServers = _options.BootstrapServers,
             GroupId = _options.GroupId,
             AutoOffsetReset = AutoOffsetReset.Earliest,
-            EnableAutoCommit = false
+            EnableAutoCommit = false,
+            QueuedMinMessages = _options.QueuedMinMessages,
+            QueuedMaxMessagesKbytes = _options.QueuedMaxMessagesKbytes,
+            FetchMinBytes = _options.FetchMinBytes,
+            FetchWaitMaxMs = _options.FetchWaitMaxMs,
+            MaxPartitionFetchBytes = _options.MaxPartitionFetchBytes
         };
 
         _consumer = new ConsumerBuilder<Ignore, string>(config)
