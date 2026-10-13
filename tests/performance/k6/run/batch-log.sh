@@ -9,6 +9,7 @@ NGINX_CONTAINER="traceflow-performance-nginx"
 SCENARIO="${1:-smoke}"
 
 API_KEY="${API_KEY:-}"
+BATCH_SIZE="${BATCH_SIZE:-10}"
 
 if [ -z "$API_KEY" ]; then
     echo "Error: API_KEY is required."

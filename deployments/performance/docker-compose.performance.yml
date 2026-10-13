@@ -51,8 +51,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "1.00"
-          memory: 1536M
+          cpus: "1.50"
+          memory: 2048M
 
   kafka-init:
     image: apache/kafka:4.1.2
@@ -125,8 +125,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.25"
-          memory: 128M
+          cpus: "1.00"
+          memory: 256M
 
   control-api:
     build: 
@@ -186,8 +186,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.50"
-          memory: 256M
+          cpus: "1.00"
+          memory: 512M
 
   ingestion-api:
     build:
@@ -259,7 +259,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.50"
+          cpus: "1.00"
           memory: 256M
   
   log-processor:
@@ -318,8 +318,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.10"
-          memory: 64M
+          cpus: "0.50"
+          memory: 128M
 
   network-simulator:
     build:
