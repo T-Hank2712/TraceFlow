@@ -1,9 +1,3 @@
-using System.Text.Json;
-using Confluent.Kafka;
-using Microsoft.Extensions.Options;
-using TraceFlow.LogProcessor.Configurations;
-using TraceFlow.LogProcessor.Contracts;
-
 namespace TraceFlow.LogProcessor.Services.Kafka;
 
 public sealed class DlqProducer : IDlqProducer, IDisposable

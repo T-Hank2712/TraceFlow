@@ -1,12 +1,3 @@
-using System.Text.Json;
-using Confluent.Kafka;
-using Microsoft.Extensions.Options;
-using TraceFlow.LogProcessor.Configurations;
-using TraceFlow.LogProcessor.Contracts;
-using TraceFlow.LogProcessor.Processing;
-using TraceFlow.LogProcessor.Services.Batching;
-using TraceFlow.LogProcessor.Services.Offsets;
-
 namespace TraceFlow.LogProcessor.Services.Kafka;
 
 public sealed class KafkaConsumer : IKafkaConsumer, IDisposable

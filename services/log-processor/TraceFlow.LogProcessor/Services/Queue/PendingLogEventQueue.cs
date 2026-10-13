@@ -1,8 +1,3 @@
-using System.Threading.Channels;
-using TraceFlow.LogProcessor.Contracts;
-using Microsoft.Extensions.Options;
-using TraceFlow.LogProcessor.Configurations;
-
 namespace TraceFlow.LogProcessor.Services.Queue;
 
 public sealed class PendingLogEventQueue : IPendingLogEventQueue

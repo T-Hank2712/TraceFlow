@@ -1,5 +1,3 @@
-using TraceFlow.LogProcessor.Contracts;
-
 namespace TraceFlow.LogProcessor.Services.Kafka;
 
 public interface IKafkaConsumer

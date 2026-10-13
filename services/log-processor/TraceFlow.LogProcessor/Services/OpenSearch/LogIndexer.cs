@@ -1,9 +1,3 @@
-using Microsoft.Extensions.Options;
-using OpenSearch.Client;
-using TraceFlow.LogProcessor.Configurations;
-using TraceFlow.LogProcessor.Contracts;
-using TraceFlow.LogProcessor.Extentions.Exceptions;
-
 namespace TraceFlow.LogProcessor.Services.OpenSearch;
 
 public sealed class LogIndexer : ILogIndexer

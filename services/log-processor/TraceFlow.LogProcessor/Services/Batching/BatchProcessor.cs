@@ -1,9 +1,3 @@
-using Microsoft.Extensions.Options;
-using TraceFlow.LogProcessor.Configurations;
-using TraceFlow.LogProcessor.Contracts;
-using TraceFlow.LogProcessor.Services.Kafka;
-using TraceFlow.LogProcessor.Services.OpenSearch;
-
 namespace TraceFlow.LogProcessor.Services.Batching;
 
 public sealed class BatchProcessor : IBatchProcessor

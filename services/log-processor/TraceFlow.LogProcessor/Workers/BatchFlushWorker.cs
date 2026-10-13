@@ -1,8 +1,3 @@
-using Microsoft.Extensions.Options;
-using TraceFlow.LogProcessor.Configurations;
-using TraceFlow.LogProcessor.Services.Batching;
-using TraceFlow.LogProcessor.Services.Offsets;
-
 namespace TraceFlow.LogProcessor.Workers;
 
 public sealed class BatchFlushWorker : BackgroundService
