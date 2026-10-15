@@ -42,7 +42,7 @@ public sealed class BatchProcessor : IBatchProcessor
             return new BatchProcessResult([]);
         }
 
-        return await ProcessBatchAsync(
+        return await ProcessBatchExclusiveAsync(
             batch,
             cancellationToken);
     }
@@ -70,7 +70,7 @@ public sealed class BatchProcessor : IBatchProcessor
             return new BatchProcessResult([]);
         }
 
-        return await ProcessBatchAsync(
+        return await ProcessBatchExclusiveAsync(
             batch,
             cancellationToken);
     }
@@ -222,5 +222,23 @@ public sealed class BatchProcessor : IBatchProcessor
 
         return new BatchProcessResult(
             processedOffsets);
+    }
+    private async Task<BatchProcessResult> ProcessBatchExclusiveAsync(
+        IReadOnlyList<PendingLogEvent> batch,
+        CancellationToken cancellationToken)
+    {
+        await _lock.WaitAsync(
+            cancellationToken);
+
+        try
+        {
+            return await ProcessBatchAsync(
+                batch,
+                cancellationToken);
+        }
+        finally
+        {
+            _lock.Release();
+        }
     }
 }

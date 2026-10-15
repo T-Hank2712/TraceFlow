@@ -4,16 +4,15 @@ public sealed class LogConsumerWorker : BackgroundService
 {
     private readonly IKafkaConsumer _kafkaConsumer;
     private readonly ILogger<LogConsumerWorker> _logger;
-    private readonly IPendingLogEventQueue _queue;
-
+    private readonly IPartitionLaneManager _laneManager;
     public LogConsumerWorker(
         IKafkaConsumer kafkaConsumer,
         ILogger<LogConsumerWorker> logger,
-        IPendingLogEventQueue queue)
+        IPartitionLaneManager laneManager)
     {
         _kafkaConsumer = kafkaConsumer;
         _logger = logger;
-        _queue = queue;
+        _laneManager = laneManager;
     }
 
     protected override async Task ExecuteAsync(
@@ -32,7 +31,7 @@ public sealed class LogConsumerWorker : BackgroundService
         PendingLogEvent pendingEvent,
         CancellationToken cancellationToken)
     {
-        await _queue.WriteAsync(
+        await _laneManager.EnqueueAsync(
             pendingEvent,
             cancellationToken);
 

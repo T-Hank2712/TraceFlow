@@ -9,6 +9,7 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
     private readonly IOffsetCoordinator _offsetCoordinator;
     private readonly IOffsetCommitSignal _offsetCommitSignal;
     private readonly IDlqProducer _dlqProducer;
+    private readonly IPartitionLaneManager _laneManager;
 
     public KafkaConsumer(
         IOptions<KafkaOptions> options,
@@ -16,7 +17,8 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
         ILogEventNormalizer logEventNormalizer,
         IOffsetCoordinator offsetCoordinator,
         IOffsetCommitSignal offsetCommitSignal,
-        IDlqProducer dlqProducer)
+        IDlqProducer dlqProducer,
+        IPartitionLaneManager laneManager)
     {
         _options = options.Value;
         _logger = logger;
@@ -24,6 +26,7 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
         _offsetCoordinator = offsetCoordinator;
         _offsetCommitSignal = offsetCommitSignal;
         _dlqProducer = dlqProducer;
+        _laneManager = laneManager;
 
         var config = new ConsumerConfig
         {
@@ -92,6 +95,22 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
         }
         finally
         {
+            try
+            {
+                await _laneManager.StopAsync(
+                    CancellationToken.None);
+
+                if (_offsetCommitSignal.IsSignaled())
+                {
+                    CommitAvailableOffsets();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Failed to stop partition lanes cleanly.");
+            }
             _consumer.Close();
 
             _logger.LogInformation(
