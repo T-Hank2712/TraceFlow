@@ -27,20 +27,38 @@ public sealed class DlqProducer : IDlqProducer, IDisposable
         using var concurrency = new SemaphoreSlim(
             _kafkaOptions.DlqPublishConcurrency);
 
-        var tasks = new List<Task>(
+        var publishTasks = new List<Task>(
             events.Count);
 
-        foreach (var dlqEvent in events)
+        try
         {
-            await concurrency.WaitAsync(
-                cancellationToken);
+            foreach (var dlqEvent in events)
+            {
+                await concurrency.WaitAsync(
+                    cancellationToken);
 
-            tasks.Add(
-                PublishOneAsync(
-                    dlqEvent,
-                    concurrency,
-                    cancellationToken));
+                publishTasks.Add(
+                    PublishOneAsync(
+                        dlqEvent,
+                        concurrency,
+                        cancellationToken));
+            }
+            await Task.WhenAll(publishTasks);
         }
+        catch
+        {
+            try
+            {
+                await Task.WhenAll(publishTasks);
+            }
+            catch (Exception)
+            {
+                
+            }
+
+            throw;
+        }
+
         _logger.LogInformation("Published failed log events to DLQ. Count: {Count}, Topic: {Topic}",
         events.Count, _kafkaOptions.DlqTopic);
     }
