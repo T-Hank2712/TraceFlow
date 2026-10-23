@@ -137,7 +137,7 @@ public class ProjectsController(ISender sender) : ControllerBase
 
         return Ok(result);
     }
-    [HttpPatch("~/api/v{version:apiVersion}/members/{memberId}")]
+    [HttpPatch("~/api/v{version:apiVersion}/projects/members/{memberId}")]
     public async Task<IActionResult> ChangeProjectMemberRole(
         Ulid memberId,
         ChangeProjectMemberRoleRequest request,
@@ -159,7 +159,7 @@ public class ProjectsController(ISender sender) : ControllerBase
 
         return Ok(result);
     }
-    [HttpDelete("~/api/v{version:apiVersion}/members/{memberId}")]
+    [HttpDelete("~/api/v{version:apiVersion}/projects/members/{memberId}")]
     public async Task<IActionResult> RemoveProjectMember(
         Ulid memberId,
         CancellationToken cancellationToken)
