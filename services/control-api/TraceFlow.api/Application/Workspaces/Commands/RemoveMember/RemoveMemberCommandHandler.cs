@@ -14,8 +14,20 @@ public class RemoveMemberCommandHandler(
         RemoveMemberCommand request,
         CancellationToken cancellationToken)
     {
+        var targetMember = await _dbContext.WorkspaceMembers
+            .FirstOrDefaultAsync(
+                member =>
+                    member.Id == request.MemberId &&
+                    member.Status == MembershipStatuses.Active,
+                cancellationToken);
+
+        if (targetMember is null)
+        {
+            throw new NotFoundException("Workspace member not found.");
+        }
+
         var actorMembership = await _workspaceAccess.GetActiveMembershipAsync(
-            request.WorkspaceId,
+            targetMember.WorkspaceId,
             request.ActorUserId,
             "Workspace not found.",
             cancellationToken);
@@ -27,19 +39,6 @@ public class RemoveMemberCommandHandler(
         _workspaceAccess.EnsureWorkspaceManager(
             actorMembership,
             "You do not have permission to remove workspace members.");
-
-        var targetMember = await _dbContext.WorkspaceMembers
-            .FirstOrDefaultAsync(
-                member =>
-                    member.Id == request.MemberId &&
-                    member.WorkspaceId == request.WorkspaceId &&
-                    member.Status == MembershipStatuses.Active,
-                cancellationToken);
-
-        if (targetMember is null)
-        {
-            throw new NotFoundException("Workspace member not found.");
-        }
 
         var isTargetPrimaryOwner = targetMember.UserId == actorMembership.Workspace.OwnerUserId;
 
@@ -61,7 +60,7 @@ public class RemoveMemberCommandHandler(
         var projectMemberships = await _dbContext.ProjectMembers
             .Where(projectMember =>
                 projectMember.UserId == targetMember.UserId &&
-                projectMember.Project.WorkspaceId == request.WorkspaceId)
+                projectMember.Project.WorkspaceId == targetMember.WorkspaceId)
             .ToListAsync(cancellationToken);
 
         foreach (var projectMembership in projectMemberships)

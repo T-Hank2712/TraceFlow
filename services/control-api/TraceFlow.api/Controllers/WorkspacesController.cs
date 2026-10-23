@@ -106,9 +106,8 @@ public class WorkspacesController(ISender sender) : ControllerBase
 
         return Ok(result);
     }
-    [HttpPatch("{workspaceId}/members/{memberId}/role")]
+    [HttpPatch("~/api/v{version:apiVersion}/workspaces/members/{memberId}")]
     public async Task<IActionResult> ChangeMemberRole(
-        Ulid workspaceId,
         Ulid memberId,
         ChangeMemberRoleRequest request,
         CancellationToken cancellationToken)
@@ -122,7 +121,6 @@ public class WorkspacesController(ISender sender) : ControllerBase
 
         var result = await _sender.Send(
             new ChangeMemberRoleCommand(
-                workspaceId,
                 memberId,
                 userId.Value,
                 request.Role),
@@ -150,9 +148,8 @@ public class WorkspacesController(ISender sender) : ControllerBase
 
         return Ok(result);
     }
-    [HttpDelete("{workspaceId}/members/{memberId}")]
+    [HttpDelete("~/api/v{version:apiVersion}/workspaces/members/{memberId}")]
     public async Task<IActionResult> RemoveMember(
-        Ulid workspaceId,
         Ulid memberId,
         CancellationToken cancellationToken)
     {
@@ -165,7 +162,6 @@ public class WorkspacesController(ISender sender) : ControllerBase
 
         var result = await _sender.Send(
             new RemoveMemberCommand(
-                workspaceId,
                 memberId,
                 userId.Value),
             cancellationToken);

@@ -14,8 +14,20 @@ public class ChangeMemberRoleCommandHandler(
         ChangeMemberRoleCommand request,
         CancellationToken cancellationToken)
     {
+        var targetMember = await _dbContext.WorkspaceMembers
+            .FirstOrDefaultAsync(
+                member =>
+                    member.Id == request.MemberId &&
+                    member.Status == MembershipStatuses.Active,
+                cancellationToken);
+
+        if (targetMember is null)
+        {
+            throw new NotFoundException("Workspace member not found.");
+        }
+
         var actorMembership = await _workspaceAccess.GetActiveMembershipAsync(
-            request.WorkspaceId,
+            targetMember.WorkspaceId,
             request.ActorUserId,
             "Workspace not found.",
             cancellationToken);
@@ -27,19 +39,6 @@ public class ChangeMemberRoleCommandHandler(
         _workspaceAccess.EnsureWorkspaceManager(
             actorMembership,
             "You do not have permission to change member roles.");
-
-        var targetMember = await _dbContext.WorkspaceMembers
-            .FirstOrDefaultAsync(
-                member =>
-                    member.Id == request.MemberId &&
-                    member.WorkspaceId == request.WorkspaceId &&
-                    member.Status == MembershipStatuses.Active,
-                cancellationToken);
-
-        if (targetMember is null)
-        {
-            throw new NotFoundException("Workspace member not found.");
-        }
 
         var newRole = request.Role.Trim().ToLowerInvariant();
 
@@ -79,7 +78,7 @@ public class ChangeMemberRoleCommandHandler(
         {
             var activeProjectIds = await _dbContext.Projects
                 .Where(project =>
-                    project.WorkspaceId == request.WorkspaceId &&
+                    project.WorkspaceId == targetMember.WorkspaceId &&
                     project.Status == ResourceStatuses.Active)
                 .Select(project => project.Id)
                 .ToListAsync(cancellationToken);
@@ -87,7 +86,7 @@ public class ChangeMemberRoleCommandHandler(
             var existingProjectMembers = await _dbContext.ProjectMembers
                 .Where(member =>
                     member.UserId == targetMember.UserId &&
-                    member.Project.WorkspaceId == request.WorkspaceId &&
+                    member.Project.WorkspaceId == targetMember.WorkspaceId &&
                     member.Project.Status == ResourceStatuses.Active)
                 .ToListAsync(cancellationToken);
 
@@ -118,7 +117,7 @@ public class ChangeMemberRoleCommandHandler(
                 .Where(member =>
                     member.UserId == targetMember.UserId &&
                     member.Status == MembershipStatuses.Active &&
-                    member.Project.WorkspaceId == request.WorkspaceId &&
+                    member.Project.WorkspaceId == targetMember.WorkspaceId &&
                     member.Project.Status == ResourceStatuses.Active)
                 .ToListAsync(cancellationToken);
 
