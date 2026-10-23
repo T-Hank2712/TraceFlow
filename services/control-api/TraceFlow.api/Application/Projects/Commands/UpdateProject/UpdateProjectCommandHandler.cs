@@ -16,7 +16,6 @@ public class UpdateProjectCommandHandler(
            CancellationToken cancellationToken)
     {
         var access = await _projectAccess.GetProjectAccessAsync(
-            request.WorkspaceId,
             request.ProjectId,
             request.UserId,
             "Project not found.",
@@ -35,7 +34,7 @@ public class UpdateProjectCommandHandler(
             var slugExists = await _dbContext.Projects
                 .AnyAsync(
                     existingProject =>
-                        existingProject.WorkspaceId == request.WorkspaceId &&
+                        existingProject.WorkspaceId == project.WorkspaceId &&
                         existingProject.Slug == normalizedSlug &&
                         existingProject.Status == ResourceStatuses.Active &&
                         existingProject.Id != request.ProjectId,

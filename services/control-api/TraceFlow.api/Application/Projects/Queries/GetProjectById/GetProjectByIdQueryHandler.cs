@@ -15,7 +15,6 @@ public class GetProjectByIdQueryHandler(
            CancellationToken cancellationToken)
     {
         var access = await _projectAccess.GetProjectAccessAsync(
-            request.WorkspaceId,
             request.ProjectId,
             request.UserId,
             "Project not found.",
@@ -31,7 +30,6 @@ public class GetProjectByIdQueryHandler(
             .AsNoTracking()
             .Where(project =>
                 project.Id == request.ProjectId &&
-                project.WorkspaceId == request.WorkspaceId &&
                 project.Status == ResourceStatuses.Active)
             .Select(project => new ProjectDetailResponse(
                 project.Id,

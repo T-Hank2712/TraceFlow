@@ -4,7 +4,6 @@ public class Project : Entity
 {
     public Ulid WorkspaceId { get; private set; }
     public Workspace Workspace { get; private set; } = null!;
-
     public Ulid CreatedByUserId { get; private set; }
     public User CreatedByUser { get; private set; } = null!;
     public string Name { get; private set; } = string.Empty;

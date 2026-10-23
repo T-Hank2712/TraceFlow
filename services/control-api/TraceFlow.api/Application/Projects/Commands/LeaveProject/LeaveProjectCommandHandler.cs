@@ -15,7 +15,6 @@ public class LeaveProjectCommandHandler(
            CancellationToken cancellationToken)
     {
         await _projectAccess.GetProjectAccessAsync(
-            request.WorkspaceId,
             request.ProjectId,
             request.UserId,
             "Project not found.",
@@ -56,7 +55,6 @@ public class LeaveProjectCommandHandler(
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         return new LeaveProjectResponse(
-            request.WorkspaceId,
             request.ProjectId,
             request.UserId,
             "Left project successfully.");

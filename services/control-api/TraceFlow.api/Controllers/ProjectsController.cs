@@ -53,9 +53,8 @@ public class ProjectsController(ISender sender) : ControllerBase
 
         return Ok(result);
     }
-    [HttpGet("{projectId}")]
+    [HttpGet("~/api/v{version:apiVersion}/projects/{projectId}")]
     public async Task<IActionResult> GetProjectById(
-        Ulid workspaceId,
         Ulid projectId,
         CancellationToken cancellationToken)
     {
@@ -68,16 +67,14 @@ public class ProjectsController(ISender sender) : ControllerBase
 
         var result = await _sender.Send(
             new GetProjectByIdQuery(
-                workspaceId,
                 projectId,
                 userId.Value),
             cancellationToken);
 
         return Ok(result);
     }
-    [HttpPatch("{projectId}")]
+    [HttpPatch("~/api/v{version:apiVersion}/projects/{projectId}")]
     public async Task<IActionResult> UpdateProject(
-        Ulid workspaceId,
         Ulid projectId,
         UpdateProjectRequest request,
         CancellationToken cancellationToken)
@@ -91,7 +88,6 @@ public class ProjectsController(ISender sender) : ControllerBase
 
         var result = await _sender.Send(
             new UpdateProjectCommand(
-                workspaceId,
                 projectId,
                 userId.Value,
                 request.Name,
@@ -101,9 +97,8 @@ public class ProjectsController(ISender sender) : ControllerBase
 
         return Ok(result);
     }
-    [HttpDelete("{projectId}")]
+    [HttpDelete("~/api/v{version:apiVersion}/projects/{projectId}")]
     public async Task<IActionResult> DeleteProject(
-        Ulid workspaceId,
         Ulid projectId,
         CancellationToken cancellationToken)
     {
@@ -116,7 +111,6 @@ public class ProjectsController(ISender sender) : ControllerBase
 
         var result = await _sender.Send(
             new DeleteProjectCommand(
-                workspaceId,
                 projectId,
                 userId.Value),
             cancellationToken);
@@ -195,9 +189,8 @@ public class ProjectsController(ISender sender) : ControllerBase
 
         return Ok(result);
     }
-    [HttpPost("{projectId}/leave")]
+    [HttpPost("~/api/v{version:apiVersion}/projects/{projectId}/leave")]
     public async Task<IActionResult> LeaveProject(
-        Ulid workspaceId,
         Ulid projectId,
         CancellationToken cancellationToken)
     {
@@ -210,7 +203,6 @@ public class ProjectsController(ISender sender) : ControllerBase
 
         var result = await _sender.Send(
             new LeaveProjectCommand(
-                workspaceId,
                 projectId,
                 userId.Value),
             cancellationToken);
