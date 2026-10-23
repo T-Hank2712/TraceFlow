@@ -14,22 +14,10 @@ public class ChangeProjectMemberRoleCommandHandler(
            ChangeProjectMemberRoleCommand request,
            CancellationToken cancellationToken)
     {
-        var access = await _projectAccess.GetProjectAccessAsync(
-            request.WorkspaceId,
-            request.ProjectId,
-            request.ActorUserId,
-            "Project not found.",
-            cancellationToken);
-
-        _projectAccess.EnsureProjectManager(
-            access,
-            "You do not have permission to change project member roles.");
-
         var targetMember = await _dbContext.ProjectMembers
             .FirstOrDefaultAsync(
                 member =>
                     member.Id == request.MemberId &&
-                    member.ProjectId == request.ProjectId &&
                     member.Status == MembershipStatuses.Active,
                 cancellationToken);
 
@@ -37,6 +25,16 @@ public class ChangeProjectMemberRoleCommandHandler(
         {
             throw new NotFoundException("Project member not found.");
         }
+
+        var access = await _projectAccess.GetProjectAccessAsync(
+            targetMember.ProjectId,
+            request.ActorUserId,
+            "Project not found.",
+            cancellationToken);
+
+        _projectAccess.EnsureProjectManager(
+            access,
+            "You do not have permission to change project member roles.");
 
         if (targetMember.UserId == request.ActorUserId)
         {
@@ -57,7 +55,7 @@ public class ChangeProjectMemberRoleCommandHandler(
             var managerCount = await _dbContext.ProjectMembers
                 .CountAsync(
                     member =>
-                        member.ProjectId == request.ProjectId &&
+                        member.ProjectId == targetMember.ProjectId &&
                         member.Role == ProjectMemberRoles.Manager &&
                         member.Status == MembershipStatuses.Active,
                     cancellationToken);

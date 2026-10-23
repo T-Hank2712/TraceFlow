@@ -26,7 +26,7 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi()
-        .WithDocumentPerVersion();
+        .WithDocumentPerVersion().AllowAnonymous();
 
     app.UseSwaggerUI(options =>
     {

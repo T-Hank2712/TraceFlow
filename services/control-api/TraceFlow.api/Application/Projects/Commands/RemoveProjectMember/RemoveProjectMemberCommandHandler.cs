@@ -15,22 +15,11 @@ public class RemoveProjectMemberCommandHandler(
            RemoveProjectMemberCommand request,
            CancellationToken cancellationToken)
     {
-        var access = await _projectAccess.GetProjectAccessAsync(
-            request.WorkspaceId,
-            request.ProjectId,
-            request.ActorUserId,
-            "Project not found.",
-            cancellationToken);
-
-        _projectAccess.EnsureProjectManager(
-            access,
-            "You do not have permission to remove project members.");
 
         var targetMember = await _dbContext.ProjectMembers
             .FirstOrDefaultAsync(
                 member =>
                     member.Id == request.MemberId &&
-                    member.ProjectId == request.ProjectId &&
                     member.Status == MembershipStatuses.Active,
                 cancellationToken);
 
@@ -38,6 +27,16 @@ public class RemoveProjectMemberCommandHandler(
         {
             throw new NotFoundException("Project member not found.");
         }
+
+        var access = await _projectAccess.GetProjectAccessAsync(
+            targetMember.ProjectId,
+            request.ActorUserId,
+            "Project not found.",
+            cancellationToken);
+
+        _projectAccess.EnsureProjectManager(
+            access,
+            "You do not have permission to remove project members.");
 
         if (request.ActorUserId == targetMember.UserId)
         {
@@ -50,7 +49,7 @@ public class RemoveProjectMemberCommandHandler(
             var managerCount = await _dbContext.ProjectMembers
                 .CountAsync(
                     member =>
-                        member.ProjectId == request.ProjectId &&
+                        member.ProjectId == targetMember.ProjectId &&
                         member.Role == ProjectMemberRoles.Manager &&
                         member.Status == MembershipStatuses.Active,
                     cancellationToken);

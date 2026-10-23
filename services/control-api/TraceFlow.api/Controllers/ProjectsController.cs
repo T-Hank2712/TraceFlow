@@ -117,9 +117,8 @@ public class ProjectsController(ISender sender) : ControllerBase
 
         return Ok(result);
     }
-    [HttpGet("{projectId}/members")]
+    [HttpGet("~/api/v{version:apiVersion}/projects/{projectId}/members")]
     public async Task<IActionResult> ListProjectMembers(
-        Ulid workspaceId,
         Ulid projectId,
         CancellationToken cancellationToken)
     {
@@ -132,17 +131,14 @@ public class ProjectsController(ISender sender) : ControllerBase
 
         var result = await _sender.Send(
             new ListProjectMembersQuery(
-                workspaceId,
                 projectId,
                 userId.Value),
             cancellationToken);
 
         return Ok(result);
     }
-    [HttpPatch("{projectId}/members/{memberId}/role")]
+    [HttpPatch("~/api/v{version:apiVersion}/members/{memberId}")]
     public async Task<IActionResult> ChangeProjectMemberRole(
-        Ulid workspaceId,
-        Ulid projectId,
         Ulid memberId,
         ChangeProjectMemberRoleRequest request,
         CancellationToken cancellationToken)
@@ -156,8 +152,6 @@ public class ProjectsController(ISender sender) : ControllerBase
 
         var result = await _sender.Send(
             new ChangeProjectMemberRoleCommand(
-                workspaceId,
-                projectId,
                 memberId,
                 userId.Value,
                 request.Role),
@@ -165,10 +159,8 @@ public class ProjectsController(ISender sender) : ControllerBase
 
         return Ok(result);
     }
-    [HttpDelete("{projectId}/members/{memberId}")]
+    [HttpDelete("~/api/v{version:apiVersion}/members/{memberId}")]
     public async Task<IActionResult> RemoveProjectMember(
-        Ulid workspaceId,
-        Ulid projectId,
         Ulid memberId,
         CancellationToken cancellationToken)
     {
@@ -181,8 +173,6 @@ public class ProjectsController(ISender sender) : ControllerBase
 
         var result = await _sender.Send(
             new RemoveProjectMemberCommand(
-                workspaceId,
-                projectId,
                 memberId,
                 userId.Value),
             cancellationToken);
