@@ -17,8 +17,19 @@ public class CancelInvitationCommandHandler(
            CancelInvitationCommand request,
            CancellationToken cancellationToken)
     {
+        var invitation = await _dbContext.WorkspaceInvitations
+            .FirstOrDefaultAsync(
+                invitation =>
+                    invitation.Id == request.InvitationId,
+                cancellationToken);
+
+        if (invitation is null)
+        {
+            throw new NotFoundException("Workspace invitation not found.");
+        }
+
         var actorMembership = await _workspaceAccess.GetActiveMembershipAsync(
-            request.WorkspaceId,
+            invitation.WorkspaceId,
             request.ActorUserId,
             "Workspace invitation not found.",
             cancellationToken);
@@ -30,18 +41,6 @@ public class CancelInvitationCommandHandler(
         _workspaceAccess.EnsureWorkspaceManager(
             actorMembership,
             "You do not have permission to cancel workspace invitations.");
-
-        var invitation = await _dbContext.WorkspaceInvitations
-            .FirstOrDefaultAsync(
-                invitation =>
-                    invitation.Id == request.InvitationId &&
-                    invitation.WorkspaceId == request.WorkspaceId,
-                cancellationToken);
-
-        if (invitation is null)
-        {
-            throw new NotFoundException("Workspace invitation not found.");
-        }
 
         if (invitation.Status != InvitationStatuses.Pending)
         {

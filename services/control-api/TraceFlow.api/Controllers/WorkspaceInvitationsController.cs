@@ -3,7 +3,7 @@ namespace TraceFlow.Api.Controllers;
 [ApiController]
 [ApiVersion(1.0)]
 [Authorize]
-[Route("api/v{version:apiVersion}/workspace-invitations")]
+[Route("api/v{version:apiVersion}/workspaces")]
 public class WorkspaceInvitationsController(ISender sender) : ControllerBase
 {
     private readonly ISender _sender = sender;
@@ -33,7 +33,7 @@ public class WorkspaceInvitationsController(ISender sender) : ControllerBase
         return Ok(result);
     }
 
-    [HttpGet]
+    [HttpGet("invitations")]
     public async Task<IActionResult> GetMyWorkspaceInvitations(
         CancellationToken cancellationToken)
     {
@@ -70,7 +70,7 @@ public class WorkspaceInvitationsController(ISender sender) : ControllerBase
 
         return Ok(result);
     }
-    [HttpPost("{invitationId}/accept")]
+    [HttpPost("invitations/{invitationId}/accept")]
     public async Task<IActionResult> AcceptWorkspaceInvitation(
         Ulid invitationId,
         CancellationToken cancellationToken)
@@ -90,7 +90,7 @@ public class WorkspaceInvitationsController(ISender sender) : ControllerBase
 
         return Ok(result);
     }
-    [HttpPost("{invitationId}/decline")]
+    [HttpPost("invitations/{invitationId}/decline")]
     public async Task<IActionResult> DeclineInvitation(
         Ulid invitationId,
         CancellationToken cancellationToken)
@@ -110,7 +110,7 @@ public class WorkspaceInvitationsController(ISender sender) : ControllerBase
 
         return Ok(result);
     }
-    [HttpDelete("api/workspaces/{workspaceId}/invitations/{invitationId}")]
+    [HttpDelete("invitations/{invitationId}")]
     public async Task<IActionResult> CancelWorkspaceInvitation(
         Ulid workspaceId,
         Ulid invitationId,
@@ -125,7 +125,6 @@ public class WorkspaceInvitationsController(ISender sender) : ControllerBase
 
         var result = await _sender.Send(
             new CancelInvitationCommand(
-                workspaceId,
                 invitationId,
                 userId.Value),
             cancellationToken);
