@@ -3,51 +3,32 @@ namespace TraceFlow.Api.Application.ApiKeys.Commands.RevokeApiKey;
 public class RevokeApiKeyCommandHandler(
     AppDbContext dbContext,
     ProjectAccessService projectAccess,
+    ApiKeyAccessService apiKeyAccess,
     TimeProvider timeProvider
 )
     : IRequestHandler<RevokeApiKeyCommand, RevokeApiKeyResponse>
 {
 
     private readonly AppDbContext _dbContext = dbContext;
-
     private readonly ProjectAccessService _projectAccess = projectAccess;
+    private readonly ApiKeyAccessService _apiKeyAccess = apiKeyAccess;
     private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<RevokeApiKeyResponse> Handle(
         RevokeApiKeyCommand request,
         CancellationToken cancellationToken)
     {
-        var access = await _projectAccess.GetProjectAccessAsync(
-            request.WorkspaceId,
-            request.ProjectId,
+        var access = await _apiKeyAccess.GetApiKeyAccessAsync(
+            request.ApiKeyId,
             request.UserId,
             "API key not found.",
             cancellationToken);
 
         _projectAccess.EnsureProjectManager(
-            access,
+            access.ApplicationAccess.ProjectAccess,
             "You do not have permission to revoke API keys.");
 
-        var applicationExists = await _dbContext.TraceApplications
-            .AsNoTracking()
-            .AnyAsync(
-                application =>
-                    application.Id == request.ApplicationId &&
-                    application.ProjectId == request.ProjectId &&
-                    application.Status == ResourceStatuses.Active,
-                cancellationToken);
-
-        if (!applicationExists)
-        {
-            throw new NotFoundException("API key not found.");
-        }
-
-        var apiKey = await _dbContext.ApiKeys
-            .FirstOrDefaultAsync(
-                key =>
-                    key.Id == request.ApiKeyId &&
-                    key.TraceApplicationId == request.ApplicationId,
-                cancellationToken);
+        var apiKey = access.ApiKey;
 
         if (apiKey is null)
         {
@@ -66,7 +47,7 @@ public class RevokeApiKeyCommandHandler(
             apiKey.Environment,
             apiKey.KeyPrefix,
             apiKey.Status,
-            utcNow,
-            utcNow);
+            apiKey.RevokedAt!.Value,
+            apiKey.UpdatedAt);
     }
 }

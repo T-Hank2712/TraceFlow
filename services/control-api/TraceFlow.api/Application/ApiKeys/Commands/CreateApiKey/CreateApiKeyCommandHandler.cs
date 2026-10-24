@@ -3,6 +3,7 @@ namespace TraceFlow.Api.Application.ApiKeys.Commands.CreateApiKey;
 public class CreateApiKeyCommandHandler(
     AppDbContext dbContext,
     ProjectAccessService projectAccess,
+    TraceApplicationAccessService applicationAccess,
     ApiKeyGenerator apiKeyGenerator,
     ApiKeyHasher apiKeyHasher,
     ApiKeyExpirationPolicyResolver expirationPolicyResolver,
@@ -10,15 +11,11 @@ public class CreateApiKeyCommandHandler(
 )
     : IRequestHandler<CreateApiKeyCommand, CreateApiKeyResponse>
 {
-
     private readonly AppDbContext _dbContext = dbContext;
-
     private readonly ProjectAccessService _projectAccess = projectAccess;
-
+    private readonly TraceApplicationAccessService _applicationAccess = applicationAccess;
     private readonly ApiKeyGenerator _apiKeyGenerator = apiKeyGenerator;
-
     private readonly ApiKeyHasher _apiKeyHasher = apiKeyHasher;
-
     private readonly ApiKeyExpirationPolicyResolver _expirationPolicyResolver = expirationPolicyResolver;
     private readonly TimeProvider _timeProvider = timeProvider;
 
@@ -26,24 +23,17 @@ public class CreateApiKeyCommandHandler(
         CreateApiKeyCommand request,
         CancellationToken cancellationToken)
     {
-        var access = await _projectAccess.GetProjectAccessAsync(
-            request.WorkspaceId,
-            request.ProjectId,
+        var access = await _applicationAccess.GetApplicationAccessAsync(
+            request.ApplicationId,
             request.UserId,
             "Trace application not found.",
             cancellationToken);
 
         _projectAccess.EnsureProjectManager(
-            access,
+            access.ProjectAccess,
             "You do not have permission to create API keys.");
 
-        var application = await _dbContext.TraceApplications
-            .FirstOrDefaultAsync(
-                app =>
-                    app.Id == request.ApplicationId &&
-                    app.ProjectId == request.ProjectId &&
-                    app.Status == ResourceStatuses.Active,
-                cancellationToken);
+        var application = access.Application;
 
         if (application is null)
         {
