@@ -41,11 +41,26 @@ public sealed class GlobalExceptionHandler(
         return true;
     }
 
+    private static bool IsUniqueConstraintViolation(Exception exception)
+    {
+        return exception is DbUpdateException
+        {
+            InnerException: PostgresException
+            {
+                SqlState: PostgresErrorCodes.UniqueViolation
+            }
+        };
+    }
+
     private ProblemDetails CreateProblemDetails(
         HttpContext httpContext,
         Exception exception)
     {
-        var status = exception switch
+        var isUniqueConstraintViolation = IsUniqueConstraintViolation(exception);
+
+        var status = isUniqueConstraintViolation
+        ? StatusCodes.Status409Conflict
+        : exception switch
         {
             ValidationException => StatusCodes.Status400BadRequest,
             UnauthorizedException => StatusCodes.Status401Unauthorized,
@@ -56,24 +71,28 @@ public sealed class GlobalExceptionHandler(
             _ => StatusCodes.Status500InternalServerError
         };
 
-        var title = exception switch
-        {
-            ValidationException => "Validation failed.",
-            UnauthorizedException => "Unauthorized.",
-            ForbiddenException => "Forbidden.",
-            NotFoundException => "Resource not found.",
-            ConflictException => "Conflict.",
-            ExternalServiceException => "External service error.",
-            _ => "Unexpected server error."
-        };
+        var title = isUniqueConstraintViolation
+            ? "Conflict."
+            : exception switch
+            {
+                ValidationException => "Validation failed.",
+                UnauthorizedException => "Unauthorized.",
+                ForbiddenException => "Forbidden.",
+                NotFoundException => "Resource not found.",
+                ConflictException => "Conflict.",
+                ExternalServiceException => "External service error.",
+                _ => "Unexpected server error."
+            };
 
         var problem = new ProblemDetails
         {
             Status = status,
             Title = title,
-            Detail = ShouldExposeDetail(status)
-                ? exception.Message
-                : "An unexpected error occurred.",
+            Detail = isUniqueConstraintViolation
+                ? "A resource with the same unique value already exists."
+                : ShouldExposeDetail(status)
+                    ? exception.Message
+                    : "An unexpected error occurred.",
             Instance = httpContext.Request.Path
         };
 

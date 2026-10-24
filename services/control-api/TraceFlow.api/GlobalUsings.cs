@@ -9,6 +9,8 @@ global using System.IdentityModel.Tokens.Jwt;
 global using System.Text.RegularExpressions;
 global using System.Threading.RateLimiting;
 
+global using Npgsql;
+
 global using Asp.Versioning;
 
 global using DotNetEnv;
