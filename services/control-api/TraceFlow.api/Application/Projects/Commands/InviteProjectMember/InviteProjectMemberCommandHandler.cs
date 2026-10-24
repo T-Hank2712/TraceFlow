@@ -20,7 +20,6 @@ public class InviteProjectMemberCommandHandler(
         CancellationToken cancellationToken)
     {
         var access = await _projectAccess.GetProjectAccessAsync(
-            request.WorkspaceId,
             request.ProjectId,
             request.InvitedByUserId,
             "Project not found.",
@@ -70,8 +69,8 @@ public class InviteProjectMemberCommandHandler(
         }
 
         var invitation = new ProjectInvitation(
-            request.WorkspaceId,
-            request.ProjectId,
+            access.Project.WorkspaceId,
+            access.Project.Id,
             invitedUser.Id,
             request.InvitedByUserId,
             request.Role,

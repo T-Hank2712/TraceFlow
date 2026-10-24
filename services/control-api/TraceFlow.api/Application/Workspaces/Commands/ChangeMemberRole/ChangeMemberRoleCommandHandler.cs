@@ -14,8 +14,20 @@ public class ChangeMemberRoleCommandHandler(
         ChangeMemberRoleCommand request,
         CancellationToken cancellationToken)
     {
+        var targetMember = await _dbContext.WorkspaceMembers
+            .FirstOrDefaultAsync(
+                member =>
+                    member.Id == request.MemberId &&
+                    member.Status == MembershipStatuses.Active,
+                cancellationToken);
+
+        if (targetMember is null)
+        {
+            throw new NotFoundException("Workspace member not found.");
+        }
+
         var actorMembership = await _workspaceAccess.GetActiveMembershipAsync(
-            request.WorkspaceId,
+            targetMember.WorkspaceId,
             request.ActorUserId,
             "Workspace not found.",
             cancellationToken);
@@ -28,20 +40,13 @@ public class ChangeMemberRoleCommandHandler(
             actorMembership,
             "You do not have permission to change member roles.");
 
-        var targetMember = await _dbContext.WorkspaceMembers
-            .FirstOrDefaultAsync(
-                member =>
-                    member.Id == request.MemberId &&
-                    member.WorkspaceId == request.WorkspaceId &&
-                    member.Status == MembershipStatuses.Active,
-                cancellationToken);
-
-        if (targetMember is null)
-        {
-            throw new NotFoundException("Workspace member not found.");
-        }
-
         var newRole = request.Role.Trim().ToLowerInvariant();
+
+        if (newRole == WorkspaceMemberRoles.Owner)
+        {
+            throw new ConflictException(
+                "Workspace ownership can only be changed through ownership transfer.");
+        }
 
         if (targetMember.Role == newRole)
         {
@@ -64,13 +69,6 @@ public class ChangeMemberRoleCommandHandler(
                 "Only workspace owner can change another workspace owner's role.");
         }
 
-        if (newRole == WorkspaceMemberRoles.Owner &&
-            actorMembership.Role != WorkspaceMemberRoles.Owner)
-        {
-            throw new ForbiddenException(
-                "Only workspace owner can promote members to owner.");
-        }
-
         var utcNow = _timeProvider.GetUtcNow();
 
         targetMember.ChangeRole(newRole, utcNow);
@@ -79,7 +77,7 @@ public class ChangeMemberRoleCommandHandler(
         {
             var activeProjectIds = await _dbContext.Projects
                 .Where(project =>
-                    project.WorkspaceId == request.WorkspaceId &&
+                    project.WorkspaceId == targetMember.WorkspaceId &&
                     project.Status == ResourceStatuses.Active)
                 .Select(project => project.Id)
                 .ToListAsync(cancellationToken);
@@ -87,7 +85,7 @@ public class ChangeMemberRoleCommandHandler(
             var existingProjectMembers = await _dbContext.ProjectMembers
                 .Where(member =>
                     member.UserId == targetMember.UserId &&
-                    member.Project.WorkspaceId == request.WorkspaceId &&
+                    member.Project.WorkspaceId == targetMember.WorkspaceId &&
                     member.Project.Status == ResourceStatuses.Active)
                 .ToListAsync(cancellationToken);
 
@@ -118,7 +116,7 @@ public class ChangeMemberRoleCommandHandler(
                 .Where(member =>
                     member.UserId == targetMember.UserId &&
                     member.Status == MembershipStatuses.Active &&
-                    member.Project.WorkspaceId == request.WorkspaceId &&
+                    member.Project.WorkspaceId == targetMember.WorkspaceId &&
                     member.Project.Status == ResourceStatuses.Active)
                 .ToListAsync(cancellationToken);
 

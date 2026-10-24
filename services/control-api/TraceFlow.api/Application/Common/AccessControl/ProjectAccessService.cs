@@ -5,7 +5,6 @@ public class ProjectAccessService(
     WorkspaceAccessService workspaceAccess
 )
 {
-
     private readonly AppDbContext _dbContext = dbContext;
 
     private readonly WorkspaceAccessService _workspaceAccess = workspaceAccess;
@@ -18,16 +17,6 @@ public class ProjectAccessService(
         CancellationToken cancellationToken,
         string archivedWorkspaceMessage = "Archived workspace cannot be modified.")
     {
-        var workspaceMembership = await _workspaceAccess.GetActiveMembershipAsync(
-            workspaceId,
-            userId,
-            notFoundMessage,
-            cancellationToken);
-
-        _workspaceAccess.EnsureWorkspaceIsActive(
-            workspaceMembership.Workspace,
-            archivedWorkspaceMessage);
-
         var project = await _dbContext.Projects
             .FirstOrDefaultAsync(
                 project =>
@@ -41,19 +30,39 @@ public class ProjectAccessService(
             throw new NotFoundException(notFoundMessage);
         }
 
-        var projectMembership = await _dbContext.ProjectMembers
-            .AsNoTracking()
+        return await CreateProjectAccessContextAsync(
+            project,
+            userId,
+            notFoundMessage,
+            cancellationToken,
+            archivedWorkspaceMessage);
+    }
+
+    public async Task<ProjectAccessContext> GetProjectAccessAsync(
+        Ulid projectId,
+        Ulid userId,
+        string notFoundMessage,
+        CancellationToken cancellationToken,
+        string archivedWorkspaceMessage = "Archived workspace cannot be modified.")
+    {
+        var project = await _dbContext.Projects
             .FirstOrDefaultAsync(
-                member =>
-                    member.ProjectId == projectId &&
-                    member.UserId == userId &&
-                    member.Status == MembershipStatuses.Active,
+                project =>
+                    project.Id == projectId &&
+                    project.Status == ResourceStatuses.Active,
                 cancellationToken);
 
-        return new ProjectAccessContext(
-            workspaceMembership,
+        if (project is null)
+        {
+            throw new NotFoundException(notFoundMessage);
+        }
+
+        return await CreateProjectAccessContextAsync(
             project,
-            projectMembership);
+            userId,
+            notFoundMessage,
+            cancellationToken,
+            archivedWorkspaceMessage);
     }
 
     public void EnsureProjectManager(
@@ -85,6 +94,38 @@ public class ProjectAccessService(
         {
             throw new ForbiddenException(forbiddenMessage);
         }
+    }
+
+    private async Task<ProjectAccessContext> CreateProjectAccessContextAsync(
+        Project project,
+        Ulid userId,
+        string notFoundMessage,
+        CancellationToken cancellationToken,
+        string archivedWorkspaceMessage)
+    {
+        var workspaceMembership = await _workspaceAccess.GetActiveMembershipAsync(
+            project.WorkspaceId,
+            userId,
+            notFoundMessage,
+            cancellationToken);
+
+        _workspaceAccess.EnsureWorkspaceIsActive(
+            workspaceMembership.Workspace,
+            archivedWorkspaceMessage);
+
+        var projectMembership = await _dbContext.ProjectMembers
+            .AsNoTracking()
+            .FirstOrDefaultAsync(
+                member =>
+                    member.ProjectId == project.Id &&
+                    member.UserId == userId &&
+                    member.Status == MembershipStatuses.Active,
+                cancellationToken);
+
+        return new ProjectAccessContext(
+            workspaceMembership,
+            project,
+            projectMembership);
     }
 }
 

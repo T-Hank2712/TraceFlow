@@ -16,7 +16,6 @@ public class ProjectInvitationSentQueryHandler(
            CancellationToken cancellationToken)
     {
         var access = await _projectAccess.GetProjectAccessAsync(
-            request.WorkspaceId,
             request.ProjectId,
             request.UserId,
             "Project not found.",
@@ -33,9 +32,7 @@ public class ProjectInvitationSentQueryHandler(
 
         return await _dbContext.ProjectInvitations
             .AsNoTracking()
-            .Where(invitation =>
-                invitation.WorkspaceId == request.WorkspaceId &&
-                invitation.ProjectId == request.ProjectId)
+            .Where(invitation => invitation.ProjectId == access.Project.Id)
             .OrderByDescending(invitation => invitation.CreatedAt)
             .Select(invitation => new ProjectInvitationSentResponse(
                 invitation.Id,

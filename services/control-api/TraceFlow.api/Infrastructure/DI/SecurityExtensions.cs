@@ -35,13 +35,32 @@ public static class SecurityExtensions
 
                         ClockSkew = TimeSpan.Zero
                     };
-            });
+            })
+            .AddScheme<
+                AuthenticationSchemeOptions,
+                InternalServiceAuthenticationHandler>(
+                InternalServiceAuthentication.Scheme,
+                _ => { });
 
         services.AddAuthorization(options =>
         {
             options.FallbackPolicy = new AuthorizationPolicyBuilder()
                 .RequireAuthenticatedUser()
                 .Build();
+
+            options.AddPolicy(
+                InternalServiceAuthentication.Policy,
+                policy =>
+                {
+                    policy.AuthenticationSchemes.Add(
+                        InternalServiceAuthentication.Scheme);
+
+                    policy.RequireAuthenticatedUser();
+
+                    policy.RequireClaim(
+                        InternalServiceAuthentication.ServiceClaimType,
+                        InternalServiceAuthentication.ServiceName);
+                });
         });
 
         return services;

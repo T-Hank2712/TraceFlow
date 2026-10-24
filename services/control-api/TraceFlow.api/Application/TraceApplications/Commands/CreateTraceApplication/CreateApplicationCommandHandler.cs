@@ -17,7 +17,6 @@ public class CreateTraceApplicationCommandHandler(
            CancellationToken cancellationToken)
     {
         var access = await _projectAccess.GetProjectAccessAsync(
-            request.WorkspaceId,
             request.ProjectId,
             request.UserId,
             "Project not found.",
@@ -32,7 +31,7 @@ public class CreateTraceApplicationCommandHandler(
         var slugExists = await _dbContext.TraceApplications
             .AnyAsync(
                 application =>
-                    application.ProjectId == request.ProjectId &&
+                    application.ProjectId == access.Project.Id &&
                     application.Slug == normalizedSlug &&
                     application.Status == ResourceStatuses.Active,
                 cancellationToken);
@@ -43,7 +42,7 @@ public class CreateTraceApplicationCommandHandler(
         }
 
         var traceApplication = new TraceApplication(
-            request.ProjectId,
+            access.Project.Id,
             request.UserId,
             request.Name,
             request.Slug,

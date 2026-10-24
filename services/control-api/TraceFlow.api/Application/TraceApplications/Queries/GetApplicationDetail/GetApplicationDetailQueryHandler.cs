@@ -1,39 +1,29 @@
 namespace TraceFlow.Api.Application.TraceApplications.Queries.GetApplicationDetail;
 
 public class GetApplicationDetailQueryHandler(
-        AppDbContext dbContext,
-        ProjectAccessService projectAccess)
+        TraceApplicationAccessService applicationAccess)
     : IRequestHandler<GetApplicationDetailQuery, ApplicationDetailResponse>
 {
-
-    private readonly AppDbContext _dbContext = dbContext;
-
-    private readonly ProjectAccessService _projectAccess = projectAccess;
+    private readonly TraceApplicationAccessService _applicationAccess = applicationAccess;
 
     public async Task<ApplicationDetailResponse> Handle(
            GetApplicationDetailQuery request,
            CancellationToken cancellationToken)
     {
-        var access = await _projectAccess.GetProjectAccessAsync(
-            request.WorkspaceId,
-            request.ProjectId,
+        var access = await _applicationAccess.GetApplicationAccessAsync(
+            request.ApplicationId,
             request.UserId,
-            "Project not found.",
+            "Application not found.",
             cancellationToken,
             "Archived workspace cannot be accessed.");
 
-        if (!access.IsWorkspaceManager && access.ProjectMembership is null)
+        if (!access.ProjectAccess.IsWorkspaceManager &&
+            access.ProjectAccess.ProjectMembership is null)
         {
-            throw new NotFoundException("Project not found.");
+            throw new NotFoundException("Application not found.");
         }
 
-        var application = await _dbContext.TraceApplications
-            .AsNoTracking()
-            .FirstOrDefaultAsync(x =>
-                x.Id == request.ApplicationId &&
-                x.ProjectId == request.ProjectId &&
-                x.Status == ResourceStatuses.Active,
-                cancellationToken);
+        var application = access.Application;
 
         if (application is null)
         {
@@ -42,7 +32,7 @@ public class GetApplicationDetailQueryHandler(
 
         return new ApplicationDetailResponse(
             application.Id,
-            request.WorkspaceId,
+            access.ProjectAccess.Project.WorkspaceId,
             application.ProjectId,
             application.Name,
             application.Slug,

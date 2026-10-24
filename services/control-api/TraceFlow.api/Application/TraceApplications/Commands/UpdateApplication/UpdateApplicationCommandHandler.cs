@@ -3,36 +3,31 @@ namespace TraceFlow.Api.Application.TraceApplications.Commands.UpdateApplication
 public class UpdateApplicationCommandHandler(
         AppDbContext dbContext,
         ProjectAccessService projectAccess,
+        TraceApplicationAccessService applicationAccess,
         TimeProvider timeProvider)
     : IRequestHandler<UpdateApplicationCommand, UpdateApplicationResponse>
 {
 
     private readonly AppDbContext _dbContext = dbContext;
-
     private readonly ProjectAccessService _projectAccess = projectAccess;
+    private readonly TraceApplicationAccessService _applicationAccess = applicationAccess;
     private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<UpdateApplicationResponse> Handle(
            UpdateApplicationCommand request,
            CancellationToken cancellationToken)
     {
-        var access = await _projectAccess.GetProjectAccessAsync(
-            request.WorkspaceId,
-            request.ProjectId,
+        var access = await _applicationAccess.GetApplicationAccessAsync(
+            request.ApplicationId,
             request.UserId,
-            "Project not found.",
+            "Application not found.",
             cancellationToken);
 
         _projectAccess.EnsureProjectDeveloperOrManager(
-            access,
+            access.ProjectAccess,
             "You do not have permission to update this application.");
 
-        var application = await _dbContext.TraceApplications
-            .FirstOrDefaultAsync(x =>
-                x.Id == request.ApplicationId &&
-                x.ProjectId == request.ProjectId &&
-                x.Status == ResourceStatuses.Active,
-                cancellationToken);
+        var application = access.Application;
 
         if (application is null)
         {
@@ -45,8 +40,8 @@ public class UpdateApplicationCommandHandler(
 
             var slugAlreadyTaken = await _dbContext.TraceApplications
                 .AnyAsync(x =>
-                    x.Id != request.ApplicationId &&
-                    x.ProjectId == request.ProjectId &&
+                    x.Id != application.Id &&
+                    x.ProjectId == application.ProjectId &&
                     x.Slug == normalizedSlug &&
                     x.Status == ResourceStatuses.Active,
                     cancellationToken);
