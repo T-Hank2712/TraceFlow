@@ -19,6 +19,9 @@ global using FluentValidation;
 
 global using MediatR;
 
+global using System.Text.Encodings.Web;
+
+global using Microsoft.AspNetCore.Authentication;
 global using Microsoft.AspNetCore.Mvc.Filters;
 global using Microsoft.AspNetCore.Http.Features;
 global using Microsoft.AspNetCore.HttpOverrides;
