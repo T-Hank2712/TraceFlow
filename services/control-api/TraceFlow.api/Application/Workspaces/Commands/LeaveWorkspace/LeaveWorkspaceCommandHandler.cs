@@ -32,6 +32,30 @@ public class LeaveWorkspaceCommandHandler(
 
         var utcNow = _timeProvider.GetUtcNow();
 
+        var pendingWorkspaceInvitations = await _dbContext.WorkspaceInvitations
+            .Where(invitation =>
+                invitation.WorkspaceId == request.WorkspaceId &&
+                invitation.InvitedUserId == request.UserId &&
+                invitation.Status == InvitationStatuses.Pending)
+            .ToListAsync(cancellationToken);
+
+        foreach (var invitation in pendingWorkspaceInvitations)
+        {
+            invitation.Cancel(utcNow);
+        }
+
+        var pendingProjectInvitations = await _dbContext.ProjectInvitations
+            .Where(invitation =>
+                invitation.WorkspaceId == request.WorkspaceId &&
+                invitation.InvitedUserId == request.UserId &&
+                invitation.Status == InvitationStatuses.Pending)
+            .ToListAsync(cancellationToken);
+
+        foreach (var invitation in pendingProjectInvitations)
+        {
+            invitation.Cancel(utcNow);
+        }
+
         var projectMemberships = await _dbContext.ProjectMembers
             .Where(projectMember =>
                 projectMember.UserId == request.UserId &&

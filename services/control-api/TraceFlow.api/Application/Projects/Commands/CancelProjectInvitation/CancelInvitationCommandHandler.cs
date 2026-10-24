@@ -17,9 +17,18 @@ public class CancelProjectInvitationCommandHandler(
            CancelProjectInvitationCommand request,
            CancellationToken cancellationToken)
     {
+        var invitation = await _dbContext.ProjectInvitations
+            .FirstOrDefaultAsync(
+                invitation => invitation.Id == request.InvitationId,
+                cancellationToken);
+
+        if (invitation is null)
+        {
+            throw new NotFoundException("Project invitation not found.");
+        }
+
         var access = await _projectAccess.GetProjectAccessAsync(
-            request.WorkspaceId,
-            request.ProjectId,
+            invitation.ProjectId,
             request.ActorUserId,
             "Project invitation not found.",
             cancellationToken);
@@ -27,19 +36,6 @@ public class CancelProjectInvitationCommandHandler(
         _projectAccess.EnsureProjectManager(
             access,
             "You do not have permission to cancel project invitations.");
-
-        var invitation = await _dbContext.ProjectInvitations
-            .FirstOrDefaultAsync(
-                invitation =>
-                    invitation.Id == request.InvitationId &&
-                    invitation.WorkspaceId == request.WorkspaceId &&
-                    invitation.ProjectId == request.ProjectId,
-                cancellationToken);
-
-        if (invitation is null)
-        {
-            throw new NotFoundException("Project invitation not found.");
-        }
 
         if (invitation.Status != InvitationStatuses.Pending)
         {
