@@ -42,6 +42,12 @@ public class ChangeMemberRoleCommandHandler(
 
         var newRole = request.Role.Trim().ToLowerInvariant();
 
+        if (newRole == WorkspaceMemberRoles.Owner)
+        {
+            throw new ConflictException(
+                "Workspace ownership can only be changed through ownership transfer.");
+        }
+
         if (targetMember.Role == newRole)
         {
             throw new ConflictException("Member already has this role.");
@@ -61,13 +67,6 @@ public class ChangeMemberRoleCommandHandler(
         {
             throw new ForbiddenException(
                 "Only workspace owner can change another workspace owner's role.");
-        }
-
-        if (newRole == WorkspaceMemberRoles.Owner &&
-            actorMembership.Role != WorkspaceMemberRoles.Owner)
-        {
-            throw new ForbiddenException(
-                "Only workspace owner can promote members to owner.");
         }
 
         var utcNow = _timeProvider.GetUtcNow();

@@ -6,6 +6,9 @@ public class WorkspaceConfiguration : IEntityTypeConfiguration<Workspace>
     {
         builder.ToTable("Workspaces");
 
+        builder.Property<uint>("xmin")
+            .IsRowVersion();
+
         builder.HasKey(workspace => workspace.Id);
 
         builder.Property(workspace => workspace.Id)

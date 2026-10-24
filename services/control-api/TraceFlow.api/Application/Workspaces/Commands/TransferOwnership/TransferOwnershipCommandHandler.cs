@@ -82,7 +82,15 @@ public class TransferOwnershipCommandHandler(
             WorkspaceMemberRoles.Admin,
             utcNow);
 
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new ConflictException(
+                "Workspace ownership was changed by another request. Refresh and try again.");
+        }
 
         return new TransferOwnershipResponse(
             request.WorkspaceId,
