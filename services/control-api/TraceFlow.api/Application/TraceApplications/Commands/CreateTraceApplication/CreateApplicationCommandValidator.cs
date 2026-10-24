@@ -12,7 +12,7 @@ public class CreateTraceApplicationCommandValidator
         RuleFor(command => command.Slug)
             .NotEmpty()
             .MaximumLength(100)
-            .Matches("^[a-zA-Z0-9-]+$")
+            .Matches("^[a-z0-9-]+$")
             .WithMessage("Slug can only contain letters, numbers, and hyphens.");
 
         RuleFor(command => command.Description)

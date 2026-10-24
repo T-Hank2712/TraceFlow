@@ -24,6 +24,7 @@ public static class ApplicationServiceExtensions
         services.AddScoped<RefreshTokenGenerator>();
         services.AddScoped<WorkspaceAccessService>();
         services.AddScoped<ProjectAccessService>();
+        services.AddScoped<TraceApplicationAccessService>();
         services.AddScoped<UserLookupService>();
         services.AddScoped<ApiKeyGenerator>();
         services.AddScoped<ApiKeyHasher>();

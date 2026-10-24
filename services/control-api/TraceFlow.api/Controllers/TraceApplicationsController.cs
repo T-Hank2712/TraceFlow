@@ -3,15 +3,12 @@ namespace TraceFlow.Api.Controllers;
 [ApiController]
 [ApiVersion(1.0)]
 [Authorize]
-[Route("api/v{version:apiVersion}/workspaces/{workspaceId}/projects/{projectId}/applications")]
+[Route("api/v{version:apiVersion}/projects/{projectId}/applications")]
 public class TraceApplicationsController(ISender sender) : ControllerBase
 {
     private readonly ISender _sender = sender;
-
-
     [HttpPost]
     public async Task<IActionResult> CreateTraceApplication(
-        Ulid workspaceId,
         Ulid projectId,
         CreateTraceApplicationRequest request,
         CancellationToken cancellationToken)
@@ -25,7 +22,6 @@ public class TraceApplicationsController(ISender sender) : ControllerBase
 
         var result = await _sender.Send(
             new CreateTraceApplicationCommand(
-                workspaceId,
                 projectId,
                 userId.Value,
                 request.Name,
@@ -37,7 +33,6 @@ public class TraceApplicationsController(ISender sender) : ControllerBase
     }
     [HttpGet]
     public async Task<IActionResult> ListTraceApplications(
-        Ulid workspaceId,
         Ulid projectId,
         CancellationToken cancellationToken)
     {
@@ -50,17 +45,14 @@ public class TraceApplicationsController(ISender sender) : ControllerBase
 
         var result = await _sender.Send(
             new ListTraceApplicationsQuery(
-                workspaceId,
                 projectId,
                 userId.Value),
             cancellationToken);
 
         return Ok(result);
     }
-    [HttpGet("{applicationId}")]
+    [HttpGet("~/api/v{version:apiVersion}/applications/{applicationId}")]
     public async Task<IActionResult> GetApplicationDetail(
-        Ulid workspaceId,
-        Ulid projectId,
         Ulid applicationId,
         CancellationToken cancellationToken)
     {
@@ -73,18 +65,14 @@ public class TraceApplicationsController(ISender sender) : ControllerBase
 
         var result = await _sender.Send(
             new GetApplicationDetailQuery(
-                workspaceId,
-                projectId,
                 applicationId,
                 userId.Value),
             cancellationToken);
 
         return Ok(result);
     }
-    [HttpPatch("{applicationId}")]
+    [HttpPatch("~/api/v{version:apiVersion}/applications/{applicationId}")]
     public async Task<IActionResult> UpdateApplication(
-        Ulid workspaceId,
-        Ulid projectId,
         Ulid applicationId,
         UpdateApplicationRequest request,
         CancellationToken cancellationToken)
@@ -98,8 +86,6 @@ public class TraceApplicationsController(ISender sender) : ControllerBase
 
         var result = await _sender.Send(
             new UpdateApplicationCommand(
-                workspaceId,
-                projectId,
                 applicationId,
                 userId.Value,
                 request.Name,
@@ -109,10 +95,8 @@ public class TraceApplicationsController(ISender sender) : ControllerBase
 
         return Ok(result);
     }
-    [HttpDelete("{applicationId}")]
+    [HttpDelete("~/api/v{version:apiVersion}/applications/{applicationId}")]
     public async Task<IActionResult> DeleteApplication(
-        Ulid workspaceId,
-        Ulid projectId,
         Ulid applicationId,
         CancellationToken cancellationToken)
     {
@@ -125,8 +109,6 @@ public class TraceApplicationsController(ISender sender) : ControllerBase
 
         var result = await _sender.Send(
             new DeleteApplicationCommand(
-                workspaceId,
-                projectId,
                 applicationId,
                 userId.Value),
             cancellationToken);
