@@ -1,4 +1,5 @@
 namespace TraceFlow.Api.Application.Common.Security;
+
 public sealed class InternalServiceAuthenticationHandler(
     IOptionsMonitor<AuthenticationSchemeOptions> schemeOptions,
     ILoggerFactory loggerFactory,
