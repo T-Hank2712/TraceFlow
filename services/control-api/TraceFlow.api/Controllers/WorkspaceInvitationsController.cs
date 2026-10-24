@@ -112,7 +112,6 @@ public class WorkspaceInvitationsController(ISender sender) : ControllerBase
     }
     [HttpDelete("invitations/{invitationId}")]
     public async Task<IActionResult> CancelWorkspaceInvitation(
-        Ulid workspaceId,
         Ulid invitationId,
         CancellationToken cancellationToken)
     {

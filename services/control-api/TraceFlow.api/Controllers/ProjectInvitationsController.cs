@@ -108,7 +108,6 @@ public class ProjectInvitationsController(ISender sender) : ControllerBase
     }
     [HttpDelete("api/v{version:apiVersion}/projects/invitations/{invitationId}")]
     public async Task<IActionResult> CancelProjectInvitation(
-        Ulid projectId,
         Ulid invitationId,
         CancellationToken cancellationToken)
     {
