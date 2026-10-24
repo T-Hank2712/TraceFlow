@@ -106,7 +106,7 @@ public class ProjectInvitationsController(ISender sender) : ControllerBase
 
         return Ok(result);
     }
-    [HttpDelete("api/v{version:apiVersion}/projects/{projectId}/invitations/{invitationId}")]
+    [HttpDelete("api/v{version:apiVersion}/projects/invitations/{invitationId}")]
     public async Task<IActionResult> CancelProjectInvitation(
         Ulid projectId,
         Ulid invitationId,
@@ -121,7 +121,6 @@ public class ProjectInvitationsController(ISender sender) : ControllerBase
 
         var result = await _sender.Send(
             new CancelProjectInvitationCommand(
-                projectId,
                 invitationId,
                 userId.Value),
             cancellationToken);
