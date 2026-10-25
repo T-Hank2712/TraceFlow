@@ -2,7 +2,8 @@ namespace TraceFlow.Api.Application.TraceLogs.Queries.SearchLogs;
 
 public sealed class SearchLogsQueryValidator : AbstractValidator<SearchLogsQuery>
 {
-    public SearchLogsQueryValidator()
+    private static readonly TimeSpan MaxSearchRange = TimeSpan.FromDays(31);
+    public SearchLogsQueryValidator(TimeProvider timeProvider)
     {
         RuleFor(query => query.Page)
             .GreaterThanOrEqualTo(1);
@@ -31,7 +32,16 @@ public sealed class SearchLogsQueryValidator : AbstractValidator<SearchLogsQuery
             .When(query => query.CorrelationId is not null);
 
         RuleFor(query => query)
-            .Must(query => query.From is null || query.To is null || query.From <= query.To)
+            .Must(query => IsValidTimeRange(query, timeProvider.GetUtcNow()))
             .WithMessage("From must be earlier than or equal to To.");
+    }
+    private static bool IsValidTimeRange(
+        SearchLogsQuery query,
+        DateTimeOffset utcNow)
+    {
+        var to = query.To?.ToUniversalTime() ?? utcNow;
+        var from = query.From?.ToUniversalTime() ?? to.AddHours(-24);
+
+        return from <= to && to - from <= MaxSearchRange;
     }
 }
