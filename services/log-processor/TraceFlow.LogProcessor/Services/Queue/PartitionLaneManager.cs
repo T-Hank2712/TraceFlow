@@ -63,10 +63,43 @@ public sealed class PartitionLaneManager
     public async Task StopAsync(
         CancellationToken cancellationToken)
     {
-        var lanes = _lanes.Values.ToArray();
+        var partitions = _lanes.Keys.ToArray();
+
+        await StopPartitionsAsync(
+            partitions,
+            cancellationToken);
+    }
+
+    public async Task StopPartitionsAsync(
+        IReadOnlyCollection<TopicPartition> partitions,
+        CancellationToken cancellationToken)
+    {
+        var lanes = new List<PartitionLane>(partitions.Count);
+
+        foreach (var partition in partitions)
+        {
+            if (_lanes.TryRemove(partition, out var lane))
+            {
+                lanes.Add(lane);
+            }
+        }
 
         await Task.WhenAll(
             lanes.Select(lane =>
-                lane.StopAsync(cancellationToken)));
+                StopAndDisposeAsync(lane, cancellationToken)));
+    }
+
+    private static async Task StopAndDisposeAsync(
+        PartitionLane lane,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await lane.StopAsync(cancellationToken);
+        }
+        finally
+        {
+            await lane.DisposeAsync();
+        }
     }
 }

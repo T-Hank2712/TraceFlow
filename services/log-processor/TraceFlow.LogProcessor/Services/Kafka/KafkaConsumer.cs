@@ -10,6 +10,7 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
     private readonly IOffsetCommitSignal _offsetCommitSignal;
     private readonly IDlqProducer _dlqProducer;
     private readonly IPartitionLaneManager _laneManager;
+    private readonly ConcurrentQueue<TopicPartition> _revokedPartitions = [];
 
     public KafkaConsumer(
         IOptions<KafkaOptions> options,
@@ -42,6 +43,16 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
         };
 
         _consumer = new ConsumerBuilder<Ignore, string>(config)
+            .SetPartitionsRevokedHandler((_, partitions) =>
+            {
+                foreach (var partition in partitions)
+                {
+                    _revokedPartitions.Enqueue(
+                        new TopicPartition(
+                            partition.Topic,
+                            partition.Partition));
+                }
+            })
             .Build();
 
         _consumer.Subscribe(_options.Topic);
@@ -76,11 +87,16 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
 
                 if (result is not null)
                 {
+                    await StopRevokedPartitionsAsync(cancellationToken);
+
                     await ProcessMessageAsync(
                         result,
                         handler,
                         cancellationToken);
                 }
+
+                await StopRevokedPartitionsAsync(cancellationToken);
+
                 if (_offsetCommitSignal.IsSignaled())
                 {
                     CommitAvailableOffsets();
@@ -239,6 +255,44 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
         }
 
         _consumer.Commit(offsets);
+    }
+
+    private async Task StopRevokedPartitionsAsync(
+        CancellationToken cancellationToken)
+    {
+        if (_revokedPartitions.IsEmpty)
+        {
+            return;
+        }
+
+        var revokedPartitions = new HashSet<TopicPartition>();
+
+        while (_revokedPartitions.TryDequeue(out var partition))
+        {
+            revokedPartitions.Add(partition);
+        }
+
+        if (revokedPartitions.Count == 0)
+        {
+            return;
+        }
+
+        try
+        {
+            await _laneManager.StopPartitionsAsync(
+                revokedPartitions,
+                cancellationToken);
+        }
+        finally
+        {
+            // Revoked partitions may be reassigned and replayed. Their previous
+            // in-memory commit state must not be reused by a new lane.
+            _offsetCoordinator.RemovePartitions(revokedPartitions);
+        }
+
+        _logger.LogInformation(
+            "Stopped partition lanes after Kafka rebalance. Partitions: {Partitions}",
+            string.Join(", ", revokedPartitions));
     }
 
     public void Dispose()
