@@ -26,7 +26,8 @@ public class InvitationInboxQueryHandler(
             .Where(invitation =>
                 invitation.InvitedUserId == request.UserId &&
                 invitation.Status == InvitationStatuses.Pending &&
-                invitation.ExpiresAt > utcNow)
+                invitation.ExpiresAt > utcNow &&
+                invitation.Workspace.Status == ResourceStatuses.Active)
             .OrderByDescending(invitation => invitation.CreatedAt)
             .Select(invitation => new InvitationInboxResponse(
                 invitation.Id,
