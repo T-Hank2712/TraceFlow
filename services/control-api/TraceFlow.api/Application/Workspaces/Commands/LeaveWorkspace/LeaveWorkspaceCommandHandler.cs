@@ -3,11 +3,13 @@ namespace TraceFlow.Api.Application.Workspaces.Commands.LeaveWorkspace;
 public class LeaveWorkspaceCommandHandler(
         AppDbContext dbContext,
         WorkspaceAccessService workspaceAccess,
+        ProjectManagerInvariantService projectManagerInvariant,
         TimeProvider timeProvider)
     : IRequestHandler<LeaveWorkspaceCommand, LeaveWorkspaceResponse>
 {
     private readonly AppDbContext _dbContext = dbContext;
     private readonly WorkspaceAccessService _workspaceAccess = workspaceAccess;
+    private readonly ProjectManagerInvariantService _projectManagerInvariant = projectManagerInvariant;
     private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<LeaveWorkspaceResponse> Handle(
@@ -29,6 +31,11 @@ public class LeaveWorkspaceCommandHandler(
             throw new ConflictException(
                 "Workspace primary owner cannot leave. Transfer primary ownership first.");
         }
+
+        await _projectManagerInvariant.EnsureCanRemoveUserFromActiveProjectsAsync(
+            request.WorkspaceId,
+            request.UserId,
+            cancellationToken);
 
         var utcNow = _timeProvider.GetUtcNow();
 

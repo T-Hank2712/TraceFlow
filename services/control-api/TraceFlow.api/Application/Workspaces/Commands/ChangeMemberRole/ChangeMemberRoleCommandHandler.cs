@@ -3,11 +3,13 @@ namespace TraceFlow.Api.Application.Workspaces.Commands.ChangeMemberRole;
 public class ChangeMemberRoleCommandHandler(
         AppDbContext dbContext,
         WorkspaceAccessService workspaceAccess,
+        ProjectManagerInvariantService projectManagerInvariant,
         TimeProvider timeProvider)
     : IRequestHandler<ChangeMemberRoleCommand, ChangeMemberRoleResponse>
 {
     private readonly AppDbContext _dbContext = dbContext;
     private readonly WorkspaceAccessService _workspaceAccess = workspaceAccess;
+    private readonly ProjectManagerInvariantService _projectManagerInvariant = projectManagerInvariant;
     private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<ChangeMemberRoleResponse> Handle(
@@ -67,6 +69,14 @@ public class ChangeMemberRoleCommandHandler(
         {
             throw new ForbiddenException(
                 "Only workspace owner can change another workspace owner's role.");
+        }
+
+        if (newRole == WorkspaceMemberRoles.Member)
+        {
+            await _projectManagerInvariant.EnsureCanRemoveUserFromActiveProjectsAsync(
+                targetMember.WorkspaceId,
+                targetMember.UserId,
+                cancellationToken);
         }
 
         var utcNow = _timeProvider.GetUtcNow();

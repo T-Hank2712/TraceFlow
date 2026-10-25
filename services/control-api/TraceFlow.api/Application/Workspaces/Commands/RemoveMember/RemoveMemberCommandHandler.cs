@@ -3,11 +3,13 @@ namespace TraceFlow.Api.Application.Workspaces.Commands.RemoveMember;
 public class RemoveMemberCommandHandler(
         AppDbContext dbContext,
         WorkspaceAccessService workspaceAccess,
+        ProjectManagerInvariantService projectManagerInvariant,
         TimeProvider timeProvider)
     : IRequestHandler<RemoveMemberCommand, RemoveMemberResponse>
 {
     private readonly AppDbContext _dbContext = dbContext;
     private readonly WorkspaceAccessService _workspaceAccess = workspaceAccess;
+    private readonly ProjectManagerInvariantService _projectManagerInvariant = projectManagerInvariant;
     private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<RemoveMemberResponse> Handle(
@@ -54,6 +56,11 @@ public class RemoveMemberCommandHandler(
             throw new ForbiddenException(
                 "Only workspace owner can remove another workspace owner.");
         }
+
+        await _projectManagerInvariant.EnsureCanRemoveUserFromActiveProjectsAsync(
+            targetMember.WorkspaceId,
+            targetMember.UserId,
+            cancellationToken);
 
         var utcNow = _timeProvider.GetUtcNow();
 
