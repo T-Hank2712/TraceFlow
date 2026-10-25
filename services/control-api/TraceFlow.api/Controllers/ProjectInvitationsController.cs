@@ -6,11 +6,8 @@ namespace TraceFlow.Api.Controllers;
 public class ProjectInvitationsController(ISender sender) : ControllerBase
 {
     private readonly ISender _sender = sender;
-
-
-    [HttpPost("api/v{version:apiVersion}/workspaces/{workspaceId}/projects/{projectId}/invitations")]
+    [HttpPost("api/v{version:apiVersion}/projects/{projectId}/invitations")]
     public async Task<IActionResult> InviteProjectMember(
-        Ulid workspaceId,
         Ulid projectId,
         InviteProjectMemberRequest request,
         CancellationToken cancellationToken)
@@ -24,7 +21,6 @@ public class ProjectInvitationsController(ISender sender) : ControllerBase
 
         var result = await _sender.Send(
             new InviteProjectMemberCommand(
-                workspaceId,
                 projectId,
                 userId.Value,
                 request.Identifier,
@@ -33,7 +29,7 @@ public class ProjectInvitationsController(ISender sender) : ControllerBase
 
         return Ok(result);
     }
-    [HttpGet("api/v{version:apiVersion}/project-invitations")]
+    [HttpGet("api/v{version:apiVersion}/projects/invitations")]
     public async Task<IActionResult> GetProjectInvitationInbox(
         CancellationToken cancellationToken)
     {
@@ -50,9 +46,8 @@ public class ProjectInvitationsController(ISender sender) : ControllerBase
 
         return Ok(result);
     }
-    [HttpGet("api/v{version:apiVersion}/workspaces/{workspaceId}/projects/{projectId}/invitations")]
+    [HttpGet("api/v{version:apiVersion}/projects/{projectId}/invitations")]
     public async Task<IActionResult> GetProjectInvitationSent(
-        Ulid workspaceId,
         Ulid projectId,
         CancellationToken cancellationToken)
     {
@@ -65,14 +60,13 @@ public class ProjectInvitationsController(ISender sender) : ControllerBase
 
         var result = await _sender.Send(
             new ProjectInvitationSentQuery(
-                workspaceId,
                 projectId,
                 userId.Value),
             cancellationToken);
 
         return Ok(result);
     }
-    [HttpPost("api/v{version:apiVersion}/project-invitations/{invitationId}/accept")]
+    [HttpPost("api/v{version:apiVersion}/projects/invitations/{invitationId}/accept")]
     public async Task<IActionResult> AcceptProjectInvitation(
         Ulid invitationId,
         CancellationToken cancellationToken)
@@ -92,7 +86,7 @@ public class ProjectInvitationsController(ISender sender) : ControllerBase
 
         return Ok(result);
     }
-    [HttpPost("api/v{version:apiVersion}/project-invitations/{invitationId}/decline")]
+    [HttpPost("api/v{version:apiVersion}/projects/invitations/{invitationId}/decline")]
     public async Task<IActionResult> DeclineProjectInvitation(
         Ulid invitationId,
         CancellationToken cancellationToken)
@@ -112,10 +106,8 @@ public class ProjectInvitationsController(ISender sender) : ControllerBase
 
         return Ok(result);
     }
-    [HttpDelete("api/v{version:apiVersion}/workspaces/{workspaceId}/projects/{projectId}/invitations/{invitationId}")]
+    [HttpDelete("api/v{version:apiVersion}/projects/invitations/{invitationId}")]
     public async Task<IActionResult> CancelProjectInvitation(
-        Ulid workspaceId,
-        Ulid projectId,
         Ulid invitationId,
         CancellationToken cancellationToken)
     {
@@ -128,8 +120,6 @@ public class ProjectInvitationsController(ISender sender) : ControllerBase
 
         var result = await _sender.Send(
             new CancelProjectInvitationCommand(
-                workspaceId,
-                projectId,
                 invitationId,
                 userId.Value),
             cancellationToken);

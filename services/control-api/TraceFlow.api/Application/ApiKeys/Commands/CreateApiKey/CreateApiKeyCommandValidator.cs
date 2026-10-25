@@ -21,7 +21,7 @@ public class CreateApiKeyCommandValidator : AbstractValidator<CreateApiKeyComman
     {
         RuleFor(command => command.Name)
             .NotEmpty()
-            .MaximumLength(120);
+            .MaximumLength(50);
 
         RuleFor(command => command.Environment)
             .NotEmpty()

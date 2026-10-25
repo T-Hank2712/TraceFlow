@@ -3,11 +3,13 @@ namespace TraceFlow.Api.Application.Workspaces.Commands.LeaveWorkspace;
 public class LeaveWorkspaceCommandHandler(
         AppDbContext dbContext,
         WorkspaceAccessService workspaceAccess,
+        ProjectManagerInvariantService projectManagerInvariant,
         TimeProvider timeProvider)
     : IRequestHandler<LeaveWorkspaceCommand, LeaveWorkspaceResponse>
 {
     private readonly AppDbContext _dbContext = dbContext;
     private readonly WorkspaceAccessService _workspaceAccess = workspaceAccess;
+    private readonly ProjectManagerInvariantService _projectManagerInvariant = projectManagerInvariant;
     private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<LeaveWorkspaceResponse> Handle(
@@ -30,7 +32,36 @@ public class LeaveWorkspaceCommandHandler(
                 "Workspace primary owner cannot leave. Transfer primary ownership first.");
         }
 
+        await _projectManagerInvariant.EnsureCanRemoveUserFromActiveProjectsAsync(
+            request.WorkspaceId,
+            request.UserId,
+            cancellationToken);
+
         var utcNow = _timeProvider.GetUtcNow();
+
+        var pendingWorkspaceInvitations = await _dbContext.WorkspaceInvitations
+            .Where(invitation =>
+                invitation.WorkspaceId == request.WorkspaceId &&
+                invitation.InvitedUserId == request.UserId &&
+                invitation.Status == InvitationStatuses.Pending)
+            .ToListAsync(cancellationToken);
+
+        foreach (var invitation in pendingWorkspaceInvitations)
+        {
+            invitation.Cancel(utcNow);
+        }
+
+        var pendingProjectInvitations = await _dbContext.ProjectInvitations
+            .Where(invitation =>
+                invitation.WorkspaceId == request.WorkspaceId &&
+                invitation.InvitedUserId == request.UserId &&
+                invitation.Status == InvitationStatuses.Pending)
+            .ToListAsync(cancellationToken);
+
+        foreach (var invitation in pendingProjectInvitations)
+        {
+            invitation.Cancel(utcNow);
+        }
 
         var projectMemberships = await _dbContext.ProjectMembers
             .Where(projectMember =>

@@ -1,9 +1,3 @@
-using Microsoft.Extensions.Options;
-using OpenSearch.Client;
-using TraceFlow.LogProcessor.Configurations;
-using TraceFlow.LogProcessor.Contracts;
-using TraceFlow.LogProcessor.Extentions.Exceptions;
-
 namespace TraceFlow.LogProcessor.Services.OpenSearch;
 
 public sealed class LogIndexer : ILogIndexer
@@ -49,11 +43,6 @@ public sealed class LogIndexer : ILogIndexer
                     else
                     {
                         failedEvents.Add(logEvent);
-
-                        _logger.LogWarning(
-                            "OpenSearch failed to index event. EventId: {EventId}, Error: {Error}",
-                            logEvent.EventId,
-                            item.Error);
                     }
                 }
 

@@ -28,6 +28,15 @@ public class DeclineProjectInvitationCommandHandler(
             throw new NotFoundException("Invitation not found.");
         }
 
+        var utcNow = _timeProvider.GetUtcNow();
+
+        if (invitation.Status != InvitationStatuses.Pending ||
+            invitation.ExpiresAt <= utcNow)
+        {
+            throw new ConflictException(
+                "Invitation is no longer valid or has already been processed.");
+        }
+
         if (invitation.Workspace.Status == ResourceStatuses.Archived)
         {
             throw new ConflictException("Archived workspace invitation cannot be declined.");
@@ -38,7 +47,7 @@ public class DeclineProjectInvitationCommandHandler(
             throw new ConflictException("Archived project invitation cannot be declined.");
         }
 
-        invitation.Decline(_timeProvider.GetUtcNow());
+        invitation.Decline(utcNow);
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 

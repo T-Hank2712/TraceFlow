@@ -3,19 +3,33 @@ namespace TraceFlow.Api.Application.Workspaces.Commands.RemoveMember;
 public class RemoveMemberCommandHandler(
         AppDbContext dbContext,
         WorkspaceAccessService workspaceAccess,
+        ProjectManagerInvariantService projectManagerInvariant,
         TimeProvider timeProvider)
     : IRequestHandler<RemoveMemberCommand, RemoveMemberResponse>
 {
     private readonly AppDbContext _dbContext = dbContext;
     private readonly WorkspaceAccessService _workspaceAccess = workspaceAccess;
+    private readonly ProjectManagerInvariantService _projectManagerInvariant = projectManagerInvariant;
     private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<RemoveMemberResponse> Handle(
         RemoveMemberCommand request,
         CancellationToken cancellationToken)
     {
+        var targetMember = await _dbContext.WorkspaceMembers
+            .FirstOrDefaultAsync(
+                member =>
+                    member.Id == request.MemberId &&
+                    member.Status == MembershipStatuses.Active,
+                cancellationToken);
+
+        if (targetMember is null)
+        {
+            throw new NotFoundException("Workspace member not found.");
+        }
+
         var actorMembership = await _workspaceAccess.GetActiveMembershipAsync(
-            request.WorkspaceId,
+            targetMember.WorkspaceId,
             request.ActorUserId,
             "Workspace not found.",
             cancellationToken);
@@ -27,19 +41,6 @@ public class RemoveMemberCommandHandler(
         _workspaceAccess.EnsureWorkspaceManager(
             actorMembership,
             "You do not have permission to remove workspace members.");
-
-        var targetMember = await _dbContext.WorkspaceMembers
-            .FirstOrDefaultAsync(
-                member =>
-                    member.Id == request.MemberId &&
-                    member.WorkspaceId == request.WorkspaceId &&
-                    member.Status == MembershipStatuses.Active,
-                cancellationToken);
-
-        if (targetMember is null)
-        {
-            throw new NotFoundException("Workspace member not found.");
-        }
 
         var isTargetPrimaryOwner = targetMember.UserId == actorMembership.Workspace.OwnerUserId;
 
@@ -56,12 +57,41 @@ public class RemoveMemberCommandHandler(
                 "Only workspace owner can remove another workspace owner.");
         }
 
+        await _projectManagerInvariant.EnsureCanRemoveUserFromActiveProjectsAsync(
+            targetMember.WorkspaceId,
+            targetMember.UserId,
+            cancellationToken);
+
         var utcNow = _timeProvider.GetUtcNow();
+
+        var pendingWorkspaceInvitations = await _dbContext.WorkspaceInvitations
+            .Where(invitation =>
+                invitation.WorkspaceId == targetMember.WorkspaceId &&
+                invitation.InvitedUserId == targetMember.UserId &&
+                invitation.Status == InvitationStatuses.Pending)
+            .ToListAsync(cancellationToken);
+
+        foreach (var invitation in pendingWorkspaceInvitations)
+        {
+            invitation.Cancel(utcNow);
+        }
+
+        var pendingProjectInvitations = await _dbContext.ProjectInvitations
+            .Where(invitation =>
+                invitation.WorkspaceId == targetMember.WorkspaceId &&
+                invitation.InvitedUserId == targetMember.UserId &&
+                invitation.Status == InvitationStatuses.Pending)
+            .ToListAsync(cancellationToken);
+
+        foreach (var invitation in pendingProjectInvitations)
+        {
+            invitation.Cancel(utcNow);
+        }
 
         var projectMemberships = await _dbContext.ProjectMembers
             .Where(projectMember =>
                 projectMember.UserId == targetMember.UserId &&
-                projectMember.Project.WorkspaceId == request.WorkspaceId)
+                projectMember.Project.WorkspaceId == targetMember.WorkspaceId)
             .ToListAsync(cancellationToken);
 
         foreach (var projectMembership in projectMemberships)

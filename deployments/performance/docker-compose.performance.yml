@@ -274,10 +274,13 @@ services:
       Kafka__Topic: ${Kafka__Topic}
       Kafka__DlqTopic: ${Kafka__DlqTopic}
       Kafka__PollTimeoutMs: ${Kafka__PollTimeoutMs}
+      Kafka__ProducerFlushTimeoutSeconds: ${Kafka__ProducerFlushTimeoutSeconds}
       Processor__MaxRetries: ${Processor__MaxRetries}
       Processor__RetryBackoffMs: ${Processor__RetryBackoffMs}
       Processor__BatchSize: ${Processor__BatchSize}
       Processor__FlushIntervalMs: ${Processor__FlushIntervalMs}
+      Processor__QueueCapacity: ${Processor__QueueCapacity}
+      Processor__ShutdownFlushTimeoutSeconds: ${Processor__ShutdownFlushTimeoutSeconds}
       OpenSearch__Url: ${OpenSearch__Url}
       OpenSearch__Username: ${OpenSearch__Username}
       OpenSearch__Password: ${OpenSearch__Password}

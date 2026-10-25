@@ -3,14 +3,15 @@ namespace TraceFlow.Api.Application.TraceApplications.Commands.DeleteTraceApplic
 public class DeleteApplicationCommandHandler(
         AppDbContext dbContext,
         ProjectAccessService projectAccess,
+        TraceApplicationAccessService applicationAccess,
         ILogSearchReader logSearchReader,
         TimeProvider timeProvider)
     : IRequestHandler<DeleteApplicationCommand, DeleteApplicationResponse>
 {
 
     private readonly AppDbContext _dbContext = dbContext;
-
     private readonly ProjectAccessService _projectAccess = projectAccess;
+    private readonly TraceApplicationAccessService _applicationAccess = applicationAccess;
     private readonly ILogSearchReader _logSearchReader = logSearchReader;
     private readonly TimeProvider _timeProvider = timeProvider;
 
@@ -18,24 +19,17 @@ public class DeleteApplicationCommandHandler(
            DeleteApplicationCommand request,
            CancellationToken cancellationToken)
     {
-        var access = await _projectAccess.GetProjectAccessAsync(
-            request.WorkspaceId,
-            request.ProjectId,
+        var access = await _applicationAccess.GetApplicationAccessAsync(
+            request.ApplicationId,
             request.UserId,
             "Application not found.",
             cancellationToken);
 
         _projectAccess.EnsureProjectDeveloperOrManager(
-            access,
+            access.ProjectAccess,
             "You do not have permission to delete this application.");
 
-        var application = await _dbContext.TraceApplications
-            .FirstOrDefaultAsync(
-                application =>
-                    application.Id == request.ApplicationId &&
-                    application.ProjectId == request.ProjectId &&
-                    application.Status == ResourceStatuses.Active,
-                cancellationToken);
+        var application = access.Application;
 
         if (application is null)
         {
@@ -44,7 +38,7 @@ public class DeleteApplicationCommandHandler(
 
         var hasApiKeys = await _dbContext.ApiKeys
             .AnyAsync(
-                apiKey => apiKey.TraceApplicationId == request.ApplicationId,
+                apiKey => apiKey.TraceApplicationId == application.Id,
                 cancellationToken);
 
         bool hasLogs = false;
@@ -54,8 +48,8 @@ public class DeleteApplicationCommandHandler(
             try
             {
                 hasLogs = await _logSearchReader.HasLogsAsync(
-                    request.WorkspaceId,
-                    request.ProjectId,
+                    access.ProjectAccess.Project.WorkspaceId,
+                    application.ProjectId,
                     request.ApplicationId,
                     cancellationToken);
             }

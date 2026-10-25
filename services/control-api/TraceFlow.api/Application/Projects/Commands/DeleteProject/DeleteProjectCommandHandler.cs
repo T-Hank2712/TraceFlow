@@ -16,7 +16,6 @@ public class DeleteProjectCommandHandler(
            CancellationToken cancellationToken)
     {
         var access = await _projectAccess.GetProjectAccessAsync(
-            request.WorkspaceId,
             request.ProjectId,
             request.UserId,
             "Project not found.",

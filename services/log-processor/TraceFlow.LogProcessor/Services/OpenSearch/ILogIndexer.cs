@@ -1,6 +1,3 @@
-using OpenSearch.Client;
-using TraceFlow.LogProcessor.Contracts;
-
 namespace TraceFlow.LogProcessor.Services.OpenSearch;
 
 public interface ILogIndexer

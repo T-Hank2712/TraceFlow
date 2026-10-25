@@ -9,6 +9,8 @@ global using System.IdentityModel.Tokens.Jwt;
 global using System.Text.RegularExpressions;
 global using System.Threading.RateLimiting;
 
+global using Npgsql;
+
 global using Asp.Versioning;
 
 global using DotNetEnv;
@@ -17,6 +19,9 @@ global using FluentValidation;
 
 global using MediatR;
 
+global using System.Text.Encodings.Web;
+
+global using Microsoft.AspNetCore.Authentication;
 global using Microsoft.AspNetCore.Mvc.Filters;
 global using Microsoft.AspNetCore.Http.Features;
 global using Microsoft.AspNetCore.HttpOverrides;

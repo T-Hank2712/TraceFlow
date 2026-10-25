@@ -1,6 +1,3 @@
-using System.Text.Json;
-using TraceFlow.LogProcessor.Contracts;
-
 namespace TraceFlow.LogProcessor.Processing;
 
 public sealed class LogEventNormalizer : ILogEventNormalizer
