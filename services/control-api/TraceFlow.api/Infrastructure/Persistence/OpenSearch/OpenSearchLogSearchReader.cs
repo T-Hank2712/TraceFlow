@@ -58,19 +58,19 @@ public sealed class OpenSearchLogSearchReader(
                 request,
                 cancellationToken);
 
-            var content = await response.Content.ReadAsStringAsync(cancellationToken);
 
             if (!response.IsSuccessStatusCode)
             {
                 _logger.LogError(
-                    "OpenSearch search failed. Index={Index} StatusCode={StatusCode} Body={Body}",
+                    "OpenSearch search failed. Index={Index} StatusCode={StatusCode}",
                     index,
-                    response.StatusCode,
-                    content);
+                    response.StatusCode);
 
                 throw new ExternalServiceException(
                     "Log search backend is unavailable.");
             }
+
+            var content = await response.Content.ReadAsStringAsync(cancellationToken);
 
             return ParseResponse(content, query.Page, query.PageSize);
         }
@@ -154,19 +154,19 @@ public sealed class OpenSearchLogSearchReader(
                 request,
                 cancellationToken);
 
-            var content = await response.Content.ReadAsStringAsync(cancellationToken);
 
             if (!response.IsSuccessStatusCode)
             {
                 _logger.LogError(
-                    "OpenSearch log existence check failed. Index={Index} StatusCode={StatusCode} Body={Body}",
+                    "OpenSearch log existence check failed. Index={Index} StatusCode={StatusCode}",
                     index,
-                    response.StatusCode,
-                    content);
+                    response.StatusCode);
 
                 throw new ExternalServiceException(
                     "Log search backend is unavailable.");
             }
+
+            var content = await response.Content.ReadAsStringAsync(cancellationToken);
 
             using var document = JsonDocument.Parse(content);
 
