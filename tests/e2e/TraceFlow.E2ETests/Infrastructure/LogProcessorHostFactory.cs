@@ -8,6 +8,7 @@ using TraceFlow.LogProcessor.Services.Batching;
 using TraceFlow.LogProcessor.Services.Kafka;
 using TraceFlow.LogProcessor.Services.Offsets;
 using TraceFlow.LogProcessor.Services.OpenSearch;
+using TraceFlow.LogProcessor.Services.Queue;
 using TraceFlow.LogProcessor.Workers;
 
 namespace TraceFlow.E2ETests.Infrastructure;
@@ -26,11 +27,20 @@ public static class LogProcessorHostFactory
             ["Kafka:Topic"] = "traceflow.logs",
             ["Kafka:DlqTopic"] = "traceflow.logs.dlq",
             ["Kafka:PollTimeoutMs"] = "100",
+            ["Kafka:ProducerFlushTimeoutSeconds"] = "5",
+            ["Kafka:DlqPublishConcurrency"] = "1",
+            ["Kafka:QueuedMinMessages"] = "1",
+            ["Kafka:QueuedMaxMessagesKbytes"] = "1024",
+            ["Kafka:FetchMinBytes"] = "1",
+            ["Kafka:FetchWaitMaxMs"] = "10",
+            ["Kafka:MaxPartitionFetchBytes"] = "1048576",
 
             ["Processor:MaxRetries"] = "1",
             ["Processor:RetryBackoffMs"] = "50",
             ["Processor:BatchSize"] = "1",
             ["Processor:FlushIntervalMs"] = "200",
+            ["Processor:QueueCapacity"] = "100",
+            ["Processor:ShutdownFlushTimeoutSeconds"] = "5",
 
             ["OpenSearch:Url"] = openSearch.Url,
             ["OpenSearch:Username"] = openSearch.Username,
@@ -65,15 +75,16 @@ public static class LogProcessorHostFactory
 
         builder.Services.AddSingleton<IKafkaConsumer, KafkaConsumer>();
         builder.Services.AddSingleton<ILogEventNormalizer, LogEventNormalizer>();
-        builder.Services.AddSingleton<IBatchProcessor, BatchProcessor>();
+        builder.Services.AddTransient<IBatchProcessor, BatchProcessor>();
+        builder.Services.AddSingleton<IBatchProcessorFactory, BatchProcessorFactory>();
         builder.Services.AddSingleton<ILogIndexer, LogIndexer>();
         builder.Services.AddSingleton<IOpenSearchClient>(new OpenSearchClient(openSearchSettings));
         builder.Services.AddSingleton<IDlqProducer, DlqProducer>();
         builder.Services.AddSingleton<IOffsetCoordinator, OffsetCoordinator>();
         builder.Services.AddSingleton<IOffsetCommitSignal, OffsetCommitSignal>();
+        builder.Services.AddSingleton<IPartitionLaneManager, PartitionLaneManager>();
 
         builder.Services.AddHostedService<LogConsumerWorker>();
-        builder.Services.AddHostedService<BatchFlushWorker>();
 
         return builder.Build();
     }
