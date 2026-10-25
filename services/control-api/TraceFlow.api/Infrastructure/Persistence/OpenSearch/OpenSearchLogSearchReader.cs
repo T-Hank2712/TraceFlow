@@ -69,7 +69,7 @@ public sealed class OpenSearchLogSearchReader(
                 throw new ExternalServiceException(
                     "Log search backend is unavailable.");
             }
-            
+
             var content = await response.Content.ReadAsStringAsync(cancellationToken);
 
             return ParseResponse(content, query.Page, query.PageSize);
@@ -165,7 +165,7 @@ public sealed class OpenSearchLogSearchReader(
                 throw new ExternalServiceException(
                     "Log search backend is unavailable.");
             }
-            
+
             var content = await response.Content.ReadAsStringAsync(cancellationToken);
 
             using var document = JsonDocument.Parse(content);
