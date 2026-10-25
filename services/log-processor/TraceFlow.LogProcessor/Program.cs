@@ -51,6 +51,24 @@ builder.Services
     .Validate(
         options => options.ProducerFlushTimeoutSeconds > 0,
         "Kafka__ProducerFlushTimeoutSeconds must be greater than 0.")
+    .Validate(
+        options => options.DlqPublishConcurrency > 0,
+        "Kafka__DlqPublishConcurrency must be greater than 0.")
+    .Validate(
+        options => options.QueuedMinMessages > 0,
+        "Kafka__QueuedMinMessages must be greater than 0.")
+    .Validate(
+        options => options.QueuedMaxMessagesKbytes > 0,
+        "Kafka__QueuedMaxMessagesKbytes must be greater than 0.")
+    .Validate(
+        options => options.FetchMinBytes > 0,
+        "Kafka__FetchMinBytes must be greater than 0.")
+    .Validate(
+        options => options.FetchWaitMaxMs >= 0,
+        "Kafka__FetchWaitMaxMs must be greater than or equal to 0.")
+    .Validate(
+        options => options.MaxPartitionFetchBytes > 0,
+        "Kafka__MaxPartitionFetchBytes must be greater than 0.")
     .ValidateOnStart();
 
 builder.Services
@@ -95,17 +113,20 @@ builder.Services
 
 builder.Services.AddSingleton<IKafkaConsumer, KafkaConsumer>();
 builder.Services.AddSingleton<ILogEventNormalizer, LogEventNormalizer>();
-builder.Services.AddSingleton<IBatchProcessor, BatchProcessor>();
 builder.Services.AddSingleton<ILogIndexer, LogIndexer>();
 builder.Services.AddSingleton<IOpenSearchClient>(new OpenSearchClient(settings));
 builder.Services.AddSingleton<IDlqProducer, DlqProducer>();
 builder.Services.AddSingleton<IOffsetCoordinator, OffsetCoordinator>();
 builder.Services.AddSingleton<IOffsetCommitSignal, OffsetCommitSignal>();
-builder.Services.AddSingleton<IPendingLogEventQueue, PendingLogEventQueue>();
+
+builder.Services.AddTransient<IBatchProcessor, BatchProcessor>();
+
+builder.Services.AddSingleton<IBatchProcessorFactory, BatchProcessorFactory>();
 
 builder.Services.AddHostedService<LogConsumerWorker>();
-builder.Services.AddHostedService<BatchFlushWorker>();
-builder.Services.AddHostedService<QueuedBatchWorker>();
+
+builder.Services.AddSingleton<IPartitionLaneManager, PartitionLaneManager>();
+
 
 var host = builder.Build();
 host.Run();

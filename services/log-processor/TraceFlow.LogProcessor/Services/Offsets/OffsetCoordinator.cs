@@ -84,4 +84,21 @@ public sealed class OffsetCoordinator : IOffsetCoordinator
             return result;
         }
     }
+
+    public void RemovePartitions(
+        IReadOnlyCollection<TopicPartition> partitions)
+    {
+        if (partitions.Count == 0)
+        {
+            return;
+        }
+
+        lock (_lock)
+        {
+            foreach (var partition in partitions)
+            {
+                _partitions.Remove(partition);
+            }
+        }
+    }
 }

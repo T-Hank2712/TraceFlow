@@ -19,11 +19,46 @@ public sealed class DlqProducer : IDlqProducer, IDisposable
     }
     public async Task PublishAsync(IReadOnlyCollection<DlqLogEvent> events, CancellationToken cancellationToken)
     {
-        foreach (var dlqEvent in events)
+        if (events.Count == 0)
         {
-            var value = JsonSerializer.Serialize(dlqEvent);
-            await _producer.ProduceAsync(_kafkaOptions.DlqTopic, new Message<Null, string> { Value = value }, cancellationToken);
+            return;
         }
+
+        using var concurrency = new SemaphoreSlim(
+            _kafkaOptions.DlqPublishConcurrency);
+
+        var publishTasks = new List<Task>(
+            events.Count);
+
+        try
+        {
+            foreach (var dlqEvent in events)
+            {
+                await concurrency.WaitAsync(
+                    cancellationToken);
+
+                publishTasks.Add(
+                    PublishOneAsync(
+                        dlqEvent,
+                        concurrency,
+                        cancellationToken));
+            }
+            await Task.WhenAll(publishTasks);
+        }
+        catch
+        {
+            try
+            {
+                await Task.WhenAll(publishTasks);
+            }
+            catch (Exception)
+            {
+                
+            }
+
+            throw;
+        }
+
         _logger.LogInformation("Published failed log events to DLQ. Count: {Count}, Topic: {Topic}",
         events.Count, _kafkaOptions.DlqTopic);
     }
@@ -31,5 +66,28 @@ public sealed class DlqProducer : IDlqProducer, IDisposable
     {
         _producer.Flush(TimeSpan.FromSeconds(_kafkaOptions.ProducerFlushTimeoutSeconds));
         _producer.Dispose();
+    }
+    private async Task PublishOneAsync(
+        DlqLogEvent dlqEvent,
+        SemaphoreSlim concurrency,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var value = JsonSerializer.Serialize(
+                dlqEvent);
+
+            await _producer.ProduceAsync(
+                _kafkaOptions.DlqTopic,
+                new Message<Null, string>
+                {
+                    Value = value
+                },
+                cancellationToken);
+        }
+        finally
+        {
+            concurrency.Release();
+        }
     }
 }

@@ -9,6 +9,8 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
     private readonly IOffsetCoordinator _offsetCoordinator;
     private readonly IOffsetCommitSignal _offsetCommitSignal;
     private readonly IDlqProducer _dlqProducer;
+    private readonly IPartitionLaneManager _laneManager;
+    private readonly ConcurrentQueue<TopicPartition> _revokedPartitions = [];
 
     public KafkaConsumer(
         IOptions<KafkaOptions> options,
@@ -16,7 +18,8 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
         ILogEventNormalizer logEventNormalizer,
         IOffsetCoordinator offsetCoordinator,
         IOffsetCommitSignal offsetCommitSignal,
-        IDlqProducer dlqProducer)
+        IDlqProducer dlqProducer,
+        IPartitionLaneManager laneManager)
     {
         _options = options.Value;
         _logger = logger;
@@ -24,16 +27,32 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
         _offsetCoordinator = offsetCoordinator;
         _offsetCommitSignal = offsetCommitSignal;
         _dlqProducer = dlqProducer;
+        _laneManager = laneManager;
 
         var config = new ConsumerConfig
         {
             BootstrapServers = _options.BootstrapServers,
             GroupId = _options.GroupId,
             AutoOffsetReset = AutoOffsetReset.Earliest,
-            EnableAutoCommit = false
+            EnableAutoCommit = false,
+            QueuedMinMessages = _options.QueuedMinMessages,
+            QueuedMaxMessagesKbytes = _options.QueuedMaxMessagesKbytes,
+            FetchMinBytes = _options.FetchMinBytes,
+            FetchWaitMaxMs = _options.FetchWaitMaxMs,
+            MaxPartitionFetchBytes = _options.MaxPartitionFetchBytes
         };
 
         _consumer = new ConsumerBuilder<Ignore, string>(config)
+            .SetPartitionsRevokedHandler((_, partitions) =>
+            {
+                foreach (var partition in partitions)
+                {
+                    _revokedPartitions.Enqueue(
+                        new TopicPartition(
+                            partition.Topic,
+                            partition.Partition));
+                }
+            })
             .Build();
 
         _consumer.Subscribe(_options.Topic);
@@ -68,11 +87,16 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
 
                 if (result is not null)
                 {
+                    await StopRevokedPartitionsAsync(cancellationToken);
+
                     await ProcessMessageAsync(
                         result,
                         handler,
                         cancellationToken);
                 }
+
+                await StopRevokedPartitionsAsync(cancellationToken);
+
                 if (_offsetCommitSignal.IsSignaled())
                 {
                     CommitAvailableOffsets();
@@ -87,6 +111,22 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
         }
         finally
         {
+            try
+            {
+                await _laneManager.StopAsync(
+                    CancellationToken.None);
+
+                if (_offsetCommitSignal.IsSignaled())
+                {
+                    CommitAvailableOffsets();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Failed to stop partition lanes cleanly.");
+            }
             _consumer.Close();
 
             _logger.LogInformation(
@@ -215,6 +255,44 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
         }
 
         _consumer.Commit(offsets);
+    }
+
+    private async Task StopRevokedPartitionsAsync(
+        CancellationToken cancellationToken)
+    {
+        if (_revokedPartitions.IsEmpty)
+        {
+            return;
+        }
+
+        var revokedPartitions = new HashSet<TopicPartition>();
+
+        while (_revokedPartitions.TryDequeue(out var partition))
+        {
+            revokedPartitions.Add(partition);
+        }
+
+        if (revokedPartitions.Count == 0)
+        {
+            return;
+        }
+
+        try
+        {
+            await _laneManager.StopPartitionsAsync(
+                revokedPartitions,
+                cancellationToken);
+        }
+        finally
+        {
+            // Revoked partitions may be reassigned and replayed. Their previous
+            // in-memory commit state must not be reused by a new lane.
+            _offsetCoordinator.RemovePartitions(revokedPartitions);
+        }
+
+        _logger.LogInformation(
+            "Stopped partition lanes after Kafka rebalance. Partitions: {Partitions}",
+            string.Join(", ", revokedPartitions));
     }
 
     public void Dispose()
