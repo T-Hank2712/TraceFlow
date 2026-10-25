@@ -13,7 +13,7 @@ public class GetMyWorkspacesQueryHandler(AppDbContext dbContext)
     {
         return await _dbContext.WorkspaceMembers
             .AsNoTracking()
-            .Where(member => member.UserId == request.UserId && member.Workspace.Status == ResourceStatuses.Active)
+            .Where(member => member.UserId == request.UserId && member.Workspace.Status == ResourceStatuses.Active && member.Status == MembershipStatuses.Active)
             .Include(member => member.Workspace)
             .OrderByDescending(member => member.Workspace.CreatedAt)
             .Select(member => new WorkspaceSummaryResponse(
