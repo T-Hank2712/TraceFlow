@@ -10,19 +10,22 @@ public sealed class PartitionLaneManager
     private readonly IOffsetCommitSignal _offsetCommitSignal;
     private readonly IOptions<ProcessorOptions> _processorOptions;
     private readonly ILoggerFactory _loggerFactory;
+    private readonly IHostApplicationLifetime _applicationLifetime;
 
     public PartitionLaneManager(
         IBatchProcessorFactory batchProcessorFactory,
         IOffsetCoordinator offsetCoordinator,
         IOffsetCommitSignal offsetCommitSignal,
         IOptions<ProcessorOptions> processorOptions,
-        ILoggerFactory loggerFactory)
+        ILoggerFactory loggerFactory,
+        IHostApplicationLifetime applicationLifetime)
     {
         _batchProcessorFactory = batchProcessorFactory;
         _offsetCoordinator = offsetCoordinator;
         _offsetCommitSignal = offsetCommitSignal;
         _processorOptions = processorOptions;
         _loggerFactory = loggerFactory;
+        _applicationLifetime = applicationLifetime;
     }
 
     public ValueTask EnqueueAsync(
@@ -52,8 +55,8 @@ public sealed class PartitionLaneManager
             _batchProcessorFactory.Create(),
             _offsetCoordinator,
             _offsetCommitSignal,
-            _loggerFactory.CreateLogger<
-                PartitionLane>());
+            _loggerFactory.CreateLogger<PartitionLane>(),
+            _applicationLifetime);
 
         lane.Start();
 

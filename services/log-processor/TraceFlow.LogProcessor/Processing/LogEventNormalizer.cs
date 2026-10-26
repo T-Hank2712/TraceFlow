@@ -11,12 +11,20 @@ public sealed class LogEventNormalizer : ILogEventNormalizer
                 "LogEvent payload cannot be null.");
         }
 
+        var service = NormalizeRequiredText(logEvent.Service, "service");
+
+        var environment = NormalizeRequiredText(
+            logEvent.Environment,
+            "environment").ToLowerInvariant();
+
+        var message = NormalizeRequiredText(logEvent.Message, "message");
+
         return logEvent with
         {
             EventId = logEvent.EventId,
-            Service = logEvent.Service.Trim(),
-            Environment = logEvent.Environment.Trim().ToLowerInvariant(),
-            Message = logEvent.Message.Trim(),
+            Service = service,
+            Environment = environment,
+            Message = message,
             Timestamp = logEvent.Timestamp.ToUniversalTime(),
             Metadata = NormalizeMetadata(logEvent.Metadata)
         };
@@ -79,5 +87,17 @@ public sealed class LogEventNormalizer : ILogEventNormalizer
 
             _ => null
         };
+    }
+    private static string NormalizeRequiredText(
+        string? value,
+        string fieldName)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            throw new FormatException(
+                $"Log event field '{fieldName}' is required.");
+        }
+
+        return value.Trim();
     }
 }
