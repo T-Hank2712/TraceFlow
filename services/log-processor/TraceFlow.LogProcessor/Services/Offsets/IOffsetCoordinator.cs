@@ -7,4 +7,7 @@ public interface IOffsetCoordinator
 
     IReadOnlyCollection<TopicPartitionOffset>
         GetCommittableOffsets();
+
+    void RemovePartitions(
+        IReadOnlyCollection<TopicPartition> partitions);
 }

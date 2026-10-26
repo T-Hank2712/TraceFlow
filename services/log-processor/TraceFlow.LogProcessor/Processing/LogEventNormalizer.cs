@@ -11,12 +11,20 @@ public sealed class LogEventNormalizer : ILogEventNormalizer
                 "LogEvent payload cannot be null.");
         }
 
+        var service = NormalizeRequiredText(logEvent.Service, "service");
+
+        var environment = NormalizeRequiredText(
+            logEvent.Environment,
+            "environment").ToLowerInvariant();
+
+        var message = NormalizeRequiredText(logEvent.Message, "message");
+
         return logEvent with
         {
             EventId = logEvent.EventId,
-            Service = logEvent.Service.Trim(),
-            Environment = logEvent.Environment.Trim().ToLowerInvariant(),
-            Message = logEvent.Message.Trim(),
+            Service = service,
+            Environment = environment,
+            Message = message,
             Timestamp = logEvent.Timestamp.ToUniversalTime(),
             Metadata = NormalizeMetadata(logEvent.Metadata)
         };
@@ -30,9 +38,18 @@ public sealed class LogEventNormalizer : ILogEventNormalizer
             return null;
         }
 
-        return metadata.ToDictionary(
-            pair => pair.Key,
-            pair => NormalizeValue(pair.Value));
+        try
+        {
+            return metadata.ToDictionary(
+                pair => pair.Key,
+                pair => NormalizeValue(pair.Value));
+        }
+        catch (ArgumentException exception)
+        {
+            throw new FormatException(
+                "Log event metadata contains duplicate or invalid object keys.",
+                exception);
+        }
     }
 
     private static object? NormalizeValue(object? value)
@@ -79,5 +96,17 @@ public sealed class LogEventNormalizer : ILogEventNormalizer
 
             _ => null
         };
+    }
+    private static string NormalizeRequiredText(
+        string? value,
+        string fieldName)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            throw new FormatException(
+                $"Log event field '{fieldName}' is required.");
+        }
+
+        return value.Trim();
     }
 }
