@@ -34,12 +34,23 @@ public sealed class LogIndexer : ILogIndexer
 
                 var responseItems = response.Items.ToList();
 
+                if (responseItems.Count != logEvents.Count)
+                {
+                    throw new OpenSearchBulkResponseException(
+                        "OpenSearch bulk response item count does not match " +
+                        $"the submitted event count. Submitted: {logEvents.Count}, " +
+                        $"Received: {responseItems.Count}.");
+                }
+
                 for (int index = 0; index < responseItems.Count; index++)
                 {
                     var logEvent = logEvents[index];
                     var item = responseItems[index];
 
-                    if (item.IsValid) succeededEvents.Add(logEvent);
+                    if (item.IsValid)
+                    {
+                        succeededEvents.Add(logEvent);
+                    }
                     else
                     {
                         failedEvents.Add(logEvent);
@@ -50,10 +61,18 @@ public sealed class LogIndexer : ILogIndexer
                     succeededEvents,
                     failedEvents);
             }
+            catch (OpenSearchBulkResponseException)
+            {
+                throw;
+            }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                _logger.LogWarning(ex, "OpenSearch bulk request failed. Attempt: {Attempt}/{MaxAttempts}. Count: {Count}",
-                attempt + 1, _processorOptions.MaxRetries + 1, logEvents.Count);
+                _logger.LogWarning(
+                    ex,
+                    "OpenSearch bulk request failed. Attempt: {Attempt}/{MaxAttempts}. Count: {Count}",
+                    attempt + 1,
+                    _processorOptions.MaxRetries + 1,
+                    logEvents.Count);
             }
 
             if (attempt < _processorOptions.MaxRetries)
