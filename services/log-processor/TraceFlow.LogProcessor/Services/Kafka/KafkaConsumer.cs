@@ -4,6 +4,7 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
 {
     private readonly IConsumer<Ignore, string> _consumer;
     private readonly KafkaOptions _options;
+    private readonly ProcessorOptions _processorOptions;
     private readonly ILogger<KafkaConsumer> _logger;
     private readonly ILogEventNormalizer _logEventNormalizer;
     private readonly IOffsetCoordinator _offsetCoordinator;
@@ -18,6 +19,7 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
 
     public KafkaConsumer(
         IOptions<KafkaOptions> options,
+        IOptions<ProcessorOptions> processorOptions,
         ILogger<KafkaConsumer> logger,
         ILogEventNormalizer logEventNormalizer,
         IOffsetCoordinator offsetCoordinator,
@@ -27,6 +29,7 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
         IHostApplicationLifetime applicationLifetime)
     {
         _options = options.Value;
+        _processorOptions = processorOptions.Value;
         _logger = logger;
         _logEventNormalizer = logEventNormalizer;
         _offsetCoordinator = offsetCoordinator;
@@ -125,15 +128,27 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
         }
         finally
         {
+            using var shutdownCts = new CancellationTokenSource(
+                TimeSpan.FromSeconds(
+                    _processorOptions.ShutdownFlushTimeoutSeconds));
+
             try
             {
                 await _laneManager.StopAsync(
-                    CancellationToken.None);
+                    shutdownCts.Token);
 
                 if (_offsetCommitSignal.IsSignaled())
                 {
                     CommitAvailableOffsets();
                 }
+            }
+            catch (OperationCanceledException)
+                when (shutdownCts.IsCancellationRequested)
+            {
+                _logger.LogWarning(
+                    "Log Processor shutdown flush timed out after {TimeoutSeconds} seconds. " +
+                    "Uncommitted Kafka messages will be replayed after restart.",
+                    _processorOptions.ShutdownFlushTimeoutSeconds);
             }
             catch (Exception ex)
             {
@@ -141,6 +156,7 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
                     ex,
                     "Failed to stop partition lanes cleanly.");
             }
+
             _consumer.Close();
 
             _logger.LogInformation(
