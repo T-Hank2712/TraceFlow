@@ -251,6 +251,8 @@ services:
       Kafka__FetchMinBytes: ${Kafka__FetchMinBytes}
       Kafka__FetchWaitMaxMs: ${Kafka__FetchWaitMaxMs}
       Kafka__MaxPartitionFetchBytes: ${Kafka__MaxPartitionFetchBytes}
+      Kafka__NoPartitionAssignmentTimeoutSeconds: ${Kafka__NoPartitionAssignmentTimeoutSeconds}
+      Kafka__MaxSubscriptionRecoveryAttempts: ${Kafka__MaxSubscriptionRecoveryAttempts}
       Processor__MaxRetries: ${Processor__MaxRetries}
       Processor__RetryBackoffMs: ${Processor__RetryBackoffMs}
       Processor__BatchSize: ${Processor__BatchSize}

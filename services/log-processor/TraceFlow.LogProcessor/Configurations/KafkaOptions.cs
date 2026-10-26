@@ -14,4 +14,6 @@ public sealed class KafkaOptions
     public int FetchMinBytes { get; set; }
     public int FetchWaitMaxMs { get; set; }
     public int MaxPartitionFetchBytes { get; set; }
+    public int NoPartitionAssignmentTimeoutSeconds { get; set; }
+    public int MaxSubscriptionRecoveryAttempts { get; set; }
 }

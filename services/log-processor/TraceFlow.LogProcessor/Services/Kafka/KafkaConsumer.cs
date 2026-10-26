@@ -11,6 +11,9 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
     private readonly IDlqProducer _dlqProducer;
     private readonly IPartitionLaneManager _laneManager;
     private readonly ConcurrentQueue<TopicPartition> _revokedPartitions = [];
+    private DateTimeOffset? _noPartitionAssignmentSince;
+
+    private int _subscriptionRecoveryAttempts;
 
     public KafkaConsumer(
         IOptions<KafkaOptions> options,
@@ -43,6 +46,12 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
         };
 
         _consumer = new ConsumerBuilder<Ignore, string>(config)
+            .SetPartitionsAssignedHandler((_, partitions) =>
+            {
+                _logger.LogInformation(
+                    "Kafka partitions assigned. Partitions: {Partitions}",
+                    string.Join(", ", partitions));
+            })
             .SetPartitionsRevokedHandler((_, partitions) =>
             {
                 foreach (var partition in partitions)
@@ -85,17 +94,19 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
                     continue;
                 }
 
-                if (result is not null)
-                {
-                    await StopRevokedPartitionsAsync(cancellationToken);
+                await StopRevokedPartitionsAsync(cancellationToken);
 
+                UpdatePartitionAssignmentState();
+                RecoverSubscriptionIfNeeded();
+
+                if (result is not null &&
+                    _consumer.Assignment.Contains(result.TopicPartition))
+                {
                     await ProcessMessageAsync(
                         result,
                         handler,
                         cancellationToken);
                 }
-
-                await StopRevokedPartitionsAsync(cancellationToken);
 
                 if (_offsetCommitSignal.IsSignaled())
                 {
@@ -241,6 +252,57 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
         {
             _offsetCommitSignal.Signal();
         }
+    }
+
+    private void UpdatePartitionAssignmentState()
+    {
+        if (_consumer.Assignment.Count > 0)
+        {
+            _noPartitionAssignmentSince = null;
+            _subscriptionRecoveryAttempts = 0;
+
+            return;
+        }
+
+        _noPartitionAssignmentSince ??= DateTimeOffset.UtcNow;
+    }
+
+    private void RecoverSubscriptionIfNeeded()
+    {
+        if (_noPartitionAssignmentSince is null)
+        {
+            return;
+        }
+
+        var elapsed = DateTimeOffset.UtcNow - _noPartitionAssignmentSince.Value;
+        var timeout = TimeSpan.FromSeconds(
+            _options.NoPartitionAssignmentTimeoutSeconds);
+
+        if (elapsed < timeout)
+        {
+            return;
+        }
+
+        if (_subscriptionRecoveryAttempts >=
+            _options.MaxSubscriptionRecoveryAttempts)
+        {
+            throw new InvalidOperationException(
+                $"Kafka consumer has owned no partitions for {elapsed}. " +
+                "Subscription recovery attempts were exhausted.");
+        }
+
+        _subscriptionRecoveryAttempts++;
+        _noPartitionAssignmentSince = DateTimeOffset.UtcNow;
+
+        _logger.LogWarning(
+            "Kafka consumer owns no partitions. Re-subscribing to {Topic}. " +
+            "Attempt: {Attempt}/{MaxAttempts}",
+            _options.Topic,
+            _subscriptionRecoveryAttempts,
+            _options.MaxSubscriptionRecoveryAttempts);
+
+        _consumer.Unsubscribe();
+        _consumer.Subscribe(_options.Topic);
     }
 
     private void CommitAvailableOffsets()

@@ -69,6 +69,12 @@ builder.Services
     .Validate(
         options => options.MaxPartitionFetchBytes > 0,
         "Kafka__MaxPartitionFetchBytes must be greater than 0.")
+    .Validate(
+        options => options.NoPartitionAssignmentTimeoutSeconds > 0,
+        "Kafka__NoPartitionAssignmentTimeoutSeconds must be greater than 0.")
+    .Validate(
+        options => options.MaxSubscriptionRecoveryAttempts > 0,
+        "Kafka__MaxSubscriptionRecoveryAttempts must be greater than 0.")
     .ValidateOnStart();
 
 builder.Services
