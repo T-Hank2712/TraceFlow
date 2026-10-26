@@ -10,6 +10,7 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
     private readonly IOffsetCommitSignal _offsetCommitSignal;
     private readonly IDlqProducer _dlqProducer;
     private readonly IPartitionLaneManager _laneManager;
+    private readonly IHostApplicationLifetime _applicationLifetime;
     private readonly ConcurrentQueue<TopicPartition> _revokedPartitions = [];
     private DateTimeOffset? _noPartitionAssignmentSince;
 
@@ -22,7 +23,8 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
         IOffsetCoordinator offsetCoordinator,
         IOffsetCommitSignal offsetCommitSignal,
         IDlqProducer dlqProducer,
-        IPartitionLaneManager laneManager)
+        IPartitionLaneManager laneManager,
+        IHostApplicationLifetime applicationLifetime)
     {
         _options = options.Value;
         _logger = logger;
@@ -31,6 +33,7 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
         _offsetCommitSignal = offsetCommitSignal;
         _dlqProducer = dlqProducer;
         _laneManager = laneManager;
+        _applicationLifetime = applicationLifetime;
 
         var config = new ConsumerConfig
         {
@@ -396,13 +399,19 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
         catch (Exception dlqException)
             when (dlqException is not OperationCanceledException)
         {
-            _logger.LogError(
+            _logger.LogCritical(
                 dlqException,
-                "Failed to publish poison Kafka message to DLQ. Topic: {Topic}, Partition: {Partition}, Offset: {Offset}, FailureType: {FailureType}",
+                "Failed to publish poison Kafka message to DLQ. " +
+                "Stopping Log Processor so the message remains uncommitted and can be retried. " +
+                "Topic: {Topic}, Partition: {Partition}, Offset: {Offset}, FailureType: {FailureType}",
                 result.Topic,
                 result.Partition,
                 result.Offset,
                 failureType);
+
+            _applicationLifetime.StopApplication();
+
+            throw;
         }
     }
 }
