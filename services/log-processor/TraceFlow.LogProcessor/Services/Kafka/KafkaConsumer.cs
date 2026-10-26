@@ -85,22 +85,22 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
             {
                 ConsumeResult<Ignore, string>? result;
 
-            try
-            {
-                result = _consumer.Consume(
-                    TimeSpan.FromMilliseconds(
-                        _options.PollTimeoutMs));
+                try
+                {
+                    result = _consumer.Consume(
+                        TimeSpan.FromMilliseconds(
+                            _options.PollTimeoutMs));
 
-                _consumeFailureSince = null;
-            }
-            catch (ConsumeException exception)
-            {
-                await HandleConsumeFailureAsync(
-                    exception,
-                    cancellationToken);
+                    _consumeFailureSince = null;
+                }
+                catch (ConsumeException exception)
+                {
+                    await HandleConsumeFailureAsync(
+                        exception,
+                        cancellationToken);
 
-                continue;
-            }
+                    continue;
+                }
 
                 await StopRevokedPartitionsAsync(cancellationToken);
 

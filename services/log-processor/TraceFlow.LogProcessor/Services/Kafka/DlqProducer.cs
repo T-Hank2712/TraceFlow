@@ -53,7 +53,7 @@ public sealed class DlqProducer : IDlqProducer, IDisposable
             }
             catch (Exception)
             {
-                
+
             }
 
             throw;
