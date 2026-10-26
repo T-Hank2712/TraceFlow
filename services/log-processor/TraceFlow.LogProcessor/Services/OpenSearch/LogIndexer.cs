@@ -86,8 +86,12 @@ public sealed class LogIndexer : ILogIndexer
     public async Task<BulkResponse> ExecuteBulkAsync(IReadOnlyList<LogEvent> logEvents, CancellationToken cancellationToken)
     {
         return await _client.BulkAsync(
-            b => b.Index(_options.Index)
-            .IndexMany(logEvents),
+            bulk => bulk
+                .Index(_options.Index)
+                .IndexMany(
+                    logEvents,
+                    (operation, logEvent) => operation
+                        .Id(logEvent.EventId)),
             cancellationToken);
     }
 }
