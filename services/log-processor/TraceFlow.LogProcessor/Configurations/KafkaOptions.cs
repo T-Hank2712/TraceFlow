@@ -7,6 +7,8 @@ public sealed class KafkaOptions
     public required string Topic { get; init; }
     public required string DlqTopic { get; init; }
     public int PollTimeoutMs { get; set; }
+    public int ConsumeFailureTimeoutSeconds { get; set; }
+    public int ConsumeFailureBackoffMs { get; set; }
     public int ProducerFlushTimeoutSeconds { get; set; }
     public int DlqPublishConcurrency { get; set; }
     public int QueuedMinMessages { get; set; }

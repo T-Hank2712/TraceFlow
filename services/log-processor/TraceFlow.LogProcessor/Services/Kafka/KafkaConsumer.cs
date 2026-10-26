@@ -14,6 +14,7 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
     private readonly IHostApplicationLifetime _applicationLifetime;
     private readonly ConcurrentQueue<TopicPartition> _revokedPartitions = [];
     private DateTimeOffset? _noPartitionAssignmentSince;
+    private DateTimeOffset? _consumeFailureSince;
 
     private int _subscriptionRecoveryAttempts;
 
@@ -84,21 +85,22 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
             {
                 ConsumeResult<Ignore, string>? result;
 
-                try
-                {
-                    result = _consumer.Consume(
-                        TimeSpan.FromMilliseconds(
-                            _options.PollTimeoutMs));
-                }
-                catch (ConsumeException ex)
-                {
-                    _logger.LogError(
-                        ex,
-                        "Kafka consumption error. Error: {Reason}",
-                        ex.Error.Reason);
+            try
+            {
+                result = _consumer.Consume(
+                    TimeSpan.FromMilliseconds(
+                        _options.PollTimeoutMs));
 
-                    continue;
-                }
+                _consumeFailureSince = null;
+            }
+            catch (ConsumeException exception)
+            {
+                await HandleConsumeFailureAsync(
+                    exception,
+                    cancellationToken);
+
+                continue;
+            }
 
                 await StopRevokedPartitionsAsync(cancellationToken);
 
@@ -271,6 +273,48 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
         {
             _offsetCommitSignal.Signal();
         }
+    }
+
+    private async Task HandleConsumeFailureAsync(
+        ConsumeException exception,
+        CancellationToken cancellationToken)
+    {
+        var isFirstFailure = _consumeFailureSince is null;
+
+        _consumeFailureSince ??= DateTimeOffset.UtcNow;
+
+        var elapsed = DateTimeOffset.UtcNow - _consumeFailureSince.Value;
+
+        if (isFirstFailure)
+        {
+            _logger.LogWarning(
+                exception,
+                "Kafka consume failed. Retrying for up to {TimeoutSeconds} seconds. " +
+                "Error: {Reason}",
+                _options.ConsumeFailureTimeoutSeconds,
+                exception.Error.Reason);
+        }
+
+        if (elapsed >= TimeSpan.FromSeconds(
+                _options.ConsumeFailureTimeoutSeconds))
+        {
+            _logger.LogCritical(
+                exception,
+                "Kafka consumption failed continuously for {Elapsed}. " +
+                "Stopping Log Processor so Docker can restart it. Error: {Reason}",
+                elapsed,
+                exception.Error.Reason);
+
+            _applicationLifetime.StopApplication();
+
+            throw new InvalidOperationException(
+                "Kafka consumption failed continuously beyond the configured timeout.",
+                exception);
+        }
+
+        await Task.Delay(
+            _options.ConsumeFailureBackoffMs,
+            cancellationToken);
     }
 
     private void UpdatePartitionAssignmentState()
