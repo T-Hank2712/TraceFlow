@@ -38,9 +38,18 @@ public sealed class LogEventNormalizer : ILogEventNormalizer
             return null;
         }
 
-        return metadata.ToDictionary(
-            pair => pair.Key,
-            pair => NormalizeValue(pair.Value));
+        try
+        {
+            return metadata.ToDictionary(
+                pair => pair.Key,
+                pair => NormalizeValue(pair.Value));
+        }
+        catch (ArgumentException exception)
+        {
+            throw new FormatException(
+                "Log event metadata contains duplicate or invalid object keys.",
+                exception);
+        }
     }
 
     private static object? NormalizeValue(object? value)
