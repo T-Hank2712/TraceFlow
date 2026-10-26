@@ -310,7 +310,6 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
 
     private void CommitAvailableOffsets()
     {
-
         var offsets = _offsetCoordinator
             .GetCommittableOffsets();
 
@@ -319,7 +318,22 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
             return;
         }
 
-        _consumer.Commit(offsets);
+        try
+        {
+            _consumer.Commit(offsets);
+        }
+        catch (Exception exception)
+        {
+            _logger.LogCritical(
+                exception,
+                "Failed to commit {OffsetCount} Kafka offsets. " +
+                "Stopping Log Processor so uncommitted messages can be replayed safely.",
+                offsets.Count);
+
+            _applicationLifetime.StopApplication();
+
+            throw;
+        }
     }
 
     private async Task StopRevokedPartitionsAsync(
