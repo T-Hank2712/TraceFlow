@@ -88,6 +88,10 @@ public sealed class BatchProcessor : IBatchProcessor
                 events,
                 cancellationToken);
         }
+        catch (OpenSearchBulkResponseException)
+        {
+            throw;
+        }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             _logger.LogError(

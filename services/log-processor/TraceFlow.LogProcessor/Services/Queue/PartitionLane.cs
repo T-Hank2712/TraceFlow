@@ -12,6 +12,9 @@ public sealed class PartitionLane : IAsyncDisposable
 
     private Task? _readTask;
     private Task? _flushTask;
+    private readonly IHostApplicationLifetime _applicationLifetime;
+
+    private int _failureSignaled;
 
     public PartitionLane(
         TopicPartition topicPartition,
@@ -20,7 +23,8 @@ public sealed class PartitionLane : IAsyncDisposable
         IBatchProcessor batchProcessor,
         IOffsetCoordinator offsetCoordinator,
         IOffsetCommitSignal offsetCommitSignal,
-        ILogger<PartitionLane> logger)
+        ILogger<PartitionLane> logger,
+        IHostApplicationLifetime applicationLifetime)
     {
         TopicPartition = topicPartition;
         _batchProcessor = batchProcessor;
@@ -28,6 +32,7 @@ public sealed class PartitionLane : IAsyncDisposable
         _offsetCommitSignal = offsetCommitSignal;
         _logger = logger;
         _flushInterval = flushInterval;
+        _applicationLifetime = applicationLifetime;
 
         var options = new BoundedChannelOptions(
             queueCapacity)
@@ -84,6 +89,11 @@ public sealed class PartitionLane : IAsyncDisposable
                 TopicPartition.Topic,
                 TopicPartition.Partition);
         }
+        catch (Exception exception)
+        {
+            HandleUnexpectedLoopFailure(exception, "read");
+            throw;
+        }
     }
 
     private async Task FlushLoopAsync()
@@ -106,8 +116,30 @@ public sealed class PartitionLane : IAsyncDisposable
             when (_runCts.IsCancellationRequested)
         {
         }
+        catch (Exception exception)
+        {
+            HandleUnexpectedLoopFailure(exception, "flush");
+            throw;
+        }
     }
+    private void HandleUnexpectedLoopFailure(
+        Exception exception,
+        string loopName)
+    {
+        if (Interlocked.Exchange(ref _failureSignaled, 1) != 0)
+        {
+            return;
+        }
 
+        _logger.LogCritical(
+            exception,
+            "Partition lane {TopicPartition} failed in the {LoopName} loop. " +
+            "Stopping Log Processor so uncommitted Kafka messages can be retried.",
+            TopicPartition,
+            loopName);
+
+        _applicationLifetime.StopApplication();
+    }
     private void MarkProcessed(
         BatchProcessResult result)
     {

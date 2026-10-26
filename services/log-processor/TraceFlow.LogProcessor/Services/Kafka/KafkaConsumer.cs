@@ -4,30 +4,40 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
 {
     private readonly IConsumer<Ignore, string> _consumer;
     private readonly KafkaOptions _options;
+    private readonly ProcessorOptions _processorOptions;
     private readonly ILogger<KafkaConsumer> _logger;
     private readonly ILogEventNormalizer _logEventNormalizer;
     private readonly IOffsetCoordinator _offsetCoordinator;
     private readonly IOffsetCommitSignal _offsetCommitSignal;
     private readonly IDlqProducer _dlqProducer;
     private readonly IPartitionLaneManager _laneManager;
+    private readonly IHostApplicationLifetime _applicationLifetime;
     private readonly ConcurrentQueue<TopicPartition> _revokedPartitions = [];
+    private DateTimeOffset? _noPartitionAssignmentSince;
+    private DateTimeOffset? _consumeFailureSince;
+
+    private int _subscriptionRecoveryAttempts;
 
     public KafkaConsumer(
         IOptions<KafkaOptions> options,
+        IOptions<ProcessorOptions> processorOptions,
         ILogger<KafkaConsumer> logger,
         ILogEventNormalizer logEventNormalizer,
         IOffsetCoordinator offsetCoordinator,
         IOffsetCommitSignal offsetCommitSignal,
         IDlqProducer dlqProducer,
-        IPartitionLaneManager laneManager)
+        IPartitionLaneManager laneManager,
+        IHostApplicationLifetime applicationLifetime)
     {
         _options = options.Value;
+        _processorOptions = processorOptions.Value;
         _logger = logger;
         _logEventNormalizer = logEventNormalizer;
         _offsetCoordinator = offsetCoordinator;
         _offsetCommitSignal = offsetCommitSignal;
         _dlqProducer = dlqProducer;
         _laneManager = laneManager;
+        _applicationLifetime = applicationLifetime;
 
         var config = new ConsumerConfig
         {
@@ -43,6 +53,12 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
         };
 
         _consumer = new ConsumerBuilder<Ignore, string>(config)
+            .SetPartitionsAssignedHandler((_, partitions) =>
+            {
+                _logger.LogInformation(
+                    "Kafka partitions assigned. Partitions: {Partitions}",
+                    string.Join(", ", partitions));
+            })
             .SetPartitionsRevokedHandler((_, partitions) =>
             {
                 foreach (var partition in partitions)
@@ -74,28 +90,31 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
                     result = _consumer.Consume(
                         TimeSpan.FromMilliseconds(
                             _options.PollTimeoutMs));
+
+                    _consumeFailureSince = null;
                 }
-                catch (ConsumeException ex)
+                catch (ConsumeException exception)
                 {
-                    _logger.LogError(
-                        ex,
-                        "Kafka consumption error. Error: {Reason}",
-                        ex.Error.Reason);
+                    await HandleConsumeFailureAsync(
+                        exception,
+                        cancellationToken);
 
                     continue;
                 }
 
-                if (result is not null)
-                {
-                    await StopRevokedPartitionsAsync(cancellationToken);
+                await StopRevokedPartitionsAsync(cancellationToken);
 
+                UpdatePartitionAssignmentState();
+                RecoverSubscriptionIfNeeded();
+
+                if (result is not null &&
+                    _consumer.Assignment.Contains(result.TopicPartition))
+                {
                     await ProcessMessageAsync(
                         result,
                         handler,
                         cancellationToken);
                 }
-
-                await StopRevokedPartitionsAsync(cancellationToken);
 
                 if (_offsetCommitSignal.IsSignaled())
                 {
@@ -111,15 +130,27 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
         }
         finally
         {
+            using var shutdownCts = new CancellationTokenSource(
+                TimeSpan.FromSeconds(
+                    _processorOptions.ShutdownFlushTimeoutSeconds));
+
             try
             {
                 await _laneManager.StopAsync(
-                    CancellationToken.None);
+                    shutdownCts.Token);
 
                 if (_offsetCommitSignal.IsSignaled())
                 {
                     CommitAvailableOffsets();
                 }
+            }
+            catch (OperationCanceledException)
+                when (shutdownCts.IsCancellationRequested)
+            {
+                _logger.LogWarning(
+                    "Log Processor shutdown flush timed out after {TimeoutSeconds} seconds. " +
+                    "Uncommitted Kafka messages will be replayed after restart.",
+                    _processorOptions.ShutdownFlushTimeoutSeconds);
             }
             catch (Exception ex)
             {
@@ -127,6 +158,7 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
                     ex,
                     "Failed to stop partition lanes cleanly.");
             }
+
             _consumer.Close();
 
             _logger.LogInformation(
@@ -243,9 +275,101 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
         }
     }
 
+    private async Task HandleConsumeFailureAsync(
+        ConsumeException exception,
+        CancellationToken cancellationToken)
+    {
+        var isFirstFailure = _consumeFailureSince is null;
+
+        _consumeFailureSince ??= DateTimeOffset.UtcNow;
+
+        var elapsed = DateTimeOffset.UtcNow - _consumeFailureSince.Value;
+
+        if (isFirstFailure)
+        {
+            _logger.LogWarning(
+                exception,
+                "Kafka consume failed. Retrying for up to {TimeoutSeconds} seconds. " +
+                "Error: {Reason}",
+                _options.ConsumeFailureTimeoutSeconds,
+                exception.Error.Reason);
+        }
+
+        if (elapsed >= TimeSpan.FromSeconds(
+                _options.ConsumeFailureTimeoutSeconds))
+        {
+            _logger.LogCritical(
+                exception,
+                "Kafka consumption failed continuously for {Elapsed}. " +
+                "Stopping Log Processor so Docker can restart it. Error: {Reason}",
+                elapsed,
+                exception.Error.Reason);
+
+            _applicationLifetime.StopApplication();
+
+            throw new InvalidOperationException(
+                "Kafka consumption failed continuously beyond the configured timeout.",
+                exception);
+        }
+
+        await Task.Delay(
+            _options.ConsumeFailureBackoffMs,
+            cancellationToken);
+    }
+
+    private void UpdatePartitionAssignmentState()
+    {
+        if (_consumer.Assignment.Count > 0)
+        {
+            _noPartitionAssignmentSince = null;
+            _subscriptionRecoveryAttempts = 0;
+
+            return;
+        }
+
+        _noPartitionAssignmentSince ??= DateTimeOffset.UtcNow;
+    }
+
+    private void RecoverSubscriptionIfNeeded()
+    {
+        if (_noPartitionAssignmentSince is null)
+        {
+            return;
+        }
+
+        var elapsed = DateTimeOffset.UtcNow - _noPartitionAssignmentSince.Value;
+        var timeout = TimeSpan.FromSeconds(
+            _options.NoPartitionAssignmentTimeoutSeconds);
+
+        if (elapsed < timeout)
+        {
+            return;
+        }
+
+        if (_subscriptionRecoveryAttempts >=
+            _options.MaxSubscriptionRecoveryAttempts)
+        {
+            throw new InvalidOperationException(
+                $"Kafka consumer has owned no partitions for {elapsed}. " +
+                "Subscription recovery attempts were exhausted.");
+        }
+
+        _subscriptionRecoveryAttempts++;
+        _noPartitionAssignmentSince = DateTimeOffset.UtcNow;
+
+        _logger.LogWarning(
+            "Kafka consumer owns no partitions. Re-subscribing to {Topic}. " +
+            "Attempt: {Attempt}/{MaxAttempts}",
+            _options.Topic,
+            _subscriptionRecoveryAttempts,
+            _options.MaxSubscriptionRecoveryAttempts);
+
+        _consumer.Unsubscribe();
+        _consumer.Subscribe(_options.Topic);
+    }
+
     private void CommitAvailableOffsets()
     {
-
         var offsets = _offsetCoordinator
             .GetCommittableOffsets();
 
@@ -254,7 +378,22 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
             return;
         }
 
-        _consumer.Commit(offsets);
+        try
+        {
+            _consumer.Commit(offsets);
+        }
+        catch (Exception exception)
+        {
+            _logger.LogCritical(
+                exception,
+                "Failed to commit {OffsetCount} Kafka offsets. " +
+                "Stopping Log Processor so uncommitted messages can be replayed safely.",
+                offsets.Count);
+
+            _applicationLifetime.StopApplication();
+
+            throw;
+        }
     }
 
     private async Task StopRevokedPartitionsAsync(
@@ -334,13 +473,19 @@ public sealed class KafkaConsumer : IKafkaConsumer, IDisposable
         catch (Exception dlqException)
             when (dlqException is not OperationCanceledException)
         {
-            _logger.LogError(
+            _logger.LogCritical(
                 dlqException,
-                "Failed to publish poison Kafka message to DLQ. Topic: {Topic}, Partition: {Partition}, Offset: {Offset}, FailureType: {FailureType}",
+                "Failed to publish poison Kafka message to DLQ. " +
+                "Stopping Log Processor so the message remains uncommitted and can be retried. " +
+                "Topic: {Topic}, Partition: {Partition}, Offset: {Offset}, FailureType: {FailureType}",
                 result.Topic,
                 result.Partition,
                 result.Offset,
                 failureType);
+
+            _applicationLifetime.StopApplication();
+
+            throw;
         }
     }
 }

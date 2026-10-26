@@ -49,6 +49,12 @@ builder.Services
         options => options.PollTimeoutMs > 0,
         "Kafka__PollTimeoutMs must be greater than 0.")
     .Validate(
+        options => options.ConsumeFailureTimeoutSeconds > 0,
+        "Kafka__ConsumeFailureTimeoutSeconds must be greater than 0.")
+    .Validate(
+        options => options.ConsumeFailureBackoffMs > 0,
+        "Kafka__ConsumeFailureBackoffMs must be greater than 0.")
+    .Validate(
         options => options.ProducerFlushTimeoutSeconds > 0,
         "Kafka__ProducerFlushTimeoutSeconds must be greater than 0.")
     .Validate(
@@ -69,6 +75,12 @@ builder.Services
     .Validate(
         options => options.MaxPartitionFetchBytes > 0,
         "Kafka__MaxPartitionFetchBytes must be greater than 0.")
+    .Validate(
+        options => options.NoPartitionAssignmentTimeoutSeconds > 0,
+        "Kafka__NoPartitionAssignmentTimeoutSeconds must be greater than 0.")
+    .Validate(
+        options => options.MaxSubscriptionRecoveryAttempts > 0,
+        "Kafka__MaxSubscriptionRecoveryAttempts must be greater than 0.")
     .ValidateOnStart();
 
 builder.Services
