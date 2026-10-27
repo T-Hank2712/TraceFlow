@@ -260,7 +260,7 @@ services:
       resources:
         limits:
           cpus: "1.00"
-          memory: 256M
+          memory: 512M
   
   log-processor:
     build: 
@@ -308,13 +308,17 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.50"
+          cpus: "1.00"
           memory: 512M
 
   nginx:
     image: nginx:1.26-alpine
     container_name: traceflow-performance-nginx
     restart: unless-stopped
+    ulimits:
+      nofile:
+        soft: 16384
+        hard: 16384
     ports:
       - "8080:80"
       - "8443:443"
@@ -331,7 +335,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.50"
+          cpus: "1.00"
           memory: 128M
 
   network-simulator:
