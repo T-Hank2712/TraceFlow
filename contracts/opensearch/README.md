@@ -6,19 +6,18 @@ Tên index được cấu hình bằng môi trường qua `OpenSearch__Index`.
 
 ## Log document
 
-Document mà Control API Search API đang kỳ vọng:
+Processor hiện bulk-index `LogEvent` và dùng `eventId` làm document ID:
 
 ```json
 {
   "eventId": "01J...",
   "timestamp": "2026-09-19T10:15:30Z",
-  "receivedAt": "2026-09-19T10:15:31Z",
   "workspaceId": "01J...",
   "projectId": "01J...",
   "applicationId": "01J...",
   "environment": "production",
   "service": "checkout-api",
-  "level": "Error",
+  "level": 4,
   "message": "Payment provider timeout",
   "traceId": "trace-7f9c2a",
   "correlationId": "order-10001",
@@ -33,7 +32,6 @@ Document mà Control API Search API đang kỳ vọng:
 
 - `eventId`: định danh duy nhất của log event.
 - `timestamp`: thời điểm event xảy ra.
-- `receivedAt`: thời điểm hệ thống nhận hoặc index log.
 - `workspaceId`: workspace sở hữu log.
 - `projectId`: project sở hữu log.
 - `applicationId`: trace application sở hữu log.
@@ -49,7 +47,8 @@ Lưu ý đồng bộ pipeline:
 
 - Kafka event dùng `Level` dạng số theo `Microsoft.Extensions.Logging.LogLevel`.
 - OpenSearch cần index `level` theo dạng có thể filter bằng `level.keyword` vì Control API hiện query field này.
-- Kafka event có `ReceivedAt`; OpenSearch document cần giữ `receivedAt` để Control API trả đúng response.
+- Kafka event có `ReceivedAt`, nhưng `LogEvent` hiện không giữ field này trước khi index. Control API vẫn có `receivedAt` trong response model, nên response nhận giá trị mặc định nếu document không có field đó.
+- Processor index `level` là số `Microsoft.Extensions.Logging.LogLevel`. Control API hiện tạo filter `level.keyword` bằng chuỗi viết hoa; filter level cần được xem là chưa đồng bộ với document hiện tại.
 
 ## Query contract
 
@@ -90,12 +89,11 @@ Các field dùng để filter chính xác cần có khả năng query dạng key
 - `traceId`
 - `correlationId`
 
-Các field thời gian cần hỗ trợ range query và sort:
+Field thời gian hiện được query/range/sort:
 
 - `timestamp`
-- `receivedAt`
 
-`message` nên phục vụ search nội dung log. `metadata` là object linh hoạt, không nên phụ thuộc vào mapping cứng cho từng key metadata nếu chưa có nhu cầu nghiệp vụ rõ ràng.
+`message` và `metadata` được index theo mapping OpenSearch hiện hành; Control API chưa thực hiện full-text message query.
 
 ## Ràng buộc nghiệp vụ
 

@@ -20,4 +20,4 @@ Consumer phải hỗ trợ graceful shutdown. Offset management phải tránh m�
 
 ## Duplicate log
 
-Hệ thống sử dụng at-least-once delivery. Với client gửi `event_id` hoặc ingestion sinh `event_id`, processor có thể áp dụng idempotency/deduplication ở mức phù hợp để giảm log trùng khi retry.
+Hệ thống sử dụng at-least-once delivery. Ingestion sinh ULID `eventId`; processor dùng nó làm OpenSearch document ID để retry cùng event ghi đè document thay vì tạo document mới.

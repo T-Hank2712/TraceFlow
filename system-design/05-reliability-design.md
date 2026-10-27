@@ -97,7 +97,7 @@ Redis được dùng để cache validation hoặc rate limit, nhưng không ph�
 | Redis Use Case | Failure Policy | Design Rationale |
 | :--- | :--- | :--- |
 | API key validation cache | Fallback sang Control API validation. | Không reject nhầm client chỉ vì cache lỗi. |
-| Rate limit counter | Core/local-dev ưu tiên fail-open có warning log. | Tránh false reject khi Redis lỗi; strict mode có thể thiết kế sau. |
+| Rate limit counter | Hiện tại fail-closed với `503`. | `RateLimitingMiddleware` từ chối request khi Redis không khả dụng. |
 | Usage/quota counter | Degrade và log warning. | Quota là nice-to-have, không được phá core ingestion. |
 
 Nếu Redis cache stale sau khi API key bị revoke, TTL ngắn và invalidation khi revoke sẽ giới hạn rủi ro. Redis cache không được lưu raw secret hoặc secret hash.
@@ -267,7 +267,7 @@ Nếu Redis unavailable hoặc cache miss, Ingestion API gọi Control API valid
 
 ### 9.2. Rate Limiting
 
-Rate limiting dùng Redis counter để bảo vệ ingestion path trước burst traffic. Với core/local-dev scope, policy mặc định nên là fail-open kèm warning log khi Redis lỗi. Lý do là rate limiting nhằm bảo vệ hệ thống, nhưng Redis lỗi không nên tự động làm tất cả client hợp lệ bị reject.
+Rate limiting dùng Redis counter để bảo vệ ingestion path trước burst traffic. Implementation hiện tại fail-closed: khi Redis rate limiter lỗi, Ingestion API trả `503 rate_limit_unavailable`. Redis cache tenant context vẫn fallback về Control API khi lỗi.
 
 Nếu sau này quota trở thành strict requirement, hệ thống có thể bổ sung strict mode:
 
@@ -374,7 +374,7 @@ flowchart TD
 | OpenSearch full bulk failure | Có | Có toàn batch nếu exhausted | Không áp dụng | `bulk_index_result` |
 | OpenSearch partial item failure | Không retry toàn batch | Có failed items | Không áp dụng | `bulk_index_result`, `dlq_publish_result` |
 | Redis validation cache failure | Fallback Control API | Không | Theo kết quả fallback | `redis_fallback` |
-| Redis rate limit failure | Không trong core mode | Không | Fail-open có warning | `redis_fallback` |
+| Redis rate limit failure | `503` | Không | Fail-closed, log error | `rate_limit_unavailable` |
 
 ## 14. Reliability Acceptance Criteria
 
@@ -390,7 +390,7 @@ Reliability design được xem là đạt khi các behavior sau được chứn
 | OpenSearch full bulk failure. | Processor retry rồi DLQ toàn batch nếu hết retry. |
 | OpenSearch partial bulk failure. | Processor chỉ DLQ failed items. |
 | Redis validation cache lỗi. | Hệ thống fallback Control API, không làm sai tenant ownership. |
-| Redis rate limit lỗi trong core mode. | Hệ thống fail-open có warning log. |
+| Redis rate limit lỗi. | Ingestion trả `503`; event không được publish. |
 | DLQ publish fail. | Hệ thống retry, log critical và không silently drop message. |
 | Search gặp OpenSearch timeout. | Control API trả lỗi an toàn, không expose raw OpenSearch error. |
 

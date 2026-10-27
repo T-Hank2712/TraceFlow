@@ -4,8 +4,8 @@ Ingestion pipeline nhận log từ application và đưa vào Kafka.
 
 ## Endpoint
 
-- `POST /logs`
-- `POST /logs/batch`
+- `POST /v1/logs`
+- `POST /v1/batch-logs`
 
 ## Các bước xử lý
 
@@ -13,7 +13,7 @@ Ingestion pipeline nhận log từ application và đưa vào Kafka.
 2. Hash/lookup API key để xác định project và application.
 3. Validate payload.
 4. Chuẩn hóa timestamp, level, service, environment và metadata.
-5. Gắn `project_id`, `application_id`, `received_at`.
+5. Gắn `workspaceId`, `projectId`, `applicationId`, `environment`, `eventId`, `batchId` và `receivedAt`.
 6. Publish vào Kafka.
 7. Trả `202 Accepted`.
 

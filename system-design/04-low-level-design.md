@@ -358,7 +358,7 @@ sequenceDiagram
     participant Control as Control API
     participant Kafka
 
-    Client->>Ingestion: POST /logs or /logs/batch with ApiKey
+    Client->>Ingestion: POST /v1/logs or /v1/batch-logs with ApiKey
     Ingestion->>Ingestion: apply request size limit and decode JSON
     Ingestion->>Redis: check validation cache / rate limit
     Ingestion->>Control: validate API key when cache misses
@@ -532,7 +532,7 @@ Redis thuộc core infrastructure, nhưng vai trò được giới hạn có ch�
 | Use case của Redis | Thuộc tính chính | Kỳ vọng khi lỗi |
 | :--- | :--- | :--- |
 | API key validation cache | TTL ngắn, không lưu raw secret, invalidate khi revoke nếu có thể. | Fallback sang Control API validation khi cache lỗi hoặc cache miss. |
-| Rate limit counter | Counter theo time-window cho API key/project. | Fail-open/fail-closed sẽ chốt trong Reliability Design. |
+| Rate limit counter | Counter theo time-window cho API key fingerprint. | Implementation hiện tại fail-closed với `503` khi Redis unavailable. |
 | Short usage counter | Theo dõi volume tạm thời. | Có thể rebuild hoặc bỏ qua nếu không dùng cho billing. |
 
 Redis không bao giờ được là nơi duy nhất lưu API key state, tenant ownership, log events hoặc search documents.

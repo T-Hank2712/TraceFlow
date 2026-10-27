@@ -13,7 +13,7 @@ Application đại diện cho service hoặc app gửi log vào TraceFlow.
 - Application thuộc đúng một project.
 - Một project có thể có nhiều application.
 - API key được cấp cho application.
-- Log gửi bằng API key của application nào sẽ được gắn `application_id` tương ứng.
+- Log gửi bằng API key của application nào sẽ được gắn `applicationId` tương ứng.
 
 ## Năng lực cần có
 

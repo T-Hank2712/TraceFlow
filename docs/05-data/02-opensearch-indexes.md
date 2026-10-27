@@ -5,21 +5,21 @@ OpenSearch lưu log phục vụ search. Operational insights có thể đọc ag
 ## Trường index chính
 
 - `timestamp`
-- `project_id`
-- `application_id`
+- `workspaceId`
+- `projectId`
+- `applicationId`
 - `service`
 - `environment`
 - `level`
 - `message`
-- `trace_id`
-- `correlation_id`
+- `traceId`
+- `correlationId`
 - `metadata`
-- `received_at`
-- `processed_at`
 
 ## Mapping nguyên tắc
 
-- `message` hỗ trợ full-text search.
-- Các field filter như `project_id`, `level`, `service` dùng keyword.
-- `timestamp`, `received_at`, `processed_at` dùng date.
+- Control API hiện chỉ filter/sort; chưa gửi full-text query cho `message`.
+- Các field filter như `workspaceId`, `projectId`, `applicationId`, `level` và `service` cần query được dạng keyword.
+- `timestamp` dùng date cho range query và sort.
+- Processor hiện index `LogEvent`, không giữ `receivedAt` hoặc `processedAt` trong document.
 - `metadata` cần thiết kế cẩn thận để tránh mapping explosion.

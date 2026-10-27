@@ -16,6 +16,8 @@ Tên topic được cấu hình bằng môi trường:
 - `Kafka__Topic`: topic log chính.
 - `Kafka__DlqTopic`: topic dead-letter của Log Processor.
 
+Compose local tạo `traceflow.logs` và `traceflow.logs.dlq`. Producer dùng `EventId` làm Kafka message key.
+
 ## Log event
 
 Producer: Ingestion API  
@@ -95,9 +97,14 @@ Schema hiện tại:
   },
   "FailureType": "OpenSearchItemFailure",
   "FailureReason": "OpenSearch failed to index the event.",
+  "Topic": "traceflow.logs",
+  "Partition": 0,
+  "Offset": 42,
   "FailedAt": "2026-09-19T10:15:35Z"
 }
 ```
+
+Khi message chưa deserialize được, `Event` là `null` và `RawPayload` chứa payload gốc.
 
 ## Quy ước compatibility
 

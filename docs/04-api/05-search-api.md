@@ -1,25 +1,23 @@
 # Search API
 
-Search API do ASP.NET Core API cung cấp và truy vấn OpenSearch.
+Search API do Control API cung cấp và truy vấn OpenSearch.
 
 ## Endpoint
 
-- `GET /projects/{projectId}/logs`
-- `GET /projects/{projectId}/traces/{traceId}`
+- `GET /api/v1/workspaces/{workspaceId}/projects/{projectId}/logs`
 
 ## Filter
 
-- `q`
 - `service`
-- `application_id`
+- `applicationId`
 - `environment`
 - `level`
 - `from`
 - `to`
-- `correlation_id`
-- `limit`
-- `cursor`
+- `correlationId`
+- `page`
+- `pageSize`
 
 ## Nguyên tắc
 
-Trước khi query OpenSearch, API phải kiểm tra user có quyền truy cập project.
+Trước khi query OpenSearch, API kiểm tra user là project member và luôn thêm `workspaceId` cùng `projectId` vào filter. API hiện không có full-text `q`, trace lookup endpoint riêng hoặc cursor pagination.

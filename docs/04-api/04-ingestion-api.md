@@ -13,7 +13,7 @@ Authorization: ApiKey <secret>
 ## Single log
 
 ```text
-POST /logs
+POST /v1/logs
 ```
 
 Nhận một log object và trả `202 Accepted` nếu đã publish vào Kafka thành công.
@@ -21,11 +21,11 @@ Nhận một log object và trả `202 Accepted` nếu đã publish vào Kafka t
 ## Batch logs
 
 ```text
-POST /logs/batch
+POST /v1/batch-logs
 ```
 
-Nhận danh sách log. Batch phải có giới hạn số lượng và dung lượng.
+Nhận danh sách log. Batch có giới hạn số lượng và dung lượng; từng item được validate/publish độc lập và response trả accepted/rejected theo item.
 
 ## Nguyên tắc
 
-Client không được tự quyết định `project_id` hoặc `application_id`. Hai trường này được suy ra từ API key.
+Client không được tự quyết định `workspaceId`, `projectId`, `applicationId` hoặc `environment`. Các trường tenant này được suy ra từ API key sau khi Control API validate.

@@ -12,4 +12,4 @@ Quyền truy cập dựa trên workspace membership và role. Mọi thao tác tr
 
 ## Nguyên tắc
 
-Không tin `workspace_id` hoặc `project_id` từ client nếu chưa kiểm tra quan hệ trong database.
+Không tin `workspaceId`, `projectId`, `applicationId` hoặc `environment` từ client nếu chưa kiểm tra quan hệ trong database.

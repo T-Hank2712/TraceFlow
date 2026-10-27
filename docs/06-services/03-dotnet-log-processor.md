@@ -6,7 +6,7 @@
 
 - Consume Kafka theo consumer group.
 - Validate internal event.
-- Enrich dữ liệu với `processed_at`.
+- Normalize các field cần index; processor hiện không thêm `processedAt`.
 - Gom batch theo size hoặc interval.
 - Bulk index vào OpenSearch.
 - Retry, DLQ và graceful shutdown.

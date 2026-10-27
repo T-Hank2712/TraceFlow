@@ -14,8 +14,8 @@ ASP.NET Core Ingestion API nhận log từ application và publish vào Kafka.
 
 ## Endpoint
 
-- `POST /logs`
-- `POST /logs/batch`
+- `POST /v1/logs`
+- `POST /v1/batch-logs`
 
 ## Nguyên tắc
 

@@ -12,7 +12,7 @@ API Key cho phép application gửi log vào TraceFlow.
 
 ## Quy tắc
 
-API key thuộc một application và gián tiếp thuộc một project. Ingestion service dùng API key để xác định `project_id` và `application_id`, không tin dữ liệu tenant do client gửi lên.
+API key thuộc một application và gián tiếp thuộc một project/workspace. Ingestion service dùng API key để xác định `workspaceId`, `projectId`, `applicationId` và `environment`, không tin dữ liệu tenant do client gửi lên.
 
 ## Năng lực cần có
 

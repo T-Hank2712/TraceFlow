@@ -5,7 +5,7 @@ Kafka là buffer giữa ingestion và processing.
 ## Topic chính
 
 ```text
-traceflow.logs.ingested
+traceflow.logs
 ```
 
 ## Topic lỗi
@@ -25,7 +25,7 @@ traceflow.alerts.events
 
 ## Event key
 
-Event key mặc định nên là `application_id` để cân bằng throughput và giữ ordering tương đối theo application. Nếu strategy thay đổi, cần cập nhật system design và reliability docs.
+Producer hiện dùng `eventId` làm message key. Vì vậy Kafka chỉ đảm bảo ordering theo event key/partition, không phải theo application.
 
 ## Consumer group
 

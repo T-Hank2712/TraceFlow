@@ -219,13 +219,13 @@ Luồng chính của hệ thống:
 Ví dụ gửi log:
 
 ```bash
-curl -X POST http://localhost:5100/logs \
+curl -X POST http://localhost:5100/v1/logs \
   -H "Authorization: ApiKey <your-api-key>" \
   -H "Content-Type: application/json" \
   -d '{
     "timestamp": "2026-09-19T10:15:30Z",
     "service": "checkout-api",
-    "level": "ERROR",
+    "level": 4,
     "message": "Payment provider timeout",
     "traceId": "trace-7f9c2a",
     "correlationId": "order-10001",

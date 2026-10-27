@@ -152,7 +152,7 @@ Test cần assert không chỉ HTTP status, mà cả việc Kafka không nhận 
 | Redis cache miss. | Ingestion gọi Control API validation. |
 | Redis unavailable khi validation cache. | Fallback Control API, request hợp lệ vẫn có thể accepted. |
 | Rate limit exceeded. | Request bị trả `429`, không publish Kafka. |
-| Redis rate limit unavailable trong core mode. | Fail-open có warning log theo reliability policy. |
+| Redis rate limit unavailable. | `503`, không publish Kafka. |
 
 Redis test phải chứng minh Redis không phải source of truth. Khi cache lỗi, correctness vẫn dựa vào Control API/PostgreSQL.
 
@@ -250,7 +250,7 @@ Reliability tests chứng minh các policy trong `05-reliability-design.md` ho�
 | :--- | :--- |
 | Kafka publish failure | Ingestion không trả accepted sai. |
 | Redis validation cache failure | Fallback Control API và vẫn giữ tenant đúng. |
-| Redis rate limit failure | Fail-open có warning log trong core mode. |
+| Redis rate limit failure | `503 rate_limit_unavailable`; không publish Kafka. |
 | Malformed Kafka message | DLQ stage `json_decode`. |
 | Invalid internal event | DLQ stage `validation`. |
 | OpenSearch full failure | Retry attempts xuất hiện trong log và DLQ whole batch nếu exhausted. |
