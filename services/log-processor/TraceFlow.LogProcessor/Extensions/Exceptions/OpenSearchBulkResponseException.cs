@@ -6,4 +6,11 @@ public sealed class OpenSearchBulkResponseException : Exception
         : base(message)
     {
     }
+
+    public OpenSearchBulkResponseException(
+        string message,
+        Exception innerException)
+        : base(message, innerException)
+    {
+    }
 }
