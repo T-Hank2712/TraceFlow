@@ -51,8 +51,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "1.00"
-          memory: 1536M
+          cpus: "1.50"
+          memory: 2048M
 
   kafka-init:
     image: apache/kafka:4.1.2
@@ -125,8 +125,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.25"
-          memory: 128M
+          cpus: "1.00"
+          memory: 256M
 
   control-api:
     build: 
@@ -186,8 +186,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.50"
-          memory: 256M
+          cpus: "1.00"
+          memory: 512M
 
   ingestion-api:
     build:
@@ -259,8 +259,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.50"
-          memory: 256M
+          cpus: "1.00"
+          memory: 512M
   
   log-processor:
     build: 
@@ -308,13 +308,17 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.50"
+          cpus: "1.00"
           memory: 512M
 
   nginx:
     image: nginx:1.26-alpine
     container_name: traceflow-performance-nginx
     restart: unless-stopped
+    ulimits:
+      nofile:
+        soft: 16384
+        hard: 16384
     ports:
       - "8080:80"
       - "8443:443"
@@ -331,8 +335,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.10"
-          memory: 64M
+          cpus: "1.00"
+          memory: 128M
 
   network-simulator:
     build:
@@ -376,6 +380,16 @@ services:
         condition: service_healthy
     networks:
       - traceflow-external-network
+    restart: "no"
+  k6:
+    image: grafana/k6:latest
+    container_name: traceflow-performance-k6
+    network_mode: "service:load-generator"
+    volumes:
+      - ../../tests/performance/k6:/tests:ro
+    depends_on:
+      load-generator:
+        condition: service_started
     restart: "no"
 
 volumes:
