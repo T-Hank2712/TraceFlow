@@ -8,11 +8,11 @@ export const options = {
     scenarios: {
         capacity: {
             executor: 'constant-arrival-rate',
-            rate: 4600,
+            rate: 4250,
             timeUnit: '1s',
-            duration: '2m',
-            preAllocatedVUs: 100,
-            maxVUs: 1000,
+            duration: '15m',
+            preAllocatedVUs: 200,
+            maxVUs: 2000,
         },
     },
 
