@@ -138,7 +138,7 @@ public sealed class OpenSearchIndexInitializer(
         if (indexMapping.ValueKind is JsonValueKind.Undefined ||
             !indexMapping.TryGetProperty("mappings", out var mappings) ||
             !mappings.TryGetProperty("dynamic", out var dynamic) ||
-            dynamic.ValueKind != JsonValueKind.False ||
+            !IsDynamicMappingDisabled(dynamic) ||
             !mappings.TryGetProperty("properties", out var properties) ||
             !properties.TryGetProperty("metadata", out var metadata) ||
             !metadata.TryGetProperty("type", out var type) ||
@@ -149,6 +149,11 @@ public sealed class OpenSearchIndexInitializer(
                 "Create a new index with the current template, reindex the data, and update OpenSearch__Index.");
         }
     }
+
+    private static bool IsDynamicMappingDisabled(JsonElement dynamic)
+        => dynamic.ValueKind == JsonValueKind.False ||
+           dynamic.ValueKind == JsonValueKind.String &&
+           string.Equals(dynamic.GetString(), "false", StringComparison.OrdinalIgnoreCase);
 
     private async Task<HttpResponseMessage> SendJsonAsync(
         HttpClient client,
