@@ -70,7 +70,8 @@ public class ValidateApiKeyCommandHandler(
             apiKey.TraceApplication.Project.WorkspaceId,
             apiKey.TraceApplication.ProjectId,
             apiKey.TraceApplicationId,
-            apiKey.Environment);
+            apiKey.Environment,
+            apiKey.ExpiresAt);
     }
 
     private static ValidateApiKeyResponse Invalid()

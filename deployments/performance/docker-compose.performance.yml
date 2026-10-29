@@ -170,10 +170,14 @@ services:
       RequestBodyLimits__AuthBytes: ${RequestBodyLimits__AuthBytes}
       RequestBodyLimits__InternalBytes: ${RequestBodyLimits__InternalBytes}
       RequestBodyLimits__SearchBytes: ${RequestBodyLimits__SearchBytes}
+      Redis__ConnectionString: redis:6379,password=${REDIS_PASSWORD}
+      Redis__ApiKeyRevocationKeyPrefix: ${Redis__ApiKeyRevocationKeyPrefix}
     depends_on:
       postgres:
         condition: service_healthy
       opensearch:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     networks:
       - traceflow-performance-network
@@ -233,6 +237,7 @@ services:
       Redis__TenantContextRedisCacheKeyPrefix: ${Redis__TenantContextRedisCacheKeyPrefix}
       Redis__TenantContextLocalCacheTtlSeconds: ${Redis__TenantContextLocalCacheTtlSeconds}
       Redis__TenantContextLocalCacheKeyPrefix: ${Redis__TenantContextLocalCacheKeyPrefix}
+      Redis__ApiKeyRevocationKeyPrefix: ${Redis__ApiKeyRevocationKeyPrefix}
       RateLimiting__PermitLimit: ${RateLimiting__PermitLimit}
       RateLimiting__WindowSeconds: ${RateLimiting__WindowSeconds}
       RateLimiting__RateLimitKeyPrefix: ${RateLimiting__RateLimitKeyPrefix}

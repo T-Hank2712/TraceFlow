@@ -40,4 +40,11 @@ public sealed class RedisCache(
     {
         await _database.KeyDeleteAsync(key);
     }
+
+    public async Task<bool> ExistsAsync(
+        string key,
+        CancellationToken cancellationToken = default)
+    {
+        return await _database.KeyExistsAsync(key);
+    }
 }

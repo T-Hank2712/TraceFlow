@@ -10,6 +10,7 @@ global using System.Text.RegularExpressions;
 global using System.Threading.RateLimiting;
 
 global using Npgsql;
+global using StackExchange.Redis;
 
 global using Asp.Versioning;
 
@@ -49,6 +50,7 @@ global using TraceFlow.Api.Domain.Common.Extensions;
 global using TraceFlow.Api.Domain.Constants;
 global using TraceFlow.Api.Domain.Entities;
 global using TraceFlow.Api.Infrastructure.Persistence;
+global using TraceFlow.Api.Infrastructure.Redis;
 global using TraceFlow.Api.Middleware;
 
 global using TraceFlow.Api.Application.Auth.Commands.ChangePassword;

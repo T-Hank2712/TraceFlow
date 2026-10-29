@@ -9,4 +9,5 @@ public sealed class RedisOptions
     public required string TenantContextRedisCacheKeyPrefix { get; init; }
     public int TenantContextLocalCacheTtlSeconds { get; init; }
     public required string TenantContextLocalCacheKeyPrefix { get; init; }
+    public required string ApiKeyRevocationKeyPrefix { get; init; }
 }

@@ -4,6 +4,7 @@ public class RevokeApiKeyCommandHandler(
     AppDbContext dbContext,
     ProjectAccessService projectAccess,
     ApiKeyAccessService apiKeyAccess,
+    IApiKeyRevocationStore apiKeyRevocationStore,
     TimeProvider timeProvider
 )
     : IRequestHandler<RevokeApiKeyCommand, RevokeApiKeyResponse>
@@ -12,6 +13,7 @@ public class RevokeApiKeyCommandHandler(
     private readonly AppDbContext _dbContext = dbContext;
     private readonly ProjectAccessService _projectAccess = projectAccess;
     private readonly ApiKeyAccessService _apiKeyAccess = apiKeyAccess;
+    private readonly IApiKeyRevocationStore _apiKeyRevocationStore = apiKeyRevocationStore;
     private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<RevokeApiKeyResponse> Handle(
@@ -36,6 +38,8 @@ public class RevokeApiKeyCommandHandler(
         }
 
         var utcNow = _timeProvider.GetUtcNow();
+
+        await _apiKeyRevocationStore.RevokeAsync(apiKey.Id, cancellationToken);
 
         apiKey.Revoke(utcNow);
 

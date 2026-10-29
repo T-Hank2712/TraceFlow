@@ -15,4 +15,8 @@ public interface IRedisCache
     Task RemoveAsync(
         string key,
         CancellationToken cancellationToken = default);
+
+    Task<bool> ExistsAsync(
+        string key,
+        CancellationToken cancellationToken = default);
 }

@@ -5,4 +5,5 @@ public sealed record ValidateApiKeyResponse(
     Ulid? WorkspaceId,
     Ulid? ProjectId,
     Ulid? ApplicationId,
-    string? Environment);
+    string? Environment,
+    DateTimeOffset? ExpiresAt = null);

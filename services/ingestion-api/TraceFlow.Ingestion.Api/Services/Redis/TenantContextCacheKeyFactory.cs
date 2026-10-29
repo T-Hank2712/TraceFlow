@@ -15,4 +15,9 @@ public sealed class TenantContextCacheKeyFactory
     {
         return $"{_redisOptions.TenantContextLocalCacheKeyPrefix}:{apiKeyFingerprint}";
     }
+
+    public string CreateRevocationKey(Ulid apiKeyId)
+    {
+        return $"{_redisOptions.ApiKeyRevocationKeyPrefix}:{apiKeyId}";
+    }
 }
