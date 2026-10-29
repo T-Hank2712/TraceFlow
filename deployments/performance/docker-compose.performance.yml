@@ -244,6 +244,7 @@ services:
       PreAuthRateLimiting__PermitLimit: ${PreAuthRateLimiting__PermitLimit}
       PreAuthRateLimiting__WindowSeconds: ${PreAuthRateLimiting__WindowSeconds}
       PreAuthRateLimiting__QueueLimit: ${PreAuthRateLimiting__QueueLimit}
+      TrustedProxies__KnownNetworks__0: ${TrustedProxies__KnownNetworks__0}
     depends_on:
       kafka:
         condition: service_healthy
@@ -417,7 +418,13 @@ networks:
   traceflow-performance-network:
     name: traceflow-performance-network
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.22.0.0/24
 
   traceflow-external-network:
     name: traceflow-external-network
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/24
