@@ -58,7 +58,7 @@ public static class LogIngestionEndpoints
                 authentication,
                 cancellationToken);
 
-            return result.Success
+            return result.Data is not null
                 ? Results.Json(result.Data, statusCode: result.StatusCode)
                 : Results.Json(result.Error, statusCode: result.StatusCode);
         }).RequireRateLimiting(RateLimitingExtensions.PreAuthPolicy);

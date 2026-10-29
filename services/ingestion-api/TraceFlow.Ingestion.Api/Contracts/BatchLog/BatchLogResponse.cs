@@ -5,4 +5,5 @@ public sealed record BatchLogResponse(
     int Total,
     int Accepted,
     int Rejected,
-    IReadOnlyList<BatchLogItemResult> Results);
+    IReadOnlyList<BatchLogItemResult> Results,
+    ErrorResponse? Error = null);

@@ -7,19 +7,22 @@ public sealed class IngestLogService : IIngestLogService
     private readonly IValidator<IngestLogRequest> _logValidator;
     private readonly IValidator<BatchLogRequest> _batchValidator;
     private readonly TimeProvider _timeProvider;
+    private readonly ILogger<IngestLogService> _logger;
 
     public IngestLogService(
         EnrichedLogEventFactory eventFactory,
         ILogEventPublisher publisher,
         IValidator<IngestLogRequest> logValidator,
         IValidator<BatchLogRequest> batchValidator,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider,
+        ILogger<IngestLogService> logger)
     {
         _eventFactory = eventFactory;
         _publisher = publisher;
         _logValidator = logValidator;
         _batchValidator = batchValidator;
         _timeProvider = timeProvider;
+        _logger = logger;
     }
 
     public async Task<Result<IngestLogResponse>> IngestAsync(
@@ -108,7 +111,7 @@ public sealed class IngestLogService : IIngestLogService
 
             if (!validationResult.IsValid)
             {
-                var error = string.Join(
+                var itemError = string.Join(
                     "; ",
                     validationResult.Errors
                         .Select(x => x.ErrorMessage));
@@ -117,7 +120,7 @@ public sealed class IngestLogService : IIngestLogService
                     Index: index,
                     Accepted: false,
                     EventId: null,
-                    Error: error);
+                    Error: itemError);
 
                 continue;
             }
@@ -132,13 +135,55 @@ public sealed class IngestLogService : IIngestLogService
             validEvents.Add((Index: index, Event: logEvent));
         }
 
+        var kafkaPublishFailed = false;
+
         if (validEvents.Count > 0)
         {
-            var publishResults = await _publisher.PublishAsync(validEvents, cancellationToken);
-
-            foreach (var publishResult in publishResults)
+            try
             {
-                results[publishResult.Index] = publishResult;
+                var publishResults = await _publisher.PublishAsync(validEvents, cancellationToken);
+
+                foreach (var publishResult in publishResults)
+                {
+                    results[publishResult.Index] = publishResult;
+                }
+
+                foreach (var validEvent in validEvents)
+                {
+                    if (results[validEvent.Index] is not null)
+                    {
+                        continue;
+                    }
+
+                    results[validEvent.Index] = new BatchLogItemResult(
+                        Index: validEvent.Index,
+                        Accepted: false,
+                        EventId: validEvent.Event.EventId,
+                        Error: "Kafka publish did not return a delivery result.");
+
+                    kafkaPublishFailed = true;
+                }
+
+                kafkaPublishFailed |= publishResults.Any(result => !result.Accepted);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Kafka batch publishing failed. BatchId: {BatchId}", batchId);
+
+                kafkaPublishFailed = true;
+
+                foreach (var validEvent in validEvents)
+                {
+                    results[validEvent.Index] = new BatchLogItemResult(
+                        Index: validEvent.Index,
+                        Accepted: false,
+                        EventId: validEvent.Event.EventId,
+                        Error: "Failed to publish log event to Kafka.");
+                }
             }
         }
 
@@ -157,12 +202,28 @@ public sealed class IngestLogService : IIngestLogService
             }
         }
 
+        var error = kafkaPublishFailed
+            ? new ErrorResponse(
+                ErrorCodes.KafkaPublishFailed,
+                "One or more log events could not be published to Kafka.")
+            : null;
+
         var response = new BatchLogResponse(
             BatchId: batchId,
             Total: totalLogs,
             Accepted: accepted,
             Rejected: rejected,
-            Results: results);
+            Results: results,
+            Error: error);
+
+        if (kafkaPublishFailed)
+        {
+            return Result<BatchLogResponse>.Fail(
+                response,
+                ErrorCodes.KafkaPublishFailed,
+                "One or more log events could not be published to Kafka.",
+                StatusCodes.Status503ServiceUnavailable);
+        }
 
         return Result<BatchLogResponse>.Ok(response);
     }
