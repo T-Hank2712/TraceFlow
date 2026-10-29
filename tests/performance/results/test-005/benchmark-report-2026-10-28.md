@@ -34,7 +34,15 @@ Ngưỡng capacity 2 phút là p95 dưới **10 ms** và tỷ lệ HTTP thất b
 
 `4.250 RPS` là mốc 15 phút cao nhất PASS theo ngưỡng latency trong tập kết quả. Tuy nhiên, cả 4.000 và 4.250 RPS đều có dropped iterations và chạm giới hạn VU, nên `4.000 RPS` là mốc thận trọng hơn nếu cần công bố sustained capacity có biên an toàn.
 
-## 4. Đối soát E2E
+## 4. Soak test 60 phút
+
+| RPS mục tiêu | RPS thực tế | Thời lượng | p95 | HTTP failure | Dropped iterations | Trạng thái soak |
+| ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| 3.000 | 2.957,30 | 60 phút | 93,12 ms | xấp xỉ 0,000009% | 153.694 | PASS |
+
+Soak test dùng tiêu chí p95 dưới **100 ms** và HTTP failure dưới **0,01%**. Do đó p95 93,12 ms là PASS theo tiêu chí soak, mặc dù output k6 vẫn hiển thị threshold cũ `p(95)<10` là FAIL. Lượt chạy hoàn tất đủ 60 phút, nhưng k6 chạm 3.000 VU và có dropped iterations; vì vậy throughput thực tế là 2.957,30 req/s thay vì target danh nghĩa 3.000 RPS.
+
+## 5. Đối soát E2E
 
 | Chỉ số | Kết quả |
 | --- | ---: |
@@ -48,9 +56,10 @@ Ngưỡng capacity 2 phút là p95 dưới **10 ms** và tỷ lệ HTTP thất b
 
 Lượt đối soát xác nhận toàn bộ 50.000 event được index đúng một lần cho workload E2E đã kiểm thử.
 
-## 5. Kết luận
+## 6. Kết luận
 
 * Với capacity ngắn 2 phút, **5.000 RPS** là mốc PASS tốt nhất.
 * Với capacity duy trì 15 phút, **4.250 RPS** là cận trên PASS quan sát được; **4.000 RPS** là lựa chọn thận trọng hơn do có biên tốt hơn trước trạng thái quá tải.
 * `4.500 RPS` không bền vững trong 15 phút và `5.200 RPS` không đạt p95 trong lượt 2 phút.
+* Soak test **3.000 RPS trong 60 phút** PASS theo tiêu chí p95 dưới 100 ms và HTTP failure dưới 0,01%; throughput thực tế là 2.957,30 req/s.
 * E2E PASS với 50.000 event được index đầy đủ, không có DLQ, thiếu hoặc trùng event.

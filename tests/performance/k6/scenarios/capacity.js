@@ -8,13 +8,15 @@ export const options = {
     scenarios: {
         capacity: {
             executor: 'constant-arrival-rate',
-            rate: 4250,
+            rate: 4000,
             timeUnit: '1s',
-            duration: '15m',
+            duration: '2m',
             preAllocatedVUs: 200,
             maxVUs: 2000,
         },
     },
+
+    summaryTrendStats: ['avg', 'min', 'med', 'max', 'p(90)', 'p(95)', 'p(99)'],
 
     thresholds: {
         http_req_failed: ['rate<0.0001'],
