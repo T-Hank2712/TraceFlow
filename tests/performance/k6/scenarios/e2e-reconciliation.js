@@ -55,6 +55,7 @@ export default function () {
             headers: {
                 'Content-Type': 'application/json',
                 Authorization: `ApiKey ${API_KEY}`,
+                'Idempotency-Key': eventKey,
             },
         },
     );

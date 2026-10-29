@@ -10,4 +10,7 @@ public sealed class RedisOptions
     public int TenantContextLocalCacheTtlSeconds { get; init; }
     public required string TenantContextLocalCacheKeyPrefix { get; init; }
     public required string ApiKeyRevocationKeyPrefix { get; init; }
+    public int IdempotencyKeyTtlSeconds { get; init; } = 86400;
+    public int IdempotencyKeyMaxLength { get; init; } = 128;
+    public string IdempotencyKeyPrefix { get; init; } = "traceflow:idempotency";
 }

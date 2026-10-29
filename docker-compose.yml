@@ -213,6 +213,9 @@ services:
       Redis__TenantContextLocalCacheTtlSeconds: ${Redis__TenantContextLocalCacheTtlSeconds}
       Redis__TenantContextLocalCacheKeyPrefix: ${Redis__TenantContextLocalCacheKeyPrefix}
       Redis__ApiKeyRevocationKeyPrefix: ${Redis__ApiKeyRevocationKeyPrefix}
+      Redis__IdempotencyKeyTtlSeconds: ${Redis__IdempotencyKeyTtlSeconds:-86400}
+      Redis__IdempotencyKeyMaxLength: ${Redis__IdempotencyKeyMaxLength:-128}
+      Redis__IdempotencyKeyPrefix: ${Redis__IdempotencyKeyPrefix:-traceflow:idempotency}
       RateLimiting__PermitLimit: ${RateLimiting__PermitLimit}
       RateLimiting__WindowSeconds: ${RateLimiting__WindowSeconds}
       RateLimiting__RateLimitKeyPrefix: ${RateLimiting__RateLimitKeyPrefix}

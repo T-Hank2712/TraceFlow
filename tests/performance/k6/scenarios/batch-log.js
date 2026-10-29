@@ -23,6 +23,7 @@ function createLog(index) {
 }
 
 export default function () {
+    const idempotencyKey = `batch-log-${__VU}-${__ITER}`;
     const logs = [];
 
     for (let i = 0; i < BATCH_SIZE; i++) {
@@ -40,6 +41,7 @@ export default function () {
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `ApiKey ${API_KEY}`,
+                'Idempotency-Key': idempotencyKey,
             },
         }
     );

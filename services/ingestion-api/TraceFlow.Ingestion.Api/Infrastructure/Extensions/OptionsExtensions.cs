@@ -59,6 +59,9 @@ public static class OptionsExtensions
             .Validate(options => options.TenantContextLocalCacheTtlSeconds > 0, "Redis__TenantContextLocalCacheTtlSeconds must be greater than 0.")
             .Validate(options => !string.IsNullOrWhiteSpace(options.TenantContextLocalCacheKeyPrefix), "Redis__TenantContextLocalCacheKeyPrefix is required.")
             .Validate(options => !string.IsNullOrWhiteSpace(options.ApiKeyRevocationKeyPrefix), "Redis__ApiKeyRevocationKeyPrefix is required.")
+            .Validate(options => options.IdempotencyKeyTtlSeconds > 0, "Redis__IdempotencyKeyTtlSeconds must be greater than 0.")
+            .Validate(options => options.IdempotencyKeyMaxLength > 0, "Redis__IdempotencyKeyMaxLength must be greater than 0.")
+            .Validate(options => !string.IsNullOrWhiteSpace(options.IdempotencyKeyPrefix), "Redis__IdempotencyKeyPrefix is required.")
             .ValidateOnStart();
 
         services

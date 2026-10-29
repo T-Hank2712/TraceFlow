@@ -13,7 +13,7 @@ Ingestion pipeline nhận log từ application và đưa vào Kafka.
 2. Hash/lookup API key để xác định project và application.
 3. Validate payload.
 4. Chuẩn hóa timestamp, level, service, environment và metadata.
-5. Gắn `workspaceId`, `projectId`, `applicationId`, `environment`, `eventId`, `batchId` và `receivedAt`.
+5. Dùng `Idempotency-Key` để lấy hoặc tạo `eventId`, rồi gắn `workspaceId`, `projectId`, `applicationId`, `environment`, `batchId` và `receivedAt`.
 6. Publish vào Kafka.
 7. Trả `202 Accepted`.
 

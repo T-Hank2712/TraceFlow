@@ -11,6 +11,8 @@ export const options = {
 };
 
 export default function () {
+    const idempotencyKey = `e2e-${TEST_MARKER}`;
+
     const payload = JSON.stringify({
         service: 'performance-test',
         level: 4,
@@ -27,6 +29,7 @@ export default function () {
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `ApiKey ${API_KEY}`,
+                'Idempotency-Key': idempotencyKey,
             },
         }
     );

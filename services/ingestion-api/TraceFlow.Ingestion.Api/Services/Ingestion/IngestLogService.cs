@@ -6,6 +6,7 @@ public sealed class IngestLogService : IIngestLogService
     private readonly ILogEventPublisher _publisher;
     private readonly IValidator<IngestLogRequest> _logValidator;
     private readonly IValidator<BatchLogRequest> _batchValidator;
+    private readonly IdempotencyEventIdResolver _idempotencyResolver;
     private readonly TimeProvider _timeProvider;
     private readonly ILogger<IngestLogService> _logger;
 
@@ -14,6 +15,7 @@ public sealed class IngestLogService : IIngestLogService
         ILogEventPublisher publisher,
         IValidator<IngestLogRequest> logValidator,
         IValidator<BatchLogRequest> batchValidator,
+        IdempotencyEventIdResolver idempotencyResolver,
         TimeProvider timeProvider,
         ILogger<IngestLogService> logger)
     {
@@ -21,6 +23,7 @@ public sealed class IngestLogService : IIngestLogService
         _publisher = publisher;
         _logValidator = logValidator;
         _batchValidator = batchValidator;
+        _idempotencyResolver = idempotencyResolver;
         _timeProvider = timeProvider;
         _logger = logger;
     }
@@ -28,6 +31,7 @@ public sealed class IngestLogService : IIngestLogService
     public async Task<Result<IngestLogResponse>> IngestAsync(
         IngestLogRequest request,
         AuthenticatedContext authentication,
+        string? idempotencyKey,
         CancellationToken cancellationToken)
     {
 
@@ -41,8 +45,41 @@ public sealed class IngestLogService : IIngestLogService
                 ValidationErrorMapper.ToDetails(validationResult.Errors));
         }
 
+        if (!_idempotencyResolver.IsValidKey(idempotencyKey))
+        {
+            return Result<IngestLogResponse>.Fail(
+                ErrorCodes.MissingIdempotencyKey,
+                "A valid Idempotency-Key header is required.",
+                StatusCodes.Status400BadRequest);
+        }
+
+        Ulid eventId;
+
+        try
+        {
+            eventId = await _idempotencyResolver.ResolveAsync(
+                idempotencyKey!,
+                itemIndex: 0,
+                request,
+                authentication,
+                cancellationToken);
+        }
+        catch (IdempotencyKeyReusedException)
+        {
+            return Result<IngestLogResponse>.Fail(
+                ErrorCodes.IdempotencyKeyReused,
+                "Idempotency-Key was already used with a different request.",
+                StatusCodes.Status409Conflict);
+        }
+        catch (IdempotencyStoreUnavailableException)
+        {
+            return Result<IngestLogResponse>.Fail(
+                ErrorCodes.IdempotencyStoreUnavailable,
+                "Idempotency storage is unavailable. Retry later with the same Idempotency-Key.",
+                StatusCodes.Status503ServiceUnavailable);
+        }
+
         var tenant = authentication.Tenant;
-        var eventId = Ulid.NewUlid();
         var batchId = Ulid.NewUlid();
 
         var logEvent = _eventFactory.Create(request, tenant, eventId, batchId);
@@ -71,6 +108,7 @@ public sealed class IngestLogService : IIngestLogService
     public async Task<Result<BatchLogResponse>> BatchLogAsync(
         BatchLogRequest request,
         AuthenticatedContext authentication,
+        string? idempotencyKey,
         CancellationToken cancellationToken)
     {
         var validationBatch = await _batchValidator.ValidateAsync(
@@ -84,6 +122,14 @@ public sealed class IngestLogService : IIngestLogService
                 validationBatch.Errors.First().ErrorMessage,
                 StatusCodes.Status400BadRequest,
                 ValidationErrorMapper.ToDetails(validationBatch.Errors));
+        }
+
+        if (!_idempotencyResolver.IsValidKey(idempotencyKey))
+        {
+            return Result<BatchLogResponse>.Fail(
+                ErrorCodes.MissingIdempotencyKey,
+                "A valid Idempotency-Key header is required.",
+                StatusCodes.Status400BadRequest);
         }
 
         var batchId = Ulid.NewUlid();
@@ -125,7 +171,32 @@ public sealed class IngestLogService : IIngestLogService
                 continue;
             }
 
-            var eventId = Ulid.NewUlid();
+            Ulid eventId;
+
+            try
+            {
+                eventId = await _idempotencyResolver.ResolveAsync(
+                    idempotencyKey!,
+                    itemIndex: index,
+                    log,
+                    authentication,
+                    cancellationToken);
+            }
+            catch (IdempotencyKeyReusedException)
+            {
+                return Result<BatchLogResponse>.Fail(
+                    ErrorCodes.IdempotencyKeyReused,
+                    "Idempotency-Key was already used with a different batch request.",
+                    StatusCodes.Status409Conflict);
+            }
+            catch (IdempotencyStoreUnavailableException)
+            {
+                return Result<BatchLogResponse>.Fail(
+                    ErrorCodes.IdempotencyStoreUnavailable,
+                    "Idempotency storage is unavailable. Retry later with the same Idempotency-Key.",
+                    StatusCodes.Status503ServiceUnavailable);
+            }
+
             var logEvent = _eventFactory.Create(
                 log,
                 tenant,

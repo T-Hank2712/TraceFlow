@@ -221,6 +221,7 @@ Ví dụ gửi log:
 ```bash
 curl -X POST http://localhost:5100/v1/logs \
   -H "Authorization: ApiKey <your-api-key>" \
+  -H "Idempotency-Key: checkout-order-10001-log-1" \
   -H "Content-Type: application/json" \
   -d '{
     "timestamp": "2026-09-19T10:15:30Z",
