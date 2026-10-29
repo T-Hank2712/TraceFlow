@@ -131,9 +131,9 @@ public sealed class OpenSearchLogSearchReader(
                 {
                     filter = new object[]
                     {
-                        Term("workspaceId.keyword", workspaceId.ToString()),
-                        Term("projectId.keyword", projectId.ToString()),
-                        Term("applicationId.keyword", applicationId.ToString())
+                        Term("workspaceId", workspaceId.ToString()),
+                        Term("projectId", projectId.ToString()),
+                        Term("applicationId", applicationId.ToString())
                     }
                 }
             }
@@ -221,20 +221,20 @@ public sealed class OpenSearchLogSearchReader(
     {
         var filters = new List<object>
         {
-            Term("workspaceId.keyword", query.WorkspaceId.ToString()),
-            Term("projectId.keyword", query.ProjectId.ToString())
+            Term("workspaceId", query.WorkspaceId.ToString()),
+            Term("projectId", query.ProjectId.ToString())
         };
 
         if (query.ApplicationId is not null)
         {
-            filters.Add(Term("applicationId.keyword", query.ApplicationId.Value.ToString()));
+            filters.Add(Term("applicationId", query.ApplicationId.Value.ToString()));
         }
 
-        AddTermIfPresent(filters, "environment.keyword", query.Environment?.ToLowerInvariant());
-        AddTermIfPresent(filters, "level.keyword", query.Level?.ToUpperInvariant());
-        AddTermIfPresent(filters, "service.keyword", query.Service);
-        AddTermIfPresent(filters, "traceId.keyword", query.TraceId);
-        AddTermIfPresent(filters, "correlationId.keyword", query.CorrelationId);
+        AddTermIfPresent(filters, "environment", query.Environment?.ToLowerInvariant());
+        AddTermIfPresent(filters, "level", query.Level?.ToUpperInvariant());
+        AddTermIfPresent(filters, "service", query.Service);
+        AddTermIfPresent(filters, "traceId", query.TraceId);
+        AddTermIfPresent(filters, "correlationId", query.CorrelationId);
 
         if (query.From is not null || query.To is not null)
         {
