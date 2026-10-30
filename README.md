@@ -324,8 +324,6 @@ Tài liệu vận hành và service:
 
 ## 11. License
 
-Project chưa khai báo license. Nếu public hoặc open-source, cần bổ sung file `LICENSE`.
-
 ## 12. Maintainer
 
 TraceFlow được duy trì bởi `ltthanh` như một backend engineering portfolio project, tập trung vào distributed systems, security, reliability và data pipeline design.
