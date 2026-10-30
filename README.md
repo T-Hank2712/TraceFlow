@@ -324,7 +324,7 @@ Tài liệu vận hành và service:
 
 ## 11. License
 
-Project chưa khai báo license. Nếu public hoặc open-source, cần bổ sung file `LICENSE`.
+Distributed under the [MIT License](LICENSE).
 
 ## 12. Maintainer
 
