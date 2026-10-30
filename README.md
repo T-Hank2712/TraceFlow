@@ -324,6 +324,8 @@ Tài liệu vận hành và service:
 
 ## 11. License
 
+Distributed under the [MIT License](LICENSE).
+
 ## 12. Maintainer
 
 TraceFlow được duy trì bởi `ltthanh` như một backend engineering portfolio project, tập trung vào distributed systems, security, reliability và data pipeline design.
