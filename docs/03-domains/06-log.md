@@ -6,16 +6,16 @@ Log là dữ liệu chính được TraceFlow thu thập và tìm kiếm.
 
 - `timestamp`
 - `level`
-- `project_id`
-- `application_id`
+- `workspaceId`
+- `projectId`
+- `applicationId`
 - `service`
 - `environment`
 - `message`
 - `trace_id`
 - `correlation_id`
 - `metadata`
-- `received_at`
-- `processed_at`
+- `receivedAt` trong Kafka event; processor hiện không lưu field này vào OpenSearch.
 
 ## Log levels
 

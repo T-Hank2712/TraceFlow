@@ -20,4 +20,4 @@ Consumer phải hỗ trợ graceful shutdown. Offset management phải tránh m�
 
 ## Duplicate log
 
-Hệ thống sử dụng at-least-once delivery. Với client gửi `event_id` hoặc ingestion sinh `event_id`, processor có thể áp dụng idempotency/deduplication ở mức phù hợp để giảm log trùng khi retry.
+Hệ thống sử dụng at-least-once delivery. Client gửi `Idempotency-Key` ổn định cho mỗi logical request; Ingestion lưu ánh xạ key và payload trong Redis rồi dùng lại cùng ULID `eventId` cho mọi retry trong 24 giờ. Processor dùng `eventId` làm OpenSearch document ID, nên bản ghi Kafka trùng do retry ghi đè cùng document thay vì tạo document mới. Dùng lại idempotency key với payload khác bị từ chối bằng `409 Conflict`.

@@ -6,7 +6,7 @@ Chấp nhận.
 
 ## Bối cảnh
 
-Control plane cần quản lý user, workspace, project, application, API key, search API và dashboard API.
+Control plane cần quản lý user, workspace, project, application, API key và Search API. Operational Insights/Dashboard API là nice-to-have nếu được bật.
 
 ## Quyết định
 
@@ -20,4 +20,4 @@ Sử dụng ASP.NET Core cho control plane.
 
 ## Hệ quả
 
-ASP.NET Core không nhận log high-throughput trực tiếp. Log ingestion thuộc trách nhiệm của Go service.
+Control API không nhận log high-throughput trực tiếp. Log ingestion thuộc trách nhiệm của Ingestion API để giữ control plane gọn và đúng boundary.

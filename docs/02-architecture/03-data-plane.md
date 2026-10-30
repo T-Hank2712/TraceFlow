@@ -4,9 +4,9 @@ Data plane là phần xử lý luồng log tốc độ cao.
 
 ## Thành phần
 
-- Go Ingestion Service.
+- ASP.NET Core Ingestion API.
 - Kafka topic chứa log event.
-- Go Log Processor.
+- .NET Log Processor.
 - OpenSearch index.
 
 ## Luồng xử lý
@@ -27,4 +27,4 @@ Client App
 - Không để OpenSearch chậm làm block trực tiếp ingestion request.
 - Không giữ queue trong memory không giới hạn.
 - Mọi lỗi publish, consume hoặc index phải có policy rõ.
-- Mỗi log phải mang `project_id` và `application_id` sau khi xác thực API key.
+- Mỗi log phải mang `workspaceId`, `projectId`, `applicationId` và `environment` sau khi xác thực API key.

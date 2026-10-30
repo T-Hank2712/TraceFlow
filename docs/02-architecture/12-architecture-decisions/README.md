@@ -30,7 +30,7 @@ ADR không phải nơi ghi mọi chi tiết nhỏ. Nó dành cho các quyết đ
 
 ## Thứ tự đọc
 
-1. `01-adr-use-go-for-data-plane.md`
+1. `01-adr-use-dotnet-for-backend-services.md`
 2. `02-adr-use-aspnetcore-for-control-plane.md`
 3. `03-adr-use-kafka-between-ingestion-and-processing.md`
 4. `04-adr-use-opensearch-for-log-search.md`

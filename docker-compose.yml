@@ -1,0 +1,322 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: traceflow-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - traceflow-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  
+  kafka:
+    image: apache/kafka:4.1.2
+    container_name: traceflow-kafka
+    restart: unless-stopped
+    environment:
+      KAFKA_NODE_ID: ${KAFKA_NODE_ID}
+      KAFKA_PROCESS_ROLES: ${KAFKA_PROCESS_ROLES}
+      KAFKA_LISTENERS: ${KAFKA_LISTENERS}
+      KAFKA_ADVERTISED_LISTENERS: ${KAFKA_ADVERTISED_LISTENERS}
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: ${KAFKA_LISTENER_SECURITY_PROTOCOL_MAP}
+      KAFKA_CONTROLLER_LISTENER_NAMES: ${KAFKA_CONTROLLER_LISTENER_NAMES}
+      KAFKA_CONTROLLER_QUORUM_VOTERS: ${KAFKA_CONTROLLER_QUORUM_VOTERS}
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: ${KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR}
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: ${KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR}
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: ${KAFKA_TRANSACTION_STATE_LOG_MIN_ISR}
+      KAFKA_HEAP_OPTS: ${KAFKA_HEAP_OPTS}
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    networks:
+      - traceflow-network
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 9092 || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
+
+  kafka-init:
+    image: apache/kafka:4.1.2
+    container_name: traceflow-kafka-init
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      "
+      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic traceflow.logs --partitions 3 --replication-factor 1 &&
+      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic traceflow.logs.dlq --partitions 1 --replication-factor 1
+      "
+    networks:
+      - traceflow-network
+  
+  opensearch:
+    image: opensearchproject/opensearch:3
+    container_name: traceflow-opensearch
+    restart: unless-stopped
+    environment:
+      cluster.name: ${OPENSEARCH_CLUSTER_NAME}
+      node.name: ${OPENSEARCH_NODE_NAME}
+      discovery.type: ${OPENSEARCH_DISCOVERY_TYPE}
+      bootstrap.memory_lock: ${OPENSEARCH_BOOTSTRAP_MEMORY_LOCK}
+      OPENSEARCH_JAVA_OPTS: ${OPENSEARCH_JAVA_OPTS}
+      DISABLE_SECURITY_PLUGIN: ${OPENSEARCH_DISABLE_SECURITY_PLUGIN}
+      OPENSEARCH_INITIAL_ADMIN_PASSWORD: ${OPENSEARCH_INITIAL_ADMIN_PASSWORD}
+    volumes:
+      - opensearch_data:/usr/share/opensearch/data
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    networks:
+      - traceflow-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -k -u admin:${OPENSEARCH_INITIAL_ADMIN_PASSWORD} https://localhost:9200/_cluster/health > /dev/null 2>&1"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 30s
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: traceflow-redis
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    command: >
+      redis-server
+      --appendonly yes
+      --requirepass ${REDIS_PASSWORD}
+      --maxmemory ${REDIS_MAXMEMORY}
+      --maxmemory-policy allkeys-lru
+    volumes:
+    - redis_data:/data
+    networks:
+      - traceflow-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  control-api:
+    build: 
+      context: ./services/control-api
+      dockerfile: Dockerfile
+    container_name: traceflow-control-api
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
+      ASPNETCORE_URLS: http://+:5075
+      ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      Jwt__Issuer: ${Jwt__Issuer}
+      Jwt__Audience: ${Jwt__Audience}
+      Jwt__Secret: ${Jwt__Secret}
+      Jwt__AccessTokenExpirationMinutes: ${Jwt__AccessTokenExpirationMinutes}
+      Jwt__RefreshTokenExpirationDays: ${Jwt__RefreshTokenExpirationDays}
+      ApiKeySecurity__Pepper: ${ApiKeySecurity__Pepper}
+      InternalService__Secret: ${InternalService__Secret}
+      RefreshTokenSecurity__Pepper: ${RefreshTokenSecurity__Pepper}
+      OpenSearch__Url: ${OpenSearch__Url}
+      OpenSearch__Username: ${OpenSearch__Username}
+      OpenSearch__Password: ${OpenSearch__Password}
+      OpenSearch__Index: ${OpenSearch__Index}
+      OpenSearch__SkipTlsVerify: ${OpenSearch__SkipTlsVerify}
+      RateLimit__Global__PermitLimit: ${RateLimit__Global__PermitLimit}
+      RateLimit__Global__WindowSeconds: ${RateLimit__Global__WindowSeconds}
+      RateLimit__Global__QueueLimit: ${RateLimit__Global__QueueLimit}
+      RateLimit__Auth__PermitLimit: ${RateLimit__Auth__PermitLimit}
+      RateLimit__Auth__WindowSeconds: ${RateLimit__Auth__WindowSeconds}
+      RateLimit__Auth__QueueLimit: ${RateLimit__Auth__QueueLimit}
+      RateLimit__Internal__PermitLimit: ${RateLimit__Internal__PermitLimit}
+      RateLimit__Internal__WindowSeconds: ${RateLimit__Internal__WindowSeconds}
+      RateLimit__Internal__QueueLimit: ${RateLimit__Internal__QueueLimit}
+      RateLimit__Search__PermitLimit: ${RateLimit__Search__PermitLimit}
+      RateLimit__Search__WindowSeconds: ${RateLimit__Search__WindowSeconds}
+      RateLimit__Search__QueueLimit: ${RateLimit__Search__QueueLimit}
+      Database__MaxRetryCount: ${Database__MaxRetryCount}
+      Database__MaxRetryDelaySeconds: ${Database__MaxRetryDelaySeconds}
+      TrustedProxies__KnownNetworks__0: ${TrustedProxies__KnownNetworks__0}
+      RequestBodyLimits__DefaultBytes: ${RequestBodyLimits__DefaultBytes}
+      RequestBodyLimits__AuthBytes: ${RequestBodyLimits__AuthBytes}
+      RequestBodyLimits__InternalBytes: ${RequestBodyLimits__InternalBytes}
+      RequestBodyLimits__SearchBytes: ${RequestBodyLimits__SearchBytes}
+      Redis__ConnectionString: redis:6379,password=${REDIS_PASSWORD}
+      Redis__ApiKeyRevocationKeyPrefix: ${Redis__ApiKeyRevocationKeyPrefix}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      opensearch:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - traceflow-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5075/health > /dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  ingestion-api:
+    build:
+      context: ./services/ingestion-api
+      dockerfile: Dockerfile
+    container_name: traceflow-ingestion-api
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
+      ASPNETCORE_URLS: http://+:5100
+      ControlApi__BaseUrl: ${ControlApi__BaseUrl}
+      ControlApi__ValidateApiPath: ${ControlApi__ValidateApiPath}
+      ControlApi__InternalServiceSecret: ${ControlApi__InternalServiceSecret}
+      ControlApi__TimeoutSeconds: ${ControlApi__TimeoutSeconds}
+      Kafka__BootstrapServers: ${Kafka__BootstrapServers}
+      Kafka__Topic: ${Kafka__Topic}
+      Kafka__MessageSendMaxRetries: ${Kafka__MessageSendMaxRetries}
+      Kafka__RetryBackoffMs: ${Kafka__RetryBackoffMs}
+      Kafka__MessageTimeoutMs: ${Kafka__MessageTimeoutMs}
+      Kafka__DeliveryTimeoutMs: ${Kafka__DeliveryTimeoutMs}
+      Kafka__QueueBufferingMaxMessages: ${Kafka__QueueBufferingMaxMessages}
+      Kafka__QueueBufferingMaxKbytes: ${Kafka__QueueBufferingMaxKbytes}
+      Kafka__LingerMs: ${Kafka__LingerMs}
+      Kafka__BatchPublishConcurrency: ${Kafka__BatchPublishConcurrency}
+      Kafka__FlushTimeoutSeconds: ${Kafka__FlushTimeoutSeconds}
+      Kafka__HealthCheckTimeoutSeconds: ${Kafka__HealthCheckTimeoutSeconds}
+      Ingestion__MaxBatchSize: ${Ingestion__MaxBatchSize}
+      Ingestion__MaxRequestBodyBytes: ${Ingestion__MaxRequestBodyBytes}
+      Ingestion__MaxMessageLength: ${Ingestion__MaxMessageLength}
+      Ingestion__MaxServiceLength: ${Ingestion__MaxServiceLength}
+      Ingestion__MaxTraceIdLength: ${Ingestion__MaxTraceIdLength}
+      Ingestion__MaxCorrelationIdLength: ${Ingestion__MaxCorrelationIdLength}
+      Ingestion__MaxMetadataKeys: ${Ingestion__MaxMetadataKeys}
+      Ingestion__MaxMetadataDepth: ${Ingestion__MaxMetadataDepth}
+      Ingestion__MaxMetadataKeyLength: ${Ingestion__MaxMetadataKeyLength}
+      Ingestion__MaxMetadataStringValueLength: ${Ingestion__MaxMetadataStringValueLength}
+      Ingestion__MaxMetadataArrayLength: ${Ingestion__MaxMetadataArrayLength}
+      Ingestion__MaxPastTimestampDays: ${Ingestion__MaxPastTimestampDays}
+      Ingestion__MaxFutureTimestampMinutes: ${Ingestion__MaxFutureTimestampMinutes}
+      Redis__SectionName: ${Redis__SectionName}
+      Redis__ConnectionString: redis:6379,password=${REDIS_PASSWORD}
+      Redis__TenantContextRedisCacheTtlSeconds: ${Redis__TenantContextRedisCacheTtlSeconds}
+      Redis__TenantContextRedisCacheKeyPrefix: ${Redis__TenantContextRedisCacheKeyPrefix}
+      Redis__TenantContextLocalCacheTtlSeconds: ${Redis__TenantContextLocalCacheTtlSeconds}
+      Redis__TenantContextLocalCacheKeyPrefix: ${Redis__TenantContextLocalCacheKeyPrefix}
+      Redis__ApiKeyRevocationKeyPrefix: ${Redis__ApiKeyRevocationKeyPrefix}
+      Redis__IdempotencyKeyTtlSeconds: ${Redis__IdempotencyKeyTtlSeconds:-86400}
+      Redis__IdempotencyKeyMaxLength: ${Redis__IdempotencyKeyMaxLength:-128}
+      Redis__IdempotencyKeyPrefix: ${Redis__IdempotencyKeyPrefix:-traceflow:idempotency}
+      RateLimiting__PermitLimit: ${RateLimiting__PermitLimit}
+      RateLimiting__WindowSeconds: ${RateLimiting__WindowSeconds}
+      RateLimiting__RateLimitKeyPrefix: ${RateLimiting__RateLimitKeyPrefix}
+      PreAuthRateLimiting__PermitLimit: ${PreAuthRateLimiting__PermitLimit}
+      PreAuthRateLimiting__WindowSeconds: ${PreAuthRateLimiting__WindowSeconds}
+      PreAuthRateLimiting__QueueLimit: ${PreAuthRateLimiting__QueueLimit}
+      TrustedProxies__KnownNetworks__0: ${TrustedProxies__KnownNetworks__0}
+    depends_on:
+      kafka:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+      control-api:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - traceflow-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5100/health/live > /dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+  
+  log-processor:
+    build: 
+      context: ./services/log-processor
+      dockerfile: Dockerfile
+    container_name: traceflow-log-processor
+    restart: unless-stopped
+    environment:
+      Kafka__BootstrapServers: ${Kafka__BootstrapServers}
+      Kafka__GroupId: ${Kafka__GroupId}
+      Kafka__Topic: ${Kafka__Topic}
+      Kafka__DlqTopic: ${Kafka__DlqTopic}
+      Kafka__PollTimeoutMs: ${Kafka__PollTimeoutMs}
+      Kafka__ConsumeFailureTimeoutSeconds: ${Kafka__ConsumeFailureTimeoutSeconds}
+      Kafka__ConsumeFailureBackoffMs: ${Kafka__ConsumeFailureBackoffMs}
+      Kafka__ProducerFlushTimeoutSeconds: ${Kafka__ProducerFlushTimeoutSeconds}
+      Kafka__DlqPublishConcurrency: ${Kafka__DlqPublishConcurrency}
+      Kafka__QueuedMinMessages: ${Kafka__QueuedMinMessages}
+      Kafka__QueuedMaxMessagesKbytes: ${Kafka__QueuedMaxMessagesKbytes}
+      Kafka__FetchMinBytes: ${Kafka__FetchMinBytes}
+      Kafka__FetchWaitMaxMs: ${Kafka__FetchWaitMaxMs}
+      Kafka__MaxPartitionFetchBytes: ${Kafka__MaxPartitionFetchBytes}
+      Kafka__NoPartitionAssignmentTimeoutSeconds: ${Kafka__NoPartitionAssignmentTimeoutSeconds}
+      Kafka__MaxSubscriptionRecoveryAttempts: ${Kafka__MaxSubscriptionRecoveryAttempts}
+      Processor__MaxRetries: ${Processor__MaxRetries}
+      Processor__RetryBackoffMs: ${Processor__RetryBackoffMs}
+      Processor__BatchSize: ${Processor__BatchSize}
+      Processor__FlushIntervalMs: ${Processor__FlushIntervalMs}
+      Processor__QueueCapacity: ${Processor__QueueCapacity}
+      Processor__ShutdownFlushTimeoutSeconds: ${Processor__ShutdownFlushTimeoutSeconds}
+      OpenSearch__Url: ${OpenSearch__Url}
+      OpenSearch__Username: ${OpenSearch__Username}
+      OpenSearch__Password: ${OpenSearch__Password}
+      OpenSearch__Index: ${OpenSearch__Index}
+      OpenSearch__SkipTlsVerify: ${OpenSearch__SkipTlsVerify}
+    depends_on:
+      kafka:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+      opensearch:
+        condition: service_healthy
+    networks:
+      - traceflow-network
+
+  nginx:
+    image: nginx:1.26-alpine
+    container_name: traceflow-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deployments/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./deployments/nginx/certs:/etc/nginx/certs:ro
+    depends_on:
+      control-api:
+        condition: service_healthy
+      ingestion-api:
+        condition: service_healthy
+    networks:
+      - traceflow-network
+
+volumes:
+    postgres_data:
+      name: traceflow-postgres-data
+    opensearch_data:
+      name: traceflow-opensearch-data
+    redis_data:
+      name: traceflow-redis-data
+    kafka_data:
+      name: traceflow-kafka
+
+networks:
+    traceflow-network:
+      name: traceflow-network
+      driver: bridge
+      ipam:
+        config:
+          - subnet: 172.20.0.0/24

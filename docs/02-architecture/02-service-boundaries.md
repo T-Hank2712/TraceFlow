@@ -8,14 +8,12 @@ Chịu trách nhiệm:
 - Workspace, Project, Application.
 - API Key management.
 - Search API.
-- Dashboard API.
-- Alert configuration.
-- Retention configuration.
-- Usage and quota configuration.
+- Internal API key validation.
+- Nice-to-have: retention/quota/operational insights ở mức nhỏ nếu được bật.
 
-Không chịu trách nhiệm nhận log tốc độ cao trực tiếp. Data plane luôn đi qua Go Ingestion Service.
+Không chịu trách nhiệm nhận log tốc độ cao trực tiếp. Data plane luôn đi qua Ingestion API.
 
-## Go Ingestion Service
+## ASP.NET Core Ingestion API
 
 Chịu trách nhiệm:
 
@@ -23,22 +21,25 @@ Chịu trách nhiệm:
 - Xác thực API key.
 - Validate và chuẩn hóa payload.
 - Publish event vào Kafka.
-- Trả `202 Accepted` nhanh cho client.
+- Dùng Redis cho validation cache, idempotency và rate limit.
+- Resolve client IP từ trusted proxy trước pre-auth rate limit.
+- Trả `200 OK` sau Kafka acknowledgement, hoặc `503` khi delivery không thể xác nhận.
 
 Không index trực tiếp vào OpenSearch trong HTTP request.
 
-## Go Log Processor
+## .NET Log Processor
 
 Chịu trách nhiệm:
 
 - Consume Kafka.
 - Normalize/enrich log.
 - Gom batch.
-- Index vào OpenSearch.
-- Xử lý retry, timeout và graceful shutdown.
+- Bulk index vào OpenSearch.
+- Xử lý retry, timeout, DLQ và commit offset theo kết quả xử lý.
 
 ## Storage Boundary
 
 - PostgreSQL lưu metadata nghiệp vụ.
+- Redis lưu cache/counter ngắn hạn, không phải source of truth.
 - Kafka lưu log stream tạm thời.
 - OpenSearch lưu log phục vụ tìm kiếm.

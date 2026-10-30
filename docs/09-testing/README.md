@@ -6,7 +6,7 @@ Testing docs giúp trả lời: logic nào test bằng unit test, dependency nà
 
 ## Nội dung cần nắm
 
-- Unit test dùng cho logic nhỏ như validation, hashing, query builder và alert evaluation.
+- Unit test dùng cho logic nhỏ như validation, hashing, query builder, bulk result classification và access policy.
 - Integration test kiểm tra PostgreSQL, Kafka, OpenSearch và repository/client thật.
 - End-to-end test kiểm tra log đi từ ingestion tới search.
 - Contract test bảo vệ API schema, Kafka event schema và OpenSearch document schema.

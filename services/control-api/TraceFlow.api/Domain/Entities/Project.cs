@@ -1,0 +1,70 @@
+namespace TraceFlow.Api.Domain.Entities;
+
+public class Project : Entity
+{
+    public Ulid WorkspaceId { get; private set; }
+    public Workspace Workspace { get; private set; } = null!;
+    public Ulid CreatedByUserId { get; private set; }
+    public User CreatedByUser { get; private set; } = null!;
+    public string Name { get; private set; } = string.Empty;
+    public string Slug { get; private set; } = string.Empty;
+    public string? Description { get; private set; }
+    public string Status { get; private set; } = ResourceStatuses.Active;
+    public ICollection<ProjectMember> Members { get; private set; }
+    = new List<ProjectMember>();
+    public ICollection<TraceApplication> TraceApplications { get; private set; }
+    = new List<TraceApplication>();
+    private Project() { }
+    public Project(
+    Ulid WorkspaceId,
+    Ulid CreatedByUserId,
+    string Name,
+    string Slug,
+    string? Description,
+    DateTimeOffset createdAt)
+    {
+        Id = Ulid.NewUlid();
+        this.WorkspaceId = WorkspaceId;
+        this.CreatedByUserId = CreatedByUserId;
+        this.Name = Name.Trim();
+        this.Slug = Slug.Trim().ToLowerInvariant();
+        this.Description = string.IsNullOrWhiteSpace(Description)
+            ? null
+            : Description.Trim();
+        Status = ResourceStatuses.Active;
+        CreatedAt = createdAt;
+        UpdatedAt = createdAt;
+    }
+    public void UpdateProject(string? Name, string? Slug, string? Description, DateTimeOffset updatedAt)
+    {
+        if (!string.IsNullOrWhiteSpace(Name))
+        {
+            this.Name = Name.Trim();
+        }
+
+        if (!string.IsNullOrWhiteSpace(Slug))
+        {
+            this.Slug = Slug.Trim().ToLowerInvariant();
+        }
+
+        if (Description is not null)
+        {
+            this.Description = string.IsNullOrWhiteSpace(Description)
+                ? null
+                : Description.Trim();
+        }
+
+        UpdatedAt = updatedAt;
+    }
+    public void Archive(DateTimeOffset archived)
+    {
+        Status = ResourceStatuses.Archived;
+        UpdatedAt = archived;
+    }
+
+    public void Activate(DateTimeOffset actived)
+    {
+        Status = ResourceStatuses.Active;
+        UpdatedAt = actived;
+    }
+}

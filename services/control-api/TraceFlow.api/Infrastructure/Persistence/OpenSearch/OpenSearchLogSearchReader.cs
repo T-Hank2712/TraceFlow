@@ -1,0 +1,333 @@
+namespace TraceFlow.Api.Infrastructure.Persistence.OpenSearch;
+
+public sealed class OpenSearchLogSearchReader(
+        HttpClient httpClient,
+        IOptions<OpenSearchOptions> options,
+        ILogger<OpenSearchLogSearchReader> logger) : ILogSearchReader
+{
+
+    private readonly HttpClient _httpClient = httpClient;
+
+    private readonly OpenSearchOptions _options = options.Value;
+
+    private readonly ILogger<OpenSearchLogSearchReader> _logger = logger;
+
+    public async Task<SearchLogsResponse> SearchAsync(
+            SearchLogsQuery query,
+            CancellationToken cancellationToken)
+    {
+        var index = _options.Index;
+
+        var filters = BuildFilters(query);
+
+        var payload = new
+        {
+            from = (query.Page - 1) * query.PageSize,
+            size = query.PageSize,
+            sort = new object[]
+            {
+                new Dictionary<string, object>
+                {
+                    ["timestamp"] = new
+                    {
+                        order = "desc"
+                    }
+                }
+            },
+            query = new
+            {
+                @bool = new
+                {
+                    filter = filters
+                }
+            }
+        };
+
+        using var request = new HttpRequestMessage(
+            HttpMethod.Post,
+            $"{index}/_search");
+
+        request.Content = new StringContent(
+            JsonSerializer.Serialize(payload),
+            Encoding.UTF8,
+            "application/json");
+
+        try
+        {
+            using var response = await _httpClient.SendAsync(
+                request,
+                cancellationToken);
+
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError(
+                    "OpenSearch search failed. Index={Index} StatusCode={StatusCode}",
+                    index,
+                    response.StatusCode);
+
+                throw new ExternalServiceException(
+                    "Log search backend is unavailable.");
+            }
+
+            var content = await response.Content.ReadAsStringAsync(cancellationToken);
+
+            return ParseResponse(content, query.Page, query.PageSize);
+        }
+        catch (ExternalServiceException)
+        {
+            throw;
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogError(
+                ex,
+                "Failed to connect to OpenSearch. Index={Index}",
+                index);
+
+            throw new ExternalServiceException(
+                "Log search backend is unavailable.",
+                ex);
+        }
+        catch (TaskCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+        {
+            _logger.LogError(
+                ex,
+                "OpenSearch search timed out. Index={Index}",
+                index);
+
+            throw new ExternalServiceException(
+                "Log search backend timed out.",
+                ex);
+        }
+        catch (JsonException ex)
+        {
+            _logger.LogError(
+                ex,
+                "Failed to parse OpenSearch search response. Index={Index}",
+                index);
+
+            throw new ExternalServiceException(
+                "Log search backend returned an invalid response.",
+                ex);
+        }
+    }
+
+    public async Task<bool> HasLogsAsync(
+        Ulid workspaceId,
+        Ulid projectId,
+        Ulid applicationId,
+        CancellationToken cancellationToken)
+    {
+        var index = _options.Index;
+
+        var payload = new
+        {
+            size = 0,
+            track_total_hits = 1,
+            query = new
+            {
+                @bool = new
+                {
+                    filter = new object[]
+                    {
+                        Term("workspaceId", workspaceId.ToString()),
+                        Term("projectId", projectId.ToString()),
+                        Term("applicationId", applicationId.ToString())
+                    }
+                }
+            }
+        };
+
+        using var request = new HttpRequestMessage(
+            HttpMethod.Post,
+            $"{index}/_search");
+
+        request.Content = new StringContent(
+            JsonSerializer.Serialize(payload),
+            Encoding.UTF8,
+            "application/json");
+
+        try
+        {
+            using var response = await _httpClient.SendAsync(
+                request,
+                cancellationToken);
+
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError(
+                    "OpenSearch log existence check failed. Index={Index} StatusCode={StatusCode}",
+                    index,
+                    response.StatusCode);
+
+                throw new ExternalServiceException(
+                    "Log search backend is unavailable.");
+            }
+
+            var content = await response.Content.ReadAsStringAsync(cancellationToken);
+
+            using var document = JsonDocument.Parse(content);
+
+            var total = document.RootElement
+                .GetProperty("hits")
+                .GetProperty("total")
+                .GetProperty("value")
+                .GetInt64();
+
+            return total > 0;
+        }
+        catch (ExternalServiceException)
+        {
+            throw;
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogError(
+                ex,
+                "Failed to connect to OpenSearch during log existence check. Index={Index}",
+                index);
+
+            throw new ExternalServiceException(
+                "Log search backend is unavailable.",
+                ex);
+        }
+        catch (TaskCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+        {
+            _logger.LogError(
+                ex,
+                "OpenSearch log existence check timed out. Index={Index}",
+                index);
+
+            throw new ExternalServiceException(
+                "Log search backend timed out.",
+                ex);
+        }
+        catch (JsonException ex)
+        {
+            _logger.LogError(
+                ex,
+                "Failed to parse OpenSearch log existence response. Index={Index}",
+                index);
+
+            throw new ExternalServiceException(
+                "Log search backend returned an invalid response.",
+                ex);
+        }
+    }
+
+    private static List<object> BuildFilters(SearchLogsQuery query)
+    {
+        var filters = new List<object>
+        {
+            Term("workspaceId", query.WorkspaceId.ToString()),
+            Term("projectId", query.ProjectId.ToString())
+        };
+
+        if (query.ApplicationId is not null)
+        {
+            filters.Add(Term("applicationId", query.ApplicationId.Value.ToString()));
+        }
+
+        AddTermIfPresent(filters, "environment", query.Environment?.ToLowerInvariant());
+        AddTermIfPresent(filters, "level", query.Level?.ToUpperInvariant());
+        AddTermIfPresent(filters, "service", query.Service);
+        AddTermIfPresent(filters, "traceId", query.TraceId);
+        AddTermIfPresent(filters, "correlationId", query.CorrelationId);
+
+        if (query.From is not null || query.To is not null)
+        {
+            var range = new Dictionary<string, object>();
+
+            if (query.From is not null)
+            {
+                range["gte"] = query.From.Value.ToUniversalTime();
+            }
+
+            if (query.To is not null)
+            {
+                range["lte"] = query.To.Value.ToUniversalTime();
+            }
+
+            filters.Add(new
+            {
+                range = new Dictionary<string, object>
+                {
+                    ["timestamp"] = range
+                }
+            });
+        }
+
+        return filters;
+    }
+
+    private static object Term(string field, string value)
+    {
+        return new
+        {
+            term = new Dictionary<string, object>
+            {
+                [field] = value
+            }
+        };
+    }
+
+    private static void AddTermIfPresent(
+        List<object> filters,
+        string field,
+        string? value)
+    {
+        if (!string.IsNullOrWhiteSpace(value))
+        {
+            filters.Add(Term(field, value.Trim()));
+        }
+    }
+
+    private static SearchLogsResponse ParseResponse(
+        string content,
+        int page,
+        int pageSize)
+    {
+        using var document = JsonDocument.Parse(content);
+
+        var hitsRoot = document.RootElement.GetProperty("hits");
+
+        var total = hitsRoot
+            .GetProperty("total")
+            .GetProperty("value")
+            .GetInt64();
+
+        var items = new List<LogSearchItemResponse>();
+
+        foreach (var hit in hitsRoot.GetProperty("hits").EnumerateArray())
+        {
+            var source = hit.GetProperty("_source");
+
+            var log = JsonSerializer.Deserialize<OpenSearchLogDocument>(
+                source.GetRawText());
+
+            if (log is null)
+            {
+                continue;
+            }
+
+            items.Add(new LogSearchItemResponse(
+                log.EventId,
+                log.Timestamp,
+                log.ReceivedAt,
+                log.WorkspaceId,
+                log.ProjectId,
+                log.ApplicationId,
+                log.Environment,
+                log.Service,
+                log.Level,
+                log.Message,
+                log.TraceId,
+                log.CorrelationId,
+                log.Metadata));
+        }
+
+        return new SearchLogsResponse(items, total, page, pageSize);
+    }
+}

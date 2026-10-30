@@ -4,7 +4,7 @@ TraceFlow có hai cơ chế xác thực chính: user token cho control/search AP
 
 ## User authentication
 
-User đăng nhập để nhận access token và refresh token. Access token dùng để gọi API quản lý workspace, project, search và dashboard.
+User đăng nhập để nhận access token và refresh token. Access token dùng để gọi API quản lý workspace, project và search. Dashboard/operational insights nếu bật cũng dùng user access token.
 
 ## Authorization
 
@@ -12,4 +12,4 @@ Quyền truy cập dựa trên workspace membership và role. Mọi thao tác tr
 
 ## Nguyên tắc
 
-Không tin `workspace_id` hoặc `project_id` từ client nếu chưa kiểm tra quan hệ trong database.
+Không tin `workspaceId`, `projectId`, `applicationId` hoặc `environment` từ client nếu chưa kiểm tra quan hệ trong database.

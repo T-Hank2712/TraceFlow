@@ -1,6 +1,6 @@
 # Cấu Trúc Tài Liệu TraceFlow
 
-Tài liệu này định nghĩa cấu trúc docs cho toàn bộ project TraceFlow. Mục tiêu là tạo một bản đồ rõ ràng cho sản phẩm hoàn chỉnh, giúp mọi thành phần kỹ thuật đều có lý do, có ranh giới và có contract tài liệu đi kèm.
+Tài liệu này định nghĩa cấu trúc docs cho toàn bộ project TraceFlow. Mục tiêu là tạo một bản đồ rõ ràng cho core system và các phần mở rộng có kiểm soát, giúp mọi thành phần kỹ thuật đều có lý do, có ranh giới và có contract tài liệu đi kèm.
 
 ```text
 docs/
@@ -28,7 +28,7 @@ docs/
 │   ├── 11-observability.md
 │   └── 12-architecture-decisions/
 │       ├── README.md
-│       ├── 01-adr-use-go-for-data-plane.md
+│       ├── 01-adr-use-dotnet-for-backend-services.md
 │       ├── 02-adr-use-aspnetcore-for-control-plane.md
 │       ├── 03-adr-use-kafka-between-ingestion-and-processing.md
 │       └── 04-adr-use-opensearch-for-log-search.md
@@ -71,8 +71,8 @@ docs/
 ├── 06-services/
 │   ├── README.md
 │   ├── 01-aspnet-control-api.md
-│   ├── 02-go-ingestion-service.md
-│   ├── 03-go-log-processor.md
+│   ├── 02-aspnet-ingestion-api.md
+│   ├── 03-dotnet-log-processor.md
 │   └── 04-local-development-stack.md
 ├── 07-security/
 │   ├── README.md
@@ -125,7 +125,7 @@ Trang mở đầu của bộ tài liệu. Giải thích TraceFlow là gì, nên 
 
 ### `01-product/`
 
-Mô tả TraceFlow dưới góc nhìn sản phẩm: người dùng, use case, business flow, phạm vi sản phẩm hoàn chỉnh và roadmap triển khai.
+Mô tả TraceFlow dưới góc nhìn sản phẩm: người dùng, use case, business flow, phạm vi Core/Nice-to-have/Optional và roadmap triển khai.
 
 ### `02-architecture/`
 
@@ -137,19 +137,19 @@ Lưu các ADR. Mỗi file ghi một quyết định kỹ thuật quan trọng, l
 
 ### `03-domains/`
 
-Mô tả từng domain trong hệ thống: Identity, Workspace, Project, Application, API Key, Log, Search, Dashboard, Alerting, Retention và Usage/Quota.
+Mô tả từng domain trong hệ thống. Identity, Workspace, Project, Application, API Key, Log và Search thuộc core. Dashboard/Operational Insights, Retention và Usage/Quota là nice-to-have. Alerting là optional.
 
 ### `04-api/`
 
-Mô tả contract API của TraceFlow, bao gồm convention chung, authentication, management API, ingestion API, search API, dashboard API, error response và OpenAPI specs.
+Mô tả contract API của TraceFlow, bao gồm convention chung, authentication, management API, ingestion API, search API, optional dashboard/insights API, error response và OpenAPI specs.
 
 ### `05-data/`
 
-Mô tả thiết kế dữ liệu: PostgreSQL schema, OpenSearch index mapping, Kafka topic, log event schema, API key storage, retention policy và sample data.
+Mô tả thiết kế dữ liệu: PostgreSQL schema, OpenSearch index mapping, Kafka topic, log event schema, API key storage, Redis supporting data, retention policy nếu bật và sample data.
 
 ### `06-services/`
 
-Mô tả từng service chính: ASP.NET Core Control API, Go Ingestion Service, Go Log Processor và local development stack.
+Mô tả từng service chính: ASP.NET Core Control API, ASP.NET Core Ingestion API, .NET Log Processor và local development stack.
 
 ### `07-security/`
 
@@ -157,7 +157,7 @@ Tập trung vào authentication, authorization, API key security, tenant isolati
 
 ### `08-operations/`
 
-Mô tả cách vận hành hệ thống: Docker Compose, configuration, migration, logging, metrics, health checks, backup/restore và troubleshooting.
+Mô tả cách vận hành hệ thống: Docker Compose, configuration, migration, logging, metrics tối thiểu, health checks, optional backup/restore và troubleshooting.
 
 ### `09-testing/`
 
@@ -174,8 +174,8 @@ Lưu ghi chú học tập và tham khảo về system design, Kafka, OpenSearch,
 ## Nguyên Tắc Viết Docs
 
 1. Mỗi tài liệu phải có mục đích rõ ràng.
-2. Tài liệu mô tả trạng thái hoàn chỉnh của project.
-3. Roadmap chỉ mô tả thứ tự triển khai, không làm giảm phạm vi thiết kế.
+2. Tài liệu phải phân biệt rõ Core, Nice-to-have và Optional.
+3. Roadmap mô tả thứ tự triển khai theo scope đã chốt, không kéo optional feature vào core.
 4. Kiến trúc và implementation phải đồng bộ với nhau.
 5. Mỗi quyết định lớn phải có ADR.
 6. Mọi công nghệ được thêm vào phải giải thích nó giải quyết vấn đề nào.

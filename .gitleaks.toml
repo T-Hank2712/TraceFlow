@@ -1,0 +1,16 @@
+title = "TraceFlow Gitleaks Configuration"
+
+[allowlist]
+description = "Allow documented local development placeholders and example configuration values."
+
+paths = [
+  '''(^|/)docs/''',
+]
+
+regexes = [
+  '''change_me''',
+  '''change_me_use_a_very_long_random_secret''',
+  '''replace-with-long-random-internal-secret''',
+  '''replace-with-long-random-server-side-secret-32bytes''',
+  '''YourStrongAdminPassword123!'''
+]

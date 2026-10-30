@@ -1,0 +1,53 @@
+namespace TraceFlow.Api.Application.Workspaces.Commands.DeclineWorkspaceInvitation;
+
+public class DeclineInvitationCommandHandler(
+    AppDbContext dbContext,
+    TimeProvider timeProvider)
+    : IRequestHandler<DeclineInvitationCommand, DeclineInvitationResponse>
+{
+
+    private readonly AppDbContext _dbContext = dbContext;
+    private readonly TimeProvider _timeProvider = timeProvider;
+
+    public async Task<DeclineInvitationResponse> Handle(
+        DeclineInvitationCommand request,
+        CancellationToken cancellationToken)
+    {
+        var invitation = await _dbContext.WorkspaceInvitations
+            .Include(invitation => invitation.Workspace)
+            .FirstOrDefaultAsync(
+                invitation =>
+                    invitation.Id == request.InvitationId &&
+                    invitation.InvitedUserId == request.UserId,
+                cancellationToken);
+
+        if (invitation is null)
+        {
+            throw new NotFoundException("Invitation not found.");
+        }
+
+        var utcNow = _timeProvider.GetUtcNow();
+
+        if (invitation.Status != InvitationStatuses.Pending ||
+            invitation.ExpiresAt <= utcNow)
+        {
+            throw new ConflictException(
+                "Invitation is no longer valid or has already been processed.");
+        }
+
+        if (invitation.Workspace.Status == ResourceStatuses.Archived)
+        {
+            throw new ConflictException(
+                "Archived workspace invitation cannot be declined.");
+        }
+
+        invitation.Decline(utcNow);
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return new DeclineInvitationResponse(
+            invitation.Id,
+            invitation.WorkspaceId,
+            invitation.Status);
+    }
+}

@@ -8,8 +8,8 @@ Unit test kiểm tra logic nhỏ, nhanh và không phụ thuộc external servic
 - API key hashing/verification.
 - Authorization policy.
 - Search query builder.
-- Retention calculation.
-- Alert rule evaluation logic.
+- Retention calculation nếu triển khai nice-to-have retention.
+- Alert rule evaluation logic chỉ cần nếu optional alerting được triển khai.
 
 ## Nguyên tắc
 

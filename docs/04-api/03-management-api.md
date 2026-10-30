@@ -4,23 +4,20 @@ Management API quản lý workspace, project, application và API key.
 
 ## Workspace
 
-- Tạo workspace.
-- Lấy danh sách workspace của user.
-- Xem chi tiết workspace.
+- `POST` / `GET /api/v1/workspaces`; `GET`, `PATCH`, `DELETE /api/v1/workspaces/{workspaceId}`.
+- Quản lý member, leave, transfer ownership và workspace invitation dưới `/api/v1/workspaces`.
 
 ## Project
 
-- Tạo project trong workspace.
-- Lấy danh sách project.
-- Xem chi tiết project.
+- `POST` / `GET /api/v1/workspaces/{workspaceId}/projects`.
+- `GET`, `PATCH`, `DELETE /api/v1/projects/{projectId}`; member và invitation có route dưới `/api/v1/projects`.
 
 ## Application
 
-- Tạo application trong project.
-- Lấy danh sách application.
+- `POST` / `GET /api/v1/projects/{projectId}/applications`.
+- `GET`, `PATCH`, `DELETE /api/v1/applications/{applicationId}`.
 
 ## API Key
 
-- Tạo API key cho application.
-- Revoke API key.
-- Lấy danh sách API key metadata.
+- `POST` / `GET /api/v1/applications/{applicationId}/api-keys`.
+- `DELETE /api/v1/api-keys/{apiKeyId}` để revoke. Create response là nơi duy nhất trả full secret.

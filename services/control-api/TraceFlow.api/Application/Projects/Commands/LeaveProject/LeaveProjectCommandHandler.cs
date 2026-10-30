@@ -1,0 +1,62 @@
+namespace TraceFlow.Api.Application.Projects.Commands.LeaveProject;
+
+public class LeaveProjectCommandHandler(
+        AppDbContext dbContext,
+        ProjectAccessService projectAccess,
+        TimeProvider timeProvider)
+    : IRequestHandler<LeaveProjectCommand, LeaveProjectResponse>
+{
+    private readonly AppDbContext _dbContext = dbContext;
+    private readonly ProjectAccessService _projectAccess = projectAccess;
+    private readonly TimeProvider _timeProvider = timeProvider;
+
+    public async Task<LeaveProjectResponse> Handle(
+           LeaveProjectCommand request,
+           CancellationToken cancellationToken)
+    {
+        await _projectAccess.GetProjectAccessAsync(
+            request.ProjectId,
+            request.UserId,
+            "Project not found.",
+            cancellationToken,
+            "Archived workspace cannot be accessed.");
+
+        var projectMember = await _dbContext.ProjectMembers
+            .FirstOrDefaultAsync(
+                member =>
+                    member.ProjectId == request.ProjectId &&
+                    member.UserId == request.UserId &&
+                    member.Status == MembershipStatuses.Active,
+                cancellationToken);
+
+        if (projectMember is null)
+        {
+            throw new NotFoundException("Project not found.");
+        }
+
+        if (projectMember.Role == ProjectMemberRoles.Manager)
+        {
+            var managerCount = await _dbContext.ProjectMembers
+                .CountAsync(
+                    member =>
+                        member.ProjectId == request.ProjectId &&
+                        member.Role == ProjectMemberRoles.Manager &&
+                        member.Status == MembershipStatuses.Active,
+                    cancellationToken);
+
+            if (managerCount <= 1)
+            {
+                throw new ConflictException("Project must have at least one manager.");
+            }
+        }
+
+        projectMember.Remove(_timeProvider.GetUtcNow());
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return new LeaveProjectResponse(
+            request.ProjectId,
+            request.UserId,
+            "Left project successfully.");
+    }
+}

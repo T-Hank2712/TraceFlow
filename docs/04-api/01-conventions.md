@@ -4,14 +4,14 @@
 
 - Request/response dùng JSON.
 - Timestamp dùng ISO 8601 UTC.
-- ID dùng UUID.
+- ID dùng ULID, được biểu diễn thành string trong JSON.
 - Header auth cho user dùng Bearer token.
 - Header auth cho ingestion dùng API key.
 
 ## Pagination
 
-Search API nên dùng cursor-based pagination với `limit` và `cursor` để tránh phân trang sâu gây chậm trên OpenSearch.
+Search API hiện dùng offset pagination với `page` và `pageSize`; `pageSize` hợp lệ từ `1` đến `100`.
 
 ## Error
 
-Mọi lỗi trả về format thống nhất gồm `code`, `message` và `details` nếu cần.
+Control API trả `ProblemDetails` hoặc `ValidationProblemDetails`. Ingestion API trả JSON gồm `code`, `message` và `details` khi có.

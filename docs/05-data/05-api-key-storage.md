@@ -12,9 +12,10 @@ API key không được lưu plaintext.
 ## Trường dữ liệu
 
 - `id`
-- `application_id`
+- `TraceApplicationId`
 - `key_prefix`
 - `secret_hash`
+- `environment`
 - `status`
 - `created_at`
 - `revoked_at`
@@ -22,4 +23,4 @@ API key không được lưu plaintext.
 
 ## Nguyên tắc
 
-Hash phải dùng thuật toán phù hợp cho secret. Không log API key trong request log.
+Hash dùng SHA-256 với pepper cấu hình ở server. Không log API key trong request log.

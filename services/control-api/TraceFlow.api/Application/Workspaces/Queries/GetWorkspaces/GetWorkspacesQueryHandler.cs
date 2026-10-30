@@ -1,0 +1,29 @@
+namespace TraceFlow.Api.Application.Workspaces.Queries.GetWorkspaces;
+
+public class GetMyWorkspacesQueryHandler(AppDbContext dbContext)
+    : IRequestHandler<GetWorkspacesQuery, IReadOnlyList<WorkspaceSummaryResponse>>
+{
+
+    private readonly AppDbContext _dbContext = dbContext;
+
+
+    public async Task<IReadOnlyList<WorkspaceSummaryResponse>> Handle(
+        GetWorkspacesQuery request,
+        CancellationToken cancellationToken)
+    {
+        return await _dbContext.WorkspaceMembers
+            .AsNoTracking()
+            .Where(member => member.UserId == request.UserId && member.Workspace.Status == ResourceStatuses.Active && member.Status == MembershipStatuses.Active)
+            .Include(member => member.Workspace)
+            .OrderByDescending(member => member.Workspace.CreatedAt)
+            .Select(member => new WorkspaceSummaryResponse(
+                member.Workspace.Id,
+                member.Workspace.Name,
+                member.Workspace.Slug,
+                member.Workspace.Description,
+                member.Role,
+                member.Workspace.Status,
+                member.Workspace.CreatedAt))
+            .ToListAsync(cancellationToken);
+    }
+}

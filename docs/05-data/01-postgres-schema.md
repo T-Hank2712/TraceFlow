@@ -4,18 +4,22 @@ PostgreSQL lưu dữ liệu nghiệp vụ và metadata.
 
 ## Bảng chính
 
-- `users`
-- `refresh_tokens`
-- `workspaces`
-- `workspace_members`
-- `projects`
-- `applications`
-- `api_keys`
-- `alert_rules`
-- `notification_channels`
-- `retention_policies`
-- `usage_counters`
-- `audit_logs`
+- `Users`
+- `RefreshTokens`
+- `Workspaces`
+- `WorkspaceMembers`
+- `WorkspaceInvitations`
+- `Projects`
+- `ProjectMembers`
+- `ProjectInvitations`
+- `TraceApplications`
+- `ApiKeys`
+
+## Bảng nice-to-have / optional
+
+- `retention_policies` nếu triển khai retention.
+- `usage_counters` nếu triển khai quota/usage tracking dài hạn.
+- `alert_rules` và `notification_channels` chỉ thuộc optional alerting.
 
 ## Nguyên tắc
 

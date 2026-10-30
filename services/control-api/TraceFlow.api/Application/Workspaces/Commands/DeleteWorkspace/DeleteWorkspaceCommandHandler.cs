@@ -1,0 +1,78 @@
+namespace TraceFlow.Api.Application.Workspaces.Commands.DeleteWorkspace;
+
+public class DeleteWorkspaceCommandHandler(
+        AppDbContext dbContext,
+        WorkspaceAccessService workspaceAccess,
+        TimeProvider timeProvider)
+    : IRequestHandler<DeleteWorkspaceCommand, DeleteWorkspaceResponse>
+{
+
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly WorkspaceAccessService _workspaceAccess = workspaceAccess;
+    private readonly TimeProvider _timeProvider = timeProvider;
+
+    public async Task<DeleteWorkspaceResponse> Handle(
+           DeleteWorkspaceCommand request,
+           CancellationToken cancellationToken)
+    {
+        var membership = await _workspaceAccess.GetActiveMembershipAsync(
+            request.WorkspaceId,
+            request.UserId,
+            "Workspace not found.",
+            cancellationToken);
+
+        _workspaceAccess.EnsureWorkspaceOwner(
+            membership,
+            "Only workspace owner can delete this workspace.");
+
+        var workspace = membership.Workspace;
+
+        _workspaceAccess.EnsureWorkspaceIsActive(
+            workspace,
+            "Workspace is already archived.");
+
+        var hasAdditionalMembers = await _dbContext.WorkspaceMembers
+            .AnyAsync(
+                member =>
+                    member.WorkspaceId == request.WorkspaceId &&
+                    member.UserId != request.UserId,
+                cancellationToken);
+
+        var hasInvitations = await _dbContext.WorkspaceInvitations
+            .AnyAsync(
+                invitation => invitation.WorkspaceId == request.WorkspaceId,
+                cancellationToken);
+
+        var hasProjects = await _dbContext.Projects
+            .AnyAsync(
+                project => project.WorkspaceId == request.WorkspaceId,
+                cancellationToken);
+
+        var canHardDelete =
+            !hasAdditionalMembers &&
+            !hasInvitations &&
+            !hasProjects;
+
+        if (canHardDelete)
+        {
+            _dbContext.Workspaces.Remove(workspace);
+
+            await _dbContext.SaveChangesAsync(cancellationToken);
+
+            return new DeleteWorkspaceResponse(
+                workspace.Id,
+                DeleteMode.Hard,
+                "Workspace permanently deleted.");
+        }
+
+        workspace.Archive(_timeProvider.GetUtcNow());
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return new DeleteWorkspaceResponse(
+            workspace.Id,
+            DeleteMode.Soft,
+            "Workspace archived.");
+    }
+}

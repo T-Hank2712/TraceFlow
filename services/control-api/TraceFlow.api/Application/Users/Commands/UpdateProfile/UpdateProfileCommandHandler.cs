@@ -1,0 +1,61 @@
+namespace TraceFlow.Api.Application.Users.Commands.UpdateProfile;
+
+public class UpdateProfileCommandHandler(
+    AppDbContext dbContext,
+    TimeProvider timeProvider) : IRequestHandler<UpdateProfileCommand, UpdateProfileResponse>
+{
+
+    private readonly AppDbContext _dbContext = dbContext;
+    private readonly TimeProvider _timeProvider = timeProvider;
+
+
+    public async Task<UpdateProfileResponse> Handle(UpdateProfileCommand request, CancellationToken cancellationToken)
+    {
+        var user = await _dbContext.Users.FirstOrDefaultAsync(
+            user => user.Id == request.UserId, cancellationToken
+        );
+
+        if (user is null)
+        {
+            throw new NotFoundException("User not found.");
+        }
+        if (user.Status != UserStatuses.Active)
+        {
+            throw new ForbiddenException(
+                "User account is not active.");
+        }
+        if (!string.IsNullOrWhiteSpace(request.UserName))
+        {
+            var normalizedUsername = request.UserName.Trim().ToLowerInvariant();
+
+            var userNameExists = await _dbContext.Users
+                .AnyAsync(
+                    user => user.NormalizedUsername == normalizedUsername &&
+                            user.Id != request.UserId,
+                    cancellationToken);
+
+            if (userNameExists)
+            {
+                throw new ConflictException(
+                    "Username is already taken.");
+            }
+        }
+
+        user.UpdateProfile(
+            request.UserName,
+            request.FirstName,
+            request.LastName,
+            _timeProvider.GetUtcNow()
+        );
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return new UpdateProfileResponse(
+            user.Id,
+            user.Email,
+            user.UserName,
+            user.FirstName,
+            user.LastName,
+            user.Role,
+            user.Status);
+    }
+}

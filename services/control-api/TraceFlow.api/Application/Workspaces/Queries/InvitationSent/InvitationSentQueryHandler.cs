@@ -1,0 +1,54 @@
+namespace TraceFlow.Api.Application.Workspaces.Queries.InvitationSent;
+
+public class InvitationSentQueryHandler(
+        AppDbContext dbContext,
+        WorkspaceAccessService workspaceAccess,
+        InvitationExpirationService invitationExpiration)
+    : IRequestHandler<InvitationSentQuery, IReadOnlyList<InvitationSentResponse>>
+{
+
+    private readonly AppDbContext _dbContext = dbContext;
+    private readonly WorkspaceAccessService _workspaceAccess = workspaceAccess;
+    private readonly InvitationExpirationService _invitationExpiration = invitationExpiration;
+
+    public async Task<IReadOnlyList<InvitationSentResponse>> Handle(
+           InvitationSentQuery request,
+           CancellationToken cancellationToken)
+    {
+        var membership = await _workspaceAccess.GetActiveMembershipAsync(
+            request.WorkspaceId,
+            request.UserId,
+            "Workspace not found.",
+            cancellationToken);
+
+        _workspaceAccess.EnsureWorkspaceIsActive(
+            membership.Workspace,
+            "Archived workspace cannot be accessed.");
+
+        _workspaceAccess.EnsureWorkspaceManager(
+            membership,
+            "You do not have permission to view workspace invitations.");
+
+        await _invitationExpiration.ExpireWorkspaceInvitationsAsync(
+            request.WorkspaceId,
+            cancellationToken);
+
+        return await _dbContext.WorkspaceInvitations
+            .AsNoTracking()
+            .Where(invitation => invitation.WorkspaceId == request.WorkspaceId)
+            .OrderByDescending(invitation => invitation.CreatedAt)
+            .Select(invitation => new InvitationSentResponse(
+                invitation.Id,
+                invitation.WorkspaceId,
+                invitation.InvitedUserId,
+                invitation.InvitedUser.UserName,
+                invitation.InvitedUser.Email,
+                invitation.InvitedByUserId,
+                invitation.InvitedByUser.UserName,
+                invitation.Role,
+                invitation.Status,
+                invitation.ExpiresAt,
+                invitation.CreatedAt))
+            .ToListAsync(cancellationToken);
+    }
+}

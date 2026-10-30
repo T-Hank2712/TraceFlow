@@ -2,12 +2,12 @@
 
 Nhóm tài liệu này mô tả cách phát triển TraceFlow trong repo: setup môi trường, quy chuẩn code, workflow Git, branching, commit convention và definition of done.
 
-Development docs không thay thế architecture docs, nhưng giúp biến các quyết định thiết kế thành thói quen làm việc hằng ngày. Khi project có cả Go, C#, Docker, Kafka và OpenSearch, quy ước phát triển rõ ràng giúp giảm lỗi do mỗi phần đi theo một kiểu riêng.
+Development docs không thay thế architecture docs, nhưng giúp biến các quyết định thiết kế thành thói quen làm việc hằng ngày. Khi project có .NET, Docker, Kafka và OpenSearch, quy ước phát triển rõ ràng giúp giảm lỗi do mỗi phần đi theo một kiểu riêng.
 
 ## Nội dung cần nắm
 
 - Cách chuẩn bị môi trường local.
-- Quy chuẩn code chung cho Go và C#.
+- Quy chuẩn code chung cho C# backend services.
 - Cách đặt branch và viết commit.
 - Thông tin cần có trong pull request.
 - Điều kiện để một thay đổi được xem là hoàn thành.

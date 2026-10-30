@@ -1,0 +1,58 @@
+namespace TraceFlow.Ingestion.Api.Services.RateLimiting;
+
+public sealed class RedisRateLimiter : IRateLimiter
+{
+    private readonly IConnectionMultiplexer _redis;
+    private readonly RateLimitOptions _options;
+    private readonly TimeProvider _timeProvider;
+    private const string IncrementScript = """
+        local count = redis.call('INCR', KEYS[1])
+        if count == 1 then
+            redis.call('EXPIRE', KEYS[1], ARGV[1])
+        end
+        return count;
+    """;
+    public RedisRateLimiter(IConnectionMultiplexer redis, IOptions<RateLimitOptions> options, TimeProvider timeProvider)
+    {
+        _redis = redis;
+        _options = options.Value;
+        _timeProvider = timeProvider;
+    }
+    public async Task<RateLimitResult> CheckAsync(string apiKeyFingerprint, CancellationToken cancellationToken)
+    {
+        var database = _redis.GetDatabase();
+        var windowId = _timeProvider.GetUtcNow().ToUnixTimeSeconds() / _options.WindowSeconds;
+        var key = CreateRateLimitKey(apiKeyFingerprint, windowId);
+
+        var count = (long)await database.ScriptEvaluateAsync(
+            IncrementScript,
+            new RedisKey[] { key },
+            new RedisValue[] { _options.WindowSeconds }
+        );
+
+        var remaining = Math.Max(0, _options.PermitLimit - (int)count);
+
+        if (count <= _options.PermitLimit)
+        {
+            return new RateLimitResult(
+                true, _options.PermitLimit, remaining, 0
+            );
+        }
+
+        var ttl = await database.KeyTimeToLiveAsync(key);
+
+        var retryAfterSeconds = ttl.HasValue
+            ? Math.Max(1, (int)Math.Ceiling(ttl.Value.TotalSeconds))
+            : _options.WindowSeconds;
+
+        return new RateLimitResult(
+            Allowed: false,
+            Limit: _options.PermitLimit,
+            Remaining: 0,
+            RetryAfterSeconds: retryAfterSeconds);
+    }
+    private string CreateRateLimitKey(string apiKeyFingerprint, long windowId)
+    {
+        return $"{_options.RateLimitKeyPrefix}:{apiKeyFingerprint}:{windowId}";
+    }
+}

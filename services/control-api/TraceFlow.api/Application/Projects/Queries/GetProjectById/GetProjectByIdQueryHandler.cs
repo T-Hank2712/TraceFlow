@@ -1,0 +1,54 @@
+namespace TraceFlow.Api.Application.Projects.Queries.GetProjectById;
+
+public class GetProjectByIdQueryHandler(
+        AppDbContext dbContext,
+        ProjectAccessService projectAccess)
+    : IRequestHandler<GetProjectByIdQuery, ProjectDetailResponse>
+{
+
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly ProjectAccessService _projectAccess = projectAccess;
+
+    public async Task<ProjectDetailResponse> Handle(
+           GetProjectByIdQuery request,
+           CancellationToken cancellationToken)
+    {
+        var access = await _projectAccess.GetProjectAccessAsync(
+            request.ProjectId,
+            request.UserId,
+            "Project not found.",
+            cancellationToken,
+            "Archived workspace cannot be accessed.");
+
+        if (!access.IsWorkspaceManager && access.ProjectMembership is null)
+        {
+            throw new NotFoundException("Project not found.");
+        }
+
+        var project = await _dbContext.Projects
+            .AsNoTracking()
+            .Where(project =>
+                project.Id == request.ProjectId &&
+                project.Status == ResourceStatuses.Active)
+            .Select(project => new ProjectDetailResponse(
+                project.Id,
+                project.WorkspaceId,
+                project.CreatedByUserId,
+                project.CreatedByUser.UserName,
+                project.Name,
+                project.Slug,
+                project.Description,
+                project.Status,
+                project.CreatedAt,
+                project.UpdatedAt))
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (project is null)
+        {
+            throw new NotFoundException("Project not found.");
+        }
+
+        return project;
+    }
+}

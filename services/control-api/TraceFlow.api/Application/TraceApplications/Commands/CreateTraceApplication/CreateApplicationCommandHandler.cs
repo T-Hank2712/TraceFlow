@@ -1,0 +1,66 @@
+namespace TraceFlow.Api.Application.TraceApplications.Commands.CreateTraceApplication;
+
+public class CreateTraceApplicationCommandHandler(
+        AppDbContext dbContext,
+        ProjectAccessService projectAccess,
+        TimeProvider timeProvider)
+    : IRequestHandler<CreateTraceApplicationCommand, CreateTraceApplicationResponse>
+{
+
+    private readonly AppDbContext _dbContext = dbContext;
+
+    private readonly ProjectAccessService _projectAccess = projectAccess;
+    private readonly TimeProvider _timeProvider = timeProvider;
+
+    public async Task<CreateTraceApplicationResponse> Handle(
+           CreateTraceApplicationCommand request,
+           CancellationToken cancellationToken)
+    {
+        var access = await _projectAccess.GetProjectAccessAsync(
+            request.ProjectId,
+            request.UserId,
+            "Project not found.",
+            cancellationToken);
+
+        _projectAccess.EnsureProjectDeveloperOrManager(
+            access,
+            "You do not have permission to create trace applications.");
+
+        var normalizedSlug = request.Slug.Trim().ToLowerInvariant();
+
+        var slugExists = await _dbContext.TraceApplications
+            .AnyAsync(
+                application =>
+                    application.ProjectId == access.Project.Id &&
+                    application.Slug == normalizedSlug &&
+                    application.Status == ResourceStatuses.Active,
+                cancellationToken);
+
+        if (slugExists)
+        {
+            throw new ConflictException("Trace application slug is already taken.");
+        }
+
+        var traceApplication = new TraceApplication(
+            access.Project.Id,
+            request.UserId,
+            request.Name,
+            request.Slug,
+            request.Description,
+            _timeProvider.GetUtcNow());
+
+        _dbContext.TraceApplications.Add(traceApplication);
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return new CreateTraceApplicationResponse(
+            traceApplication.Id,
+            traceApplication.ProjectId,
+            traceApplication.CreatedByUserId,
+            traceApplication.Name,
+            traceApplication.Slug,
+            traceApplication.Description,
+            traceApplication.Status,
+            traceApplication.CreatedAt);
+    }
+}

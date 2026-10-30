@@ -1,6 +1,6 @@
 # Domain: Alerting
 
-Alerting cho phép người dùng định nghĩa rule dựa trên log query, threshold và time window.
+Alerting là optional, không thuộc TraceFlow Core. Capability này chỉ nên được cân nhắc sau khi ingestion, processing, search, reliability và operational insights đã ổn định.
 
 ## Ví dụ rule
 
@@ -27,4 +27,4 @@ window = 5 minutes
 
 ## Nguyên tắc
 
-Alerting phải dựa trên search/aggregation đáng tin cậy và phải có cơ chế tránh gửi thông báo lặp quá nhiều trong cùng một incident.
+Nếu triển khai, alerting phải dựa trên search/aggregation đáng tin cậy và phải có cơ chế tránh gửi thông báo lặp quá nhiều trong cùng một incident. Notification production-grade không nằm trong scope core.

@@ -11,8 +11,9 @@ Domain docs trả lời câu hỏi: hệ thống có những thực thể nào, 
 - Project là boundary chính cho log và search.
 - Application đại diện cho service gửi log.
 - API Key là credential của application, không phải credential của user.
-- Log, Search và Dashboard là phần người dùng khai thác dữ liệu.
-- Alerting, Retention, Usage/Quota làm sản phẩm hoàn chỉnh và vận hành được lâu dài.
+- Log và Search là phần core để người dùng khai thác dữ liệu.
+- Dashboard/Operational Insights, Retention và Usage/Quota là nice-to-have có kiểm soát.
+- Alerting là optional, không phải điều kiện hoàn thiện core pipeline.
 
 ## Khi nào cần cập nhật nhóm này
 
@@ -30,10 +31,10 @@ Domain docs trả lời câu hỏi: hệ thống có những thực thể nào, 
 5. `05-api-key.md`
 6. `06-log.md`
 7. `07-search.md`
-8. `08-dashboard.md`
-9. `09-alerting.md`
-10. `10-retention.md`
-11. `11-usage-and-quota.md`
+8. `08-dashboard.md` - nice-to-have operational insights.
+9. `09-alerting.md` - optional.
+10. `10-retention.md` - nice-to-have.
+11. `11-usage-and-quota.md` - nice-to-have.
 
 ## Kết quả mong đợi sau khi đọc
 

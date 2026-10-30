@@ -1,0 +1,35 @@
+using FluentAssertions;
+using TraceFlow.Ingestion.Api.IntegrationTests.Infrastructure;
+
+namespace TraceFlow.Ingestion.Api.IntegrationTests.Tests;
+
+[Collection("Ingestion API Integration")]
+public sealed class ConfigurationTests
+{
+    private readonly KafkaFixture _kafka;
+    private readonly RedisFixture _redis;
+
+    public ConfigurationTests(
+        KafkaFixture kafka,
+        RedisFixture redis)
+    {
+        _kafka = kafka;
+        _redis = redis;
+    }
+
+    [Fact]
+    public void Redis_Should_Expose_Connection_String()
+    {
+        _redis.ConnectionString
+            .Should()
+            .NotBeNullOrWhiteSpace();
+    }
+
+    [Fact]
+    public void Kafka_Should_Expose_Bootstrap_Server()
+    {
+        _kafka.BootstrapServers
+            .Should()
+            .NotBeNullOrWhiteSpace();
+    }
+}

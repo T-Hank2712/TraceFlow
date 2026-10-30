@@ -4,7 +4,6 @@ Tài liệu này hướng dẫn chuẩn bị môi trường phát triển TraceF
 
 ## Công cụ cần có
 
-- Go.
 - .NET SDK.
 - Docker.
 - Docker Compose.

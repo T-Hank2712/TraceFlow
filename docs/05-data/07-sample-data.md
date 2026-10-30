@@ -26,4 +26,4 @@ notification-worker
 
 ## Log mẫu
 
-Nên có log đủ level, service, trace_id và correlation_id để test search, trace lookup và dashboard metrics.
+Nên có log đủ level, service, trace_id và correlation_id để test search, trace lookup và operational insights nếu bật.

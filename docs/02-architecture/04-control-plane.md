@@ -9,7 +9,8 @@ Control plane quản lý metadata và API dành cho người dùng TraceFlow.
 - Quản lý project.
 - Quản lý application/service.
 - Tạo, revoke và kiểm tra API key.
-- Cung cấp Search API và Dashboard API.
+- Cung cấp Search API.
+- Cung cấp Operational Insights/Dashboard API nếu nice-to-have này được bật.
 
 ## Storage
 
@@ -17,4 +18,4 @@ Control plane sử dụng PostgreSQL cho dữ liệu có tính transaction như 
 
 ## Nguyên tắc
 
-Mọi truy vấn control plane phải kiểm tra quyền truy cập theo workspace/project. Không được dựa vào client truyền `project_id` mà bỏ qua authorization server-side.
+Mọi truy vấn control plane phải kiểm tra quyền truy cập theo workspace/project. Không được dựa vào client truyền `projectId` mà bỏ qua authorization server-side.

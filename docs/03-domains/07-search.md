@@ -21,4 +21,4 @@ Search cho phép người dùng tìm và lọc log đã được index.
 
 ## Năng lực cần có
 
-Search cần hỗ trợ endpoint tìm log, trace lookup theo `trace_id`, saved searches, sort, pagination và aggregation phục vụ dashboard.
+Search core cần hỗ trợ endpoint tìm log, trace lookup theo `trace_id`, sort và pagination. Saved searches và aggregation phục vụ operational insights là nice-to-have, không phải điều kiện của core Search API.

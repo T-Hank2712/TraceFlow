@@ -26,5 +26,5 @@ Mọi service nên log dạng structured với các trường:
 ## Health checks
 
 - ASP.NET Core API kiểm tra PostgreSQL và OpenSearch nếu cần.
-- Go Ingestion kiểm tra Kafka và kết nối metadata store/API key store.
+- Ingestion API kiểm tra Kafka và kết nối validation/cache cần thiết.
 - Processor kiểm tra Kafka consumer và OpenSearch.

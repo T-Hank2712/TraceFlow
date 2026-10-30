@@ -1,6 +1,6 @@
 # Domain: Retention
 
-Retention kiểm soát thời gian lưu log.
+Retention kiểm soát thời gian lưu log. Đây là nice-to-have, không phải điều kiện để core ingestion/search pipeline hoạt động.
 
 ## Chính sách ví dụ
 
@@ -10,10 +10,10 @@ Retention kiểm soát thời gian lưu log.
 
 ## Quy tắc
 
-- Retention thuộc project hoặc plan.
+- Retention ưu tiên thuộc project hoặc application với fixed values đơn giản.
 - Không lưu log vô hạn.
 - Xóa dữ liệu cũ phải có policy rõ, có thể kiểm tra và quan sát được.
 
 ## Năng lực cần có
 
-Retention cần có policy rõ ràng, job thực thi, audit log và chỉ số quan sát để biết dữ liệu nào đã được xóa.
+Retention cần có policy rõ ràng và job thực thi an toàn. Archive/restore log hết hạn không nằm trong scope hiện tại.
