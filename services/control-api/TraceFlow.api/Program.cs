@@ -4,6 +4,8 @@ builder.Configuration.AddEnvironmentFile(builder.Environment);
 
 builder.Services.AddTypedOptions(builder.Configuration);
 
+builder.Services.AddApiKeyRevocationStore(builder.Configuration);
+
 builder.Services.AddPersistence(builder.Configuration);
 
 builder.Services.AddApplicationServices();

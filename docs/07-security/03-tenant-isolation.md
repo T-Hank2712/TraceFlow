@@ -14,4 +14,4 @@ Tenant isolation đảm bảo dữ liệu workspace/project này không bị tru
 
 ## Nguyên tắc
 
-Mọi log document trong OpenSearch phải có `workspace_id` hoặc `project_id`. Mọi query phải thêm filter tenant từ server-side authorization context.
+Mọi log document trong OpenSearch phải có `workspaceId` và `projectId`. Mọi query phải thêm hai filter tenant này từ server-side authorization context.

@@ -10,6 +10,7 @@ builder.Services
     .AddKafkaProducer()
     .AddRedisInfrastructure(builder.Configuration)
     .AddIngestionHealthChecks(builder.Configuration)
+    .AddForwardedClientHeaders(builder.Configuration, builder.Environment)
     .AddPreAuthRateLimiting(builder.Configuration);
 
 var app = builder.Build();
@@ -18,6 +19,8 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi().WithDocumentPerVersion();
 }
+
+app.UseForwardedHeaders();
 
 app.UseHttpsRedirection();
 

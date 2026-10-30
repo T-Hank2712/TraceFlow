@@ -81,7 +81,7 @@ Requirements không chỉ là danh sách mong muốn; mỗi nhóm yêu cầu ph�
 | Kafka pipeline | Tách ingestion khỏi indexing bằng event stream. | `02-high-level-design.md`, `05-reliability-design.md` | Topic, partition key, schema version. | Test publish/consume và poison message handling. |
 | Log Processor | Validate event, buffer batch, bulk index và xử lý lỗi. | `04-low-level-design.md`, `05-reliability-design.md` | Bulk index result, DLQ event. | Test success, retry, full failure, partial failure. |
 | Search API | User search log qua Control API, không truy cập OpenSearch trực tiếp. | `03-contracts.md`, `06-security-and-tenancy.md` | Search request/response, scoped query. | Test tenant isolation và filter/pagination. |
-| Redis | Cache validation, rate limit và counter ngắn hạn. | `03-contracts.md`, `05-reliability-design.md` | Key format, TTL, fail-open/fail-closed policy. | Test cache hit/miss, stale key, rate limit exceeded. |
+| Redis | Cache validation và rate limit. | `03-contracts.md`, `05-reliability-design.md` | Key format, TTL, fail-closed rate-limit policy. | Test cache hit/miss, stale key, rate limit exceeded. |
 
 ## 2. System Actors & Personas
 

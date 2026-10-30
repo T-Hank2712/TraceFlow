@@ -152,7 +152,7 @@ Test cần assert không chỉ HTTP status, mà cả việc Kafka không nhận 
 | Redis cache miss. | Ingestion gọi Control API validation. |
 | Redis unavailable khi validation cache. | Fallback Control API, request hợp lệ vẫn có thể accepted. |
 | Rate limit exceeded. | Request bị trả `429`, không publish Kafka. |
-| Redis rate limit unavailable trong core mode. | Fail-open có warning log theo reliability policy. |
+| Redis rate limit unavailable. | `503`, không publish Kafka. |
 
 Redis test phải chứng minh Redis không phải source of truth. Khi cache lỗi, correctness vẫn dựa vào Control API/PostgreSQL.
 
@@ -160,10 +160,10 @@ Redis test phải chứng minh Redis không phải source of truth. Khi cache l�
 
 | Scenario | Expected Result |
 | :--- | :--- |
-| Valid single log. | Publish đúng một Kafka event và trả `202`. |
-| Valid batch logs. | Publish đúng số lượng event và trả accepted count. |
+| Valid single log. | Publish đúng một Kafka event và trả `200`. |
+| Valid batch logs. | Publish event hợp lệ, trả kết quả theo item. |
 | Kafka unavailable. | Không trả accepted sai; trả lỗi phù hợp. |
-| Batch có một item invalid. | Reject cả batch trước khi publish. |
+| Batch có một item invalid. | Reject item đó, không publish item đó; item hợp lệ vẫn được publish. |
 
 ## 8. Log Processor Test Strategy
 
@@ -250,7 +250,7 @@ Reliability tests chứng minh các policy trong `05-reliability-design.md` ho�
 | :--- | :--- |
 | Kafka publish failure | Ingestion không trả accepted sai. |
 | Redis validation cache failure | Fallback Control API và vẫn giữ tenant đúng. |
-| Redis rate limit failure | Fail-open có warning log trong core mode. |
+| Redis rate limit failure | `503 rate_limit_unavailable`; không publish Kafka. |
 | Malformed Kafka message | DLQ stage `json_decode`. |
 | Invalid internal event | DLQ stage `validation`. |
 | OpenSearch full failure | Retry attempts xuất hiện trong log và DLQ whole batch nếu exhausted. |
@@ -327,7 +327,7 @@ Ma trận này nối trực tiếp requirements với test/evidence để tránh
 | :--- | :--- | :--- | :--- |
 | Auth/RBAC | Permission service, role mapping. | Protected endpoints với JWT hợp lệ/không hợp lệ. | User không có quyền project không search được log. |
 | API key lifecycle | Hash verify, expiry, revoke rules. | Create/list/revoke/validate endpoint. | Full secret chỉ hiện một lần, revoked key bị từ chối. |
-| Ingestion validation | Payload validator, tenant field stripping. | API key validation cache, rate limit, Kafka publisher. | Client gửi batch hợp lệ nhận `202`. |
+| Ingestion validation | Payload validator, idempotency key handling. | API key validation cache, rate limit, Kafka publisher. | Client gửi batch hợp lệ nhận `200`; retry cùng key không tạo logical event mới. |
 | Kafka event contract | Event builder/schema validator. | Publish/consume local Kafka topic. | Event có tenant context và schemaVersion. |
 | Processor batch/bulk | Buffer flush, bulk result parser. | OpenSearch bulk success/full/partial failure. | Batch indexed count, failed count, retryAttempts xuất hiện trong log. |
 | DLQ | DLQ event builder. | Publish DLQ topic khi malformed/invalid/indexing failure. | Failed item có original payload và failure stage. |

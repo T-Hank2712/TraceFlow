@@ -10,7 +10,7 @@ TraceFlow phải tự log theo structured logging.
 - `environment`
 - `request_id`
 - `trace_id`
-- `project_id`
+- `projectId`
 - `duration_ms`
 - `error`
 

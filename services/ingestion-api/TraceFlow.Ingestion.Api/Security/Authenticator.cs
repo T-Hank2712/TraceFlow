@@ -47,11 +47,31 @@ public sealed class Authenticator
         }
 
         var apiKey = parsedKey.ApiKey;
+
+        var canUseTenantCache = true;
+
+        if (_apiKeyParser.TryGetApiKeyId(apiKey, out var apiKeyId))
+        {
+            var revocationCheck = await IsApiKeyRevokedAsync(apiKeyId, cancellationToken);
+
+            if (revocationCheck is true)
+            {
+                return Result<AuthenticatedContext>.Fail(
+                    ErrorCodes.InvalidApiKey,
+                    "API key is invalid, revoked, or expired.",
+                    StatusCodes.Status401Unauthorized);
+            }
+
+            canUseTenantCache = revocationCheck is false;
+        }
+
         var apiKeyFingerprint = ApiKeyFingerprint.Create(apiKey);
         var memoryCacheKey = _tenantContextCacheKey.CreateMemoryKey(apiKeyFingerprint);
         var redisCacheKey = _tenantContextCacheKey.CreateRedisKey(apiKeyFingerprint);
 
-        var tenant = await TryGetTenantFromCacheAsync(memoryCacheKey, redisCacheKey, cancellationToken);
+        var tenant = canUseTenantCache
+            ? await TryGetTenantFromCacheAsync(memoryCacheKey, redisCacheKey, cancellationToken)
+            : null;
 
         if (tenant is not null)
         {
@@ -60,36 +80,38 @@ public sealed class Authenticator
 
         try
         {
-            tenant = await _validationFlights.RunAsync(
-                apiKeyFingerprint,
-                async () =>
-                {
-                    var cachedTenant = await TryGetTenantFromCacheAsync(
-                        memoryCacheKey,
-                        redisCacheKey,
-                        CancellationToken.None);
-
-                    if (cachedTenant is not null)
+            if (!canUseTenantCache)
+            {
+                tenant = await ValidateAndCacheTenantAsync(
+                    apiKey,
+                    redisCacheKey,
+                    memoryCacheKey,
+                    cancellationToken);
+            }
+            else
+            {
+                tenant = await _validationFlights.RunAsync(
+                    apiKeyFingerprint,
+                    async () =>
                     {
-                        return cachedTenant;
-                    }
+                        var cachedTenant = await TryGetTenantFromCacheAsync(
+                            memoryCacheKey,
+                            redisCacheKey,
+                            CancellationToken.None);
 
-                    var validatedTenant = await _apiKeyValidator.ValidateAsync(
-                        apiKey,
-                        CancellationToken.None);
+                        if (cachedTenant is not null)
+                        {
+                            return cachedTenant;
+                        }
 
-                    if (validatedTenant.Valid)
-                    {
-                        await CacheTenantAsync(
+                        return await ValidateAndCacheTenantAsync(
+                            apiKey,
                             redisCacheKey,
                             memoryCacheKey,
-                            validatedTenant,
                             CancellationToken.None);
-                    }
-
-                    return validatedTenant;
-                },
-                cancellationToken);
+                    },
+                    cancellationToken);
+            }
         }
         catch (ControlApiUnavailableException ex)
         {
@@ -116,6 +138,51 @@ public sealed class Authenticator
                 apiKeyFingerprint,
                 tenant));
     }
+
+    private async Task<bool?> IsApiKeyRevokedAsync(
+        Ulid apiKeyId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await _redisCache.ExistsAsync(
+                _tenantContextCacheKey.CreateRevocationKey(apiKeyId),
+                cancellationToken);
+        }
+        catch (RedisException ex)
+        {
+            _logger.LogWarning(
+                ex,
+                "Redis unavailable while checking API key revocation. " +
+                "Bypassing tenant context cache and validating with Control API.");
+            return null;
+        }
+    }
+
+    private async Task<ApiKeyValidationResult> ValidateAndCacheTenantAsync(
+        string apiKey,
+        string redisCacheKey,
+        string memoryCacheKey,
+        CancellationToken cancellationToken)
+    {
+        var validatedTenant = await _apiKeyValidator.ValidateAsync(
+            apiKey,
+            cancellationToken);
+
+        if (GetCacheExpiration(
+                validatedTenant,
+                _redisOptions.TenantContextRedisCacheTtlSeconds) is not null)
+        {
+            await CacheTenantAsync(
+                redisCacheKey,
+                memoryCacheKey,
+                validatedTenant,
+                cancellationToken);
+        }
+
+        return validatedTenant;
+    }
+
     private async Task<ApiKeyValidationResult?> TryGetTenantFromCacheAsync(
         string memoryCacheKey,
         string redisCacheKey,
@@ -124,17 +191,32 @@ public sealed class Authenticator
     {
         if (_memoryCache.TryGetValue<ApiKeyValidationResult>(memoryCacheKey, out var cachedTenant) && cachedTenant is not null)
         {
-            return cachedTenant;
+            if (IsTenantContextUsable(cachedTenant))
+            {
+                return cachedTenant;
+            }
+
+            _memoryCache.Remove(memoryCacheKey);
         }
 
         try
         {
             var tenant = await _redisCache.GetAsync<ApiKeyValidationResult>(redisCacheKey, cancellationToken);
-            if (tenant is not null)
+            if (tenant is not null && IsTenantContextUsable(tenant))
             {
-                _memoryCache.Set(memoryCacheKey, tenant, TimeSpan.FromSeconds(_redisOptions.TenantContextLocalCacheTtlSeconds));
+                var memoryCacheExpiration = GetCacheExpiration(
+                    tenant,
+                    _redisOptions.TenantContextLocalCacheTtlSeconds);
+
+                if (memoryCacheExpiration is not null)
+                {
+                    _memoryCache.Set(memoryCacheKey, tenant, memoryCacheExpiration.Value);
+                }
+
+                return tenant;
             }
-            return tenant;
+
+            return null;
         }
         catch (RedisException ex)
         {
@@ -151,12 +233,24 @@ public sealed class Authenticator
         ApiKeyValidationResult tenant,
         CancellationToken cancellationToken)
     {
+        var redisCacheExpiration = GetCacheExpiration(
+            tenant,
+            _redisOptions.TenantContextRedisCacheTtlSeconds);
+        var memoryCacheExpiration = GetCacheExpiration(
+            tenant,
+            _redisOptions.TenantContextLocalCacheTtlSeconds);
+
+        if (redisCacheExpiration is null || memoryCacheExpiration is null)
+        {
+            return;
+        }
+
         try
         {
             await _redisCache.SetAsync(
                 redisCacheKey,
                 tenant,
-                TimeSpan.FromSeconds(_redisOptions.TenantContextRedisCacheTtlSeconds),
+                redisCacheExpiration.Value,
                 cancellationToken
             );
         }
@@ -169,7 +263,30 @@ public sealed class Authenticator
         _memoryCache.Set(
             memoryCacheKey,
             tenant,
-            TimeSpan.FromSeconds(
-                _redisOptions.TenantContextLocalCacheTtlSeconds));
+            memoryCacheExpiration.Value);
+    }
+
+    private static bool IsTenantContextUsable(ApiKeyValidationResult tenant)
+    {
+        return tenant.Valid &&
+            tenant.ExpiresAt is not null &&
+            tenant.ExpiresAt.Value > DateTimeOffset.UtcNow;
+    }
+
+    private static TimeSpan? GetCacheExpiration(
+        ApiKeyValidationResult tenant,
+        int configuredTtlSeconds)
+    {
+        if (!IsTenantContextUsable(tenant))
+        {
+            return null;
+        }
+
+        var remainingLifetime = tenant.ExpiresAt!.Value - DateTimeOffset.UtcNow;
+        var configuredTtl = TimeSpan.FromSeconds(configuredTtlSeconds);
+
+        return remainingLifetime < configuredTtl
+            ? remainingLifetime
+            : configuredTtl;
     }
 }

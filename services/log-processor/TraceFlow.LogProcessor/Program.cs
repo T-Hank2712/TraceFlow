@@ -127,6 +127,7 @@ builder.Services.AddSingleton<IKafkaConsumer, KafkaConsumer>();
 builder.Services.AddSingleton<ILogEventNormalizer, LogEventNormalizer>();
 builder.Services.AddSingleton<ILogIndexer, LogIndexer>();
 builder.Services.AddSingleton<IOpenSearchClient>(new OpenSearchClient(settings));
+builder.Services.AddSingleton<IOpenSearchIndexInitializer, OpenSearchIndexInitializer>();
 builder.Services.AddSingleton<IDlqProducer, DlqProducer>();
 builder.Services.AddSingleton<IOffsetCoordinator, OffsetCoordinator>();
 builder.Services.AddSingleton<IOffsetCommitSignal, OffsetCommitSignal>();
@@ -141,4 +142,9 @@ builder.Services.AddSingleton<IPartitionLaneManager, PartitionLaneManager>();
 
 
 var host = builder.Build();
+
+await host.Services
+    .GetRequiredService<IOpenSearchIndexInitializer>()
+    .InitializeAsync(CancellationToken.None);
+
 host.Run();

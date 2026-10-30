@@ -326,9 +326,10 @@ Ingestion API được thiết kế để request path ngắn, dễ dự đoán 
 4. Validate API key và nhận TenantContext.
 5. Kiểm tra rate limit bằng TenantContext/apiKeyId.
 6. Validate các field của log.
-7. Tạo LogEvent với TenantContext phía server.
-8. Publish LogEvent vào Kafka.
-9. Trả về 202 Accepted.
+7. Resolve `eventId` từ `Idempotency-Key` và payload qua Redis.
+8. Tạo LogEvent với TenantContext phía server.
+9. Publish LogEvent vào Kafka.
+10. Trả về `200 OK` sau Kafka acknowledgement; trả `503` khi delivery không thể xác nhận.
 ```
 
 ### 6.3. Thuật Toán Xử Lý Batch Logs
@@ -341,14 +342,14 @@ Ingestion API được thiết kế để request path ngắn, dễ dự đoán 
 3. Decode batch JSON.
 4. Validate API key một lần.
 5. Kiểm tra rate limit theo số lượng log trong batch.
-6. Validate toàn bộ item trong batch.
-7. Nếu có item không hợp lệ, reject cả batch trước khi publish Kafka.
-8. Tạo một LogEvent cho mỗi item.
-9. Publish events vào Kafka.
-10. Trả về số lượng log đã accepted.
+6. Validate từng item trong batch.
+7. Trả trạng thái reject cho item không hợp lệ, không publish item đó.
+8. Resolve `eventId` idempotent cho mỗi item hợp lệ.
+9. Publish events hợp lệ vào Kafka.
+10. Trả kết quả theo item; toàn batch trả `503` nếu bất kỳ Kafka delivery nào không được xác nhận.
 ```
 
-Batch ingestion dùng all-or-nothing validation trước khi publish. Cách này giúp behavior phía client rõ ràng hơn. Trường hợp Kafka publish lỗi giữa batch là quyết định reliability và sẽ được chốt trong `05-reliability-design.md`.
+Batch ingestion cho phép partial validation result. Client dựa vào `results` theo item và dùng lại cùng `Idempotency-Key` với cùng payload khi retry sau `503`.
 
 ```mermaid
 sequenceDiagram
@@ -358,15 +359,15 @@ sequenceDiagram
     participant Control as Control API
     participant Kafka
 
-    Client->>Ingestion: POST /logs or /logs/batch with ApiKey
+    Client->>Ingestion: POST /v1/logs or /v1/batch-logs with ApiKey + Idempotency-Key
     Ingestion->>Ingestion: apply request size limit and decode JSON
-    Ingestion->>Redis: check validation cache / rate limit
+    Ingestion->>Redis: check revoke marker, validation cache, idempotency and rate limit
     Ingestion->>Control: validate API key when cache misses
     Control-->>Ingestion: TenantContext
     Ingestion->>Ingestion: validate payload and enrich tenant context
     Ingestion->>Kafka: publish enriched log event(s)
     Kafka-->>Ingestion: publish acknowledged
-    Ingestion-->>Client: 202 Accepted
+    Ingestion-->>Client: 200 OK after Kafka acknowledgement
 ```
 
 ### 6.4. Mapping Lỗi Của Ingestion
@@ -532,7 +533,7 @@ Redis thuộc core infrastructure, nhưng vai trò được giới hạn có ch�
 | Use case của Redis | Thuộc tính chính | Kỳ vọng khi lỗi |
 | :--- | :--- | :--- |
 | API key validation cache | TTL ngắn, không lưu raw secret, invalidate khi revoke nếu có thể. | Fallback sang Control API validation khi cache lỗi hoặc cache miss. |
-| Rate limit counter | Counter theo time-window cho API key/project. | Fail-open/fail-closed sẽ chốt trong Reliability Design. |
+| Rate limit counter | Counter theo time-window cho API key fingerprint. | Implementation hiện tại fail-closed với `503` khi Redis unavailable. |
 | Short usage counter | Theo dõi volume tạm thời. | Có thể rebuild hoặc bỏ qua nếu không dùng cho billing. |
 
 Redis không bao giờ được là nơi duy nhất lưu API key state, tenant ownership, log events hoặc search documents.

@@ -10,6 +10,8 @@ export const options = {
 };
 
 export default function () {
+    const idempotencyKey = `single-log-${__VU}-${__ITER}`;
+
     const payload = JSON.stringify({
         service: 'performance-test',
         level: 2,
@@ -23,6 +25,7 @@ export default function () {
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `ApiKey ${API_KEY}`,
+                'Idempotency-Key': idempotencyKey,
             },
         }
     );

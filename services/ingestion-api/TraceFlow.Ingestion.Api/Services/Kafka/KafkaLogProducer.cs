@@ -13,6 +13,7 @@ public sealed class KafkaLogProducer : ILogEventPublisher, IDisposable
         {
             BootstrapServers = _options.BootstrapServers,
             Acks = Acks.All,
+            EnableIdempotence = true,
             MessageSendMaxRetries = _options.MessageSendMaxRetries,
             RetryBackoffMs = _options.RetryBackoffMs,
             MessageTimeoutMs = _options.MessageTimeoutMs,

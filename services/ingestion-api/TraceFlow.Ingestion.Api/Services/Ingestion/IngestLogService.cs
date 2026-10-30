@@ -6,25 +6,32 @@ public sealed class IngestLogService : IIngestLogService
     private readonly ILogEventPublisher _publisher;
     private readonly IValidator<IngestLogRequest> _logValidator;
     private readonly IValidator<BatchLogRequest> _batchValidator;
+    private readonly IdempotencyEventIdResolver _idempotencyResolver;
     private readonly TimeProvider _timeProvider;
+    private readonly ILogger<IngestLogService> _logger;
 
     public IngestLogService(
         EnrichedLogEventFactory eventFactory,
         ILogEventPublisher publisher,
         IValidator<IngestLogRequest> logValidator,
         IValidator<BatchLogRequest> batchValidator,
-        TimeProvider timeProvider)
+        IdempotencyEventIdResolver idempotencyResolver,
+        TimeProvider timeProvider,
+        ILogger<IngestLogService> logger)
     {
         _eventFactory = eventFactory;
         _publisher = publisher;
         _logValidator = logValidator;
         _batchValidator = batchValidator;
+        _idempotencyResolver = idempotencyResolver;
         _timeProvider = timeProvider;
+        _logger = logger;
     }
 
     public async Task<Result<IngestLogResponse>> IngestAsync(
         IngestLogRequest request,
         AuthenticatedContext authentication,
+        string? idempotencyKey,
         CancellationToken cancellationToken)
     {
 
@@ -38,8 +45,41 @@ public sealed class IngestLogService : IIngestLogService
                 ValidationErrorMapper.ToDetails(validationResult.Errors));
         }
 
+        if (!_idempotencyResolver.IsValidKey(idempotencyKey))
+        {
+            return Result<IngestLogResponse>.Fail(
+                ErrorCodes.MissingIdempotencyKey,
+                "A valid Idempotency-Key header is required.",
+                StatusCodes.Status400BadRequest);
+        }
+
+        Ulid eventId;
+
+        try
+        {
+            eventId = await _idempotencyResolver.ResolveAsync(
+                idempotencyKey!,
+                itemIndex: 0,
+                request,
+                authentication,
+                cancellationToken);
+        }
+        catch (IdempotencyKeyReusedException)
+        {
+            return Result<IngestLogResponse>.Fail(
+                ErrorCodes.IdempotencyKeyReused,
+                "Idempotency-Key was already used with a different request.",
+                StatusCodes.Status409Conflict);
+        }
+        catch (IdempotencyStoreUnavailableException)
+        {
+            return Result<IngestLogResponse>.Fail(
+                ErrorCodes.IdempotencyStoreUnavailable,
+                "Idempotency storage is unavailable. Retry later with the same Idempotency-Key.",
+                StatusCodes.Status503ServiceUnavailable);
+        }
+
         var tenant = authentication.Tenant;
-        var eventId = Ulid.NewUlid();
         var batchId = Ulid.NewUlid();
 
         var logEvent = _eventFactory.Create(request, tenant, eventId, batchId);
@@ -68,6 +108,7 @@ public sealed class IngestLogService : IIngestLogService
     public async Task<Result<BatchLogResponse>> BatchLogAsync(
         BatchLogRequest request,
         AuthenticatedContext authentication,
+        string? idempotencyKey,
         CancellationToken cancellationToken)
     {
         var validationBatch = await _batchValidator.ValidateAsync(
@@ -81,6 +122,14 @@ public sealed class IngestLogService : IIngestLogService
                 validationBatch.Errors.First().ErrorMessage,
                 StatusCodes.Status400BadRequest,
                 ValidationErrorMapper.ToDetails(validationBatch.Errors));
+        }
+
+        if (!_idempotencyResolver.IsValidKey(idempotencyKey))
+        {
+            return Result<BatchLogResponse>.Fail(
+                ErrorCodes.MissingIdempotencyKey,
+                "A valid Idempotency-Key header is required.",
+                StatusCodes.Status400BadRequest);
         }
 
         var batchId = Ulid.NewUlid();
@@ -108,7 +157,7 @@ public sealed class IngestLogService : IIngestLogService
 
             if (!validationResult.IsValid)
             {
-                var error = string.Join(
+                var itemError = string.Join(
                     "; ",
                     validationResult.Errors
                         .Select(x => x.ErrorMessage));
@@ -117,12 +166,37 @@ public sealed class IngestLogService : IIngestLogService
                     Index: index,
                     Accepted: false,
                     EventId: null,
-                    Error: error);
+                    Error: itemError);
 
                 continue;
             }
 
-            var eventId = Ulid.NewUlid();
+            Ulid eventId;
+
+            try
+            {
+                eventId = await _idempotencyResolver.ResolveAsync(
+                    idempotencyKey!,
+                    itemIndex: index,
+                    log,
+                    authentication,
+                    cancellationToken);
+            }
+            catch (IdempotencyKeyReusedException)
+            {
+                return Result<BatchLogResponse>.Fail(
+                    ErrorCodes.IdempotencyKeyReused,
+                    "Idempotency-Key was already used with a different batch request.",
+                    StatusCodes.Status409Conflict);
+            }
+            catch (IdempotencyStoreUnavailableException)
+            {
+                return Result<BatchLogResponse>.Fail(
+                    ErrorCodes.IdempotencyStoreUnavailable,
+                    "Idempotency storage is unavailable. Retry later with the same Idempotency-Key.",
+                    StatusCodes.Status503ServiceUnavailable);
+            }
+
             var logEvent = _eventFactory.Create(
                 log,
                 tenant,
@@ -132,13 +206,55 @@ public sealed class IngestLogService : IIngestLogService
             validEvents.Add((Index: index, Event: logEvent));
         }
 
+        var kafkaPublishFailed = false;
+
         if (validEvents.Count > 0)
         {
-            var publishResults = await _publisher.PublishAsync(validEvents, cancellationToken);
-
-            foreach (var publishResult in publishResults)
+            try
             {
-                results[publishResult.Index] = publishResult;
+                var publishResults = await _publisher.PublishAsync(validEvents, cancellationToken);
+
+                foreach (var publishResult in publishResults)
+                {
+                    results[publishResult.Index] = publishResult;
+                }
+
+                foreach (var validEvent in validEvents)
+                {
+                    if (results[validEvent.Index] is not null)
+                    {
+                        continue;
+                    }
+
+                    results[validEvent.Index] = new BatchLogItemResult(
+                        Index: validEvent.Index,
+                        Accepted: false,
+                        EventId: validEvent.Event.EventId,
+                        Error: "Kafka publish did not return a delivery result.");
+
+                    kafkaPublishFailed = true;
+                }
+
+                kafkaPublishFailed |= publishResults.Any(result => !result.Accepted);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Kafka batch publishing failed. BatchId: {BatchId}", batchId);
+
+                kafkaPublishFailed = true;
+
+                foreach (var validEvent in validEvents)
+                {
+                    results[validEvent.Index] = new BatchLogItemResult(
+                        Index: validEvent.Index,
+                        Accepted: false,
+                        EventId: validEvent.Event.EventId,
+                        Error: "Failed to publish log event to Kafka.");
+                }
             }
         }
 
@@ -157,12 +273,28 @@ public sealed class IngestLogService : IIngestLogService
             }
         }
 
+        var error = kafkaPublishFailed
+            ? new ErrorResponse(
+                ErrorCodes.KafkaPublishFailed,
+                "One or more log events could not be published to Kafka.")
+            : null;
+
         var response = new BatchLogResponse(
             BatchId: batchId,
             Total: totalLogs,
             Accepted: accepted,
             Rejected: rejected,
-            Results: results);
+            Results: results,
+            Error: error);
+
+        if (kafkaPublishFailed)
+        {
+            return Result<BatchLogResponse>.Fail(
+                response,
+                ErrorCodes.KafkaPublishFailed,
+                "One or more log events could not be published to Kafka.",
+                StatusCodes.Status503ServiceUnavailable);
+        }
 
         return Result<BatchLogResponse>.Ok(response);
     }

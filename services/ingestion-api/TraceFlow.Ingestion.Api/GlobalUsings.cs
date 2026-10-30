@@ -12,6 +12,7 @@ global using Confluent.Kafka;
 global using FluentValidation;
 global using Microsoft.AspNetCore.Authorization;
 global using Microsoft.AspNetCore.Http.Features;
+global using Microsoft.AspNetCore.HttpOverrides;
 global using Microsoft.Extensions.Caching.Memory;
 global using Microsoft.Extensions.Options;
 global using StackExchange.Redis;

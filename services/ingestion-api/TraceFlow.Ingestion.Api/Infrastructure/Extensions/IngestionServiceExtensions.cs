@@ -8,6 +8,7 @@ public static class IngestionServiceExtensions
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<ApiKeyHeaderParser>();
         services.AddSingleton<EnrichedLogEventFactory>();
+        services.AddSingleton<IdempotencyEventIdResolver>();
         services.AddSingleton<ApiKeyValidationFlightStore>();
 
         services.AddScoped<Authenticator>();

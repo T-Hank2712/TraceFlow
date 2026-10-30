@@ -25,6 +25,7 @@ public static class LogIngestionEndpoints
             var result = await service.IngestAsync(
                 request,
                 authentication,
+                httpContext.Request.Headers["Idempotency-Key"].ToString(),
                 cancellationToken);
 
             return result.Success
@@ -56,9 +57,10 @@ public static class LogIngestionEndpoints
             var result = await service.BatchLogAsync(
                 request,
                 authentication,
+                httpContext.Request.Headers["Idempotency-Key"].ToString(),
                 cancellationToken);
 
-            return result.Success
+            return result.Data is not null
                 ? Results.Json(result.Data, statusCode: result.StatusCode)
                 : Results.Json(result.Error, statusCode: result.StatusCode);
         }).RequireRateLimiting(RateLimitingExtensions.PreAuthPolicy);

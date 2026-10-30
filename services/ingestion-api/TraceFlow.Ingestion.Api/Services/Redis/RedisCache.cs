@@ -34,10 +34,32 @@ public sealed class RedisCache(
             expiration);
     }
 
+    public async Task<bool> TryAddAsync<T>(
+        string key,
+        T value,
+        TimeSpan expiration,
+        CancellationToken cancellationToken = default)
+    {
+        var serialized = JsonSerializer.Serialize(value);
+
+        return await _database.StringSetAsync(
+            key,
+            serialized,
+            expiration,
+            When.NotExists);
+    }
+
     public async Task RemoveAsync(
         string key,
         CancellationToken cancellationToken = default)
     {
         await _database.KeyDeleteAsync(key);
+    }
+
+    public async Task<bool> ExistsAsync(
+        string key,
+        CancellationToken cancellationToken = default)
+    {
+        return await _database.KeyExistsAsync(key);
     }
 }

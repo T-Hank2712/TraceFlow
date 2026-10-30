@@ -236,8 +236,10 @@ Redis là core supporting infrastructure, nhưng contract của Redis phải gi�
 
 | Use case | Key direction | Value | TTL |
 | :--- | :--- | :--- | :--- |
-| API key validation cache | `api_key_validation:{keyPrefix}:{secretHashFingerprint}` | Tenant context tối thiểu và `apiKeyId`. | Ngắn, ví dụ 30-300 giây. |
-| Rate limit counter | `rate_limit:{apiKeyId}:{window}` | Counter request/log trong time window. | Theo window. |
+| API key validation cache | `{TenantContextRedisCacheKeyPrefix}:{apiKeyFingerprint}:tenant-context` | Tenant context validation tối thiểu. | Theo `TenantContextRedisCacheTtlSeconds`. |
+| API key revoke marker | `{ApiKeyRevocationKeyPrefix}:{apiKeyId}` | Marker key đã revoke. | Theo thời hạn revoke policy. |
+| Idempotency record | `{IdempotencyKeyPrefix}:{apiKeyFingerprint}:{keyHash}:{itemIndex}` | `eventId` và payload hash. | Theo `IdempotencyKeyTtlSeconds`, mặc định 24 giờ. |
+| Rate limit counter | `{RateLimitKeyPrefix}:{apiKeyFingerprint}:{window}` | Counter request trong time window. | Theo `WindowSeconds`. |
 | Short usage counter | `usage:{projectId}:{window}` | Counter ngắn hạn phục vụ quota nếu bật. | Theo window. |
 
 Redis value không được chứa full API key secret. Nếu cache miss hoặc Redis lỗi, hệ thống phải có đường fallback gọi Control API validation trực tiếp, trừ khi rate limit được cấu hình fail-closed trong Reliability Design.
@@ -247,8 +249,9 @@ Redis value không được chứa full API key secret. Nếu cache miss hoặc 
 ### 7.1. Single Log
 
 ```http
-POST /logs
+POST /v1/logs
 Authorization: ApiKey {secret}
+Idempotency-Key: {stable-request-key}
 Content-Type: application/json
 ```
 
@@ -258,7 +261,7 @@ Request:
 {
   "timestamp": "2026-09-19T10:15:30Z",
   "service": "checkout-api",
-  "level": "ERROR",
+  "level": 4,
   "message": "Payment provider timeout",
   "traceId": "trace-7f9c2a",
   "correlationId": "order-10001",
@@ -274,15 +277,20 @@ Accepted response:
 
 ```json
 {
-  "status": "accepted"
+  "eventId": "01J...",
+  "status": true,
+  "acceptedAt": "2026-09-19T10:15:31Z"
 }
 ```
+
+Response thành công là `200 OK` sau Kafka acknowledgement, không có nghĩa document đã được OpenSearch index. Retry sau timeout hoặc `503` phải dùng cùng `Idempotency-Key` và cùng payload. Reuse key với payload khác trả `409 Conflict`; idempotency Redis unavailable trả `503`.
 
 ### 7.2. Batch Logs
 
 ```http
-POST /logs/batch
+POST /v1/batch-logs
 Authorization: ApiKey {secret}
+Idempotency-Key: {stable-request-key}
 Content-Type: application/json
 ```
 
@@ -294,7 +302,7 @@ Request:
     {
       "timestamp": "2026-09-19T10:15:30Z",
       "service": "checkout-api",
-      "level": "INFO",
+      "level": 2,
       "message": "Payment request started",
       "traceId": "trace-7f9c2a",
       "correlationId": "order-10001",
@@ -306,12 +314,17 @@ Request:
 }
 ```
 
+Item invalid được trả trong `results` với `accepted: false` và không publish. Nếu Kafka delivery của bất kỳ item hợp lệ nào không được xác nhận, toàn response trả `503` nhưng vẫn kèm `results` để client retry an toàn với cùng idempotency key.
+
 Accepted response:
 
 ```json
 {
-  "status": "accepted",
-  "acceptedLogs": 1
+  "batchId": "01J...",
+  "total": 1,
+  "accepted": 1,
+  "rejected": 0,
+  "results": []
 }
 ```
 
@@ -321,7 +334,7 @@ Accepted response:
 | :--- | :---: | :--- |
 | `timestamp` | No | Nếu có, phải là RFC3339; nếu thiếu dùng thời điểm nhận request. |
 | `service` | Yes | Không được rỗng. |
-| `level` | Yes | Một trong `DEBUG`, `INFO`, `WARN`, `ERROR`, `FATAL`. |
+| `level` | Yes | Giá trị số của `Microsoft.Extensions.Logging.LogLevel`: `Trace=0` đến `Critical=5`. |
 | `message` | Yes | Không được rỗng. |
 | `traceId` | No | Dùng để truy vết request xuyên service. |
 | `correlationId` | No | Dùng để nhóm log theo business/request context. |
@@ -341,27 +354,26 @@ Client không được quyết định `workspaceId`, `projectId`, `applicationI
 
 ```json
 {
-  "schemaVersion": 1,
-  "eventId": "01J8Z7Y3YF4S6V9KZKX4K9TQ7M",
-  "timestamp": "2026-09-19T10:15:30Z",
-  "receivedAt": "2026-09-19T10:15:31Z",
-  "workspaceId": "01J8Z7A6KQ1X4R91YPXZR3ANH2",
-  "projectId": "01J8Z7BAW6EMX0QK9W0K4D2S7R",
-  "applicationId": "01J8Z7CC9P0NZV8J6SP3Z8BW2V",
-  "environment": "production",
-  "service": "checkout-api",
-  "level": "ERROR",
-  "message": "Payment provider timeout",
-  "traceId": "trace-7f9c2a",
-  "correlationId": "order-10001",
-  "metadata": {
+  "EventId": "01J8Z7Y3YF4S6V9KZKX4K9TQ7M",
+  "BatchID": "01J8Z7Y3YF4S6V9KZKX4K9TQ7M",
+  "WorkspaceId": "01J8Z7A6KQ1X4R91YPXZR3ANH2",
+  "ProjectId": "01J8Z7BAW6EMX0QK9W0K4D2S7R",
+  "ApplicationId": "01J8Z7CC9P0NZV8J6SP3Z8BW2V",
+  "Environment": "production",
+  "Timestamp": "2026-09-19T10:15:30Z",
+  "Level": 4,
+  "Service": "checkout-api",
+  "Message": "Payment provider timeout",
+  "TraceId": "trace-7f9c2a",
+  "CorrelationId": "order-10001",
+  "Metadata": {
     "provider": "stripe",
     "durationMs": 3500
   }
 }
 ```
 
-Kafka partition key sẽ được chốt trong Reliability Design. Contract chỉ yêu cầu event có đủ tenant context và `eventId`.
+Kafka producer hiện dùng `EventId` làm partition key. Contract yêu cầu event có đủ tenant context và `EventId`.
 
 ## 9. OpenSearch Document Contract
 
@@ -386,16 +398,15 @@ Document schema giữ cùng core fields với Kafka event. Mapping direction:
 | `service` | keyword + text nếu cần | Filter/search. |
 | `level` | keyword | Optional filter. |
 | `timestamp` | date | Sort và range query. |
-| `receivedAt` | date | Debug latency. |
 | `traceId` | keyword | Trace lookup. |
 | `correlationId` | keyword | Correlation lookup. |
-| `message` | text | Full-text search. |
+| `message` | text/object theo mapping hiện hành | Control API chưa có full-text query. |
 | `metadata` | object/flattened | Extension data trong guardrails. |
 
 ## 10. Search API Contract
 
 ```http
-GET /api/workspaces/{workspaceId}/projects/{projectId}/logs
+GET /api/v1/workspaces/{workspaceId}/projects/{projectId}/logs
 Authorization: Bearer {accessToken}
 ```
 
@@ -411,9 +422,8 @@ Query parameters:
 | `service` | No | Filter service. |
 | `traceId` | No | Trace lookup. |
 | `correlationId` | No | Correlation lookup. |
-| `q` | No | Message full-text query. |
-| `limit` | No | Page size with max limit. |
-| `cursor` | No | Pagination cursor. |
+| `page` | No | Trang, mặc định `1`. |
+| `pageSize` | No | Kích thước trang từ `1` đến `100`, mặc định `20`. |
 
 Response:
 
@@ -428,7 +438,7 @@ Response:
       "applicationId": "01J8Z7CC9P0NZV8J6SP3Z8BW2V",
       "environment": "production",
       "service": "checkout-api",
-      "level": "ERROR",
+      "level": 4,
       "message": "Payment provider timeout",
       "traceId": "trace-7f9c2a",
       "correlationId": "order-10001",
@@ -437,7 +447,9 @@ Response:
       }
     }
   ],
-  "nextCursor": null
+  "total": 1,
+  "page": 1,
+  "pageSize": 20
 }
 ```
 

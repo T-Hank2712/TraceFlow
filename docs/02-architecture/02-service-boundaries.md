@@ -21,8 +21,9 @@ Chịu trách nhiệm:
 - Xác thực API key.
 - Validate và chuẩn hóa payload.
 - Publish event vào Kafka.
-- Dùng Redis cho validation cache/rate limit nếu bật.
-- Trả `202 Accepted` nhanh cho client.
+- Dùng Redis cho validation cache, idempotency và rate limit.
+- Resolve client IP từ trusted proxy trước pre-auth rate limit.
+- Trả `200 OK` sau Kafka acknowledgement, hoặc `503` khi delivery không thể xác nhận.
 
 Không index trực tiếp vào OpenSearch trong HTTP request.
 
@@ -34,7 +35,7 @@ Chịu trách nhiệm:
 - Normalize/enrich log.
 - Gom batch.
 - Bulk index vào OpenSearch.
-- Xử lý retry, timeout và DLQ.
+- Xử lý retry, timeout, DLQ và commit offset theo kết quả xử lý.
 
 ## Storage Boundary
 

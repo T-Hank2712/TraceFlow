@@ -31,4 +31,15 @@ public sealed record Result<T>(
             default,
             new ErrorResponse(code, message, details),
             statusCode);
+
+    public static Result<T> Fail(
+        T data,
+        string code,
+        string message,
+        int statusCode)
+        => new(
+            false,
+            data,
+            new ErrorResponse(code, message),
+            statusCode);
 }

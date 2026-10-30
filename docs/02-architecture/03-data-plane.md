@@ -27,4 +27,4 @@ Client App
 - Không để OpenSearch chậm làm block trực tiếp ingestion request.
 - Không giữ queue trong memory không giới hạn.
 - Mọi lỗi publish, consume hoặc index phải có policy rõ.
-- Mỗi log phải mang `project_id` và `application_id` sau khi xác thực API key.
+- Mỗi log phải mang `workspaceId`, `projectId`, `applicationId` và `environment` sau khi xác thực API key.

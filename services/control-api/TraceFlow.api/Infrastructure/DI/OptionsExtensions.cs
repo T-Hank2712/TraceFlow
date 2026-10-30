@@ -40,6 +40,13 @@ public static class OptionsExtensions
             .ValidateOnStart();
 
         services
+            .AddOptions<RedisOptions>()
+            .Bind(configuration.GetSection(RedisOptions.SectionName))
+            .Validate(options => !string.IsNullOrWhiteSpace(options.ConnectionString), "Redis__ConnectionString is required.")
+            .Validate(options => !string.IsNullOrWhiteSpace(options.ApiKeyRevocationKeyPrefix), "Redis__ApiKeyRevocationKeyPrefix is required.")
+            .ValidateOnStart();
+
+        services
             .AddOptions<RateLimitOptions>()
             .Bind(configuration.GetSection(RateLimitOptions.SectionName))
             .Validate(options => options.Global.PermitLimit > 0, "Global rate limit permit limit must be greater than 0.")

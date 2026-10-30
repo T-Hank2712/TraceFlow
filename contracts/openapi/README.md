@@ -15,13 +15,11 @@ Nhóm endpoint chính:
 - `PUT /api/v{version}/auth/change-password`: đổi mật khẩu và revoke refresh token còn hiệu lực.
 - `GET /api/v{version}/auth/me`: lấy thông tin người dùng hiện tại.
 - `PATCH /api/v{version}/users/me/profile`: cập nhật hồ sơ người dùng.
-- `api/v{version}/workspaces`: quản lý workspace, member, role, leave và transfer ownership.
-- `api/v{version}/workspace-invitations`: gửi, xem, accept, decline và hủy workspace invitation.
-- `api/v{version}/workspaces/{workspaceId}/projects`: quản lý project, member, role và leave project.
-- `api/v{version}/project-invitations`: gửi, xem, accept, decline và hủy project invitation.
-- `api/v{version}/workspaces/{workspaceId}/projects/{projectId}/applications`: quản lý trace application.
-- `api/v{version}/workspaces/{workspaceId}/projects/{projectId}/applications/{applicationId}/api-keys`: tạo, liệt kê và revoke API key.
-- `GET /api/v{version}/workspaces/{workspaceId}/projects/{projectId}/logs`: tìm kiếm log trong OpenSearch.
+- `/api/v{version}/workspaces`: quản lý workspace, member, role, leave, transfer ownership và workspace invitation.
+- `/api/v{version}/workspaces/{workspaceId}/projects`: tạo và liệt kê project trong workspace.
+- `/api/v{version}/projects`: quản lý project, member, leave, invitation và trace application.
+- `/api/v{version}/applications`: xem, cập nhật, archive trace application và quản lý API key.
+- `GET /api/v{version}/workspaces/{workspaceId}/projects/{projectId}/logs`: tìm kiếm log trong OpenSearch bằng `page`/`pageSize`.
 - `GET /api/system/status`: endpoint public để kiểm tra trạng thái service.
 
 ## Internal Control API

@@ -190,7 +190,20 @@ tests/performance/k6/run/e2e.sh e2e
 
 Sau khi chạy, có thể dùng marker để kiểm tra log đã đi qua Kafka, Log Processor và OpenSearch.
 
-## 11. Cách Script Hoạt Động
+## 11. Chạy E2E Reconciliation
+
+Kịch bản này gửi workload xác định và tự đối soát dữ liệu sau pipeline:
+
+```bash
+export API_KEY="<your-api-key>"
+tests/performance/k6/run/e2e-reconciliation.sh
+```
+
+Scenario hiện gửi 50 VUs x 1.000 iterations = 50.000 log, yêu cầu không có HTTP failure và p95 dưới 15 ms. Sau k6, `TraceFlow.PipelineVerifier` tìm event bằng `E2E_RUN_ID` và kiểm tra OpenSearch cùng DLQ. Cả k6 và verifier phải thành công thì run mới đạt.
+
+Không dùng lại `E2E_RUN_ID` nếu muốn một run độc lập. Có thể đặt `E2E_TIMEOUT_SECONDS` để tăng thời gian chờ verifier; biến `E2E_K6_P95_MS` hiện chưa thay đổi threshold vì threshold được cố định trong scenario.
+
+## 12. Cách Script Hoạt Động
 
 Các script trong `tests/performance/k6/run` sẽ:
 
@@ -203,7 +216,7 @@ Các script trong `tests/performance/k6/run` sẽ:
 
 Không cần chạy `k6` trực tiếp trên máy host.
 
-## 12. Xem Log Khi Lỗi
+## 13. Xem Log Khi Lỗi
 
 Nginx:
 
@@ -241,7 +254,7 @@ OpenSearch:
 docker logs traceflow-performance-opensearch
 ```
 
-## 13. Kiểm Tra Network Path
+## 14. Kiểm Tra Network Path
 
 Lấy IP Nginx trong performance network:
 
@@ -267,7 +280,7 @@ load-generator
   -> service
 ```
 
-## 14. Dừng Hoặc Reset Stack
+## 15. Dừng Hoặc Reset Stack
 
 Dừng stack:
 
@@ -287,7 +300,7 @@ docker compose \
   down -v
 ```
 
-## 15. Quy Trình Khuyến Nghị
+## 16. Quy Trình Khuyến Nghị
 
 Chạy theo thứ tự:
 
@@ -316,7 +329,7 @@ tests/performance/k6/run/spike.sh
 tests/performance/k6/run/stress.sh
 ```
 
-## 16. Ghi Nhận Kết Quả
+## 17. Ghi Nhận Kết Quả
 
 Sau mỗi lần chạy, nên ghi lại:
 
@@ -337,7 +350,7 @@ Kết quả benchmark nên lưu trong:
 tests/performance/results/<test-id>/
 ```
 
-## 17. Troubleshooting Nhanh
+## 18. Troubleshooting Nhanh
 
 Nếu k6 báo thiếu API key:
 

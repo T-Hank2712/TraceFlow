@@ -5,8 +5,8 @@ TraceFlow sử dụng OpenSearch để lưu và tìm kiếm log.
 ## Truy vấn cần hỗ trợ
 
 - Full-text search theo `message`.
-- Filter theo `project_id`.
-- Filter theo `application_id` hoặc `service`.
+- Filter bắt buộc theo `workspaceId` và `projectId`.
+- Filter optional theo `applicationId`, `service`, `environment`, `level`, `traceId` hoặc `correlationId`.
 - Filter theo `environment`.
 - Filter theo `level`.
 - Time range.

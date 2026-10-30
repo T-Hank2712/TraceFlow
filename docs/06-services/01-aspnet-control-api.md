@@ -9,13 +9,12 @@ ASP.NET Core Control API là service quản lý control plane của TraceFlow.
 - Project, application và API key.
 - Search API.
 - Internal API key validation cho Ingestion API.
-- Nice-to-have: retention, quota và operational insights nếu được bật.
 
 ## Dependency
 
 - PostgreSQL cho metadata nghiệp vụ.
 - OpenSearch cho search query.
-- Redis cho validation cache, rate limiting hoặc counter ngắn hạn.
+- Control API hiện không dùng Redis; cache validation và ingestion rate limit thuộc Ingestion API.
 
 ## Nguyên tắc
 

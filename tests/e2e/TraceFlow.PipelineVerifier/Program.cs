@@ -156,7 +156,7 @@ static async Task<OpenSearchEvents> ReadOpenSearchEventsAsync(
             {
                 term = new Dictionary<string, string>
                 {
-                    ["metadata.e2eRunId.keyword"] = options.RunId
+                    ["metadata.e2eRunId"] = options.RunId
                 }
             }
         });

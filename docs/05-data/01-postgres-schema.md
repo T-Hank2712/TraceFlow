@@ -4,14 +4,16 @@ PostgreSQL lưu dữ liệu nghiệp vụ và metadata.
 
 ## Bảng chính
 
-- `users`
-- `refresh_tokens`
-- `workspaces`
-- `workspace_members`
-- `projects`
-- `applications`
-- `api_keys`
-- `audit_logs`
+- `Users`
+- `RefreshTokens`
+- `Workspaces`
+- `WorkspaceMembers`
+- `WorkspaceInvitations`
+- `Projects`
+- `ProjectMembers`
+- `ProjectInvitations`
+- `TraceApplications`
+- `ApiKeys`
 
 ## Bảng nice-to-have / optional
 

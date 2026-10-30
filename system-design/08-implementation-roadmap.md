@@ -105,7 +105,7 @@ Phase này tạo đường đi thật cho client application gửi log vào hệ
 
 ### Design Constraints
 
-Ingestion API không được tin tenant fields từ client. Response `202 Accepted` chỉ được trả sau khi Kafka nhận event theo publish policy. Accepted không có nghĩa log đã search được.
+Ingestion API không được tin tenant fields từ client. Response `200 OK` chỉ được trả sau khi Kafka acknowledge event theo publish policy. Response này không có nghĩa log đã search được.
 
 ### Evidence
 
