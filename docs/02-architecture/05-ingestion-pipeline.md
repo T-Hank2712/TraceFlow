@@ -15,7 +15,7 @@ Ingestion pipeline nhận log từ application và đưa vào Kafka.
 4. Chuẩn hóa timestamp, level, service, environment và metadata.
 5. Dùng `Idempotency-Key` để lấy hoặc tạo `eventId`, rồi gắn `workspaceId`, `projectId`, `applicationId`, `environment`, `batchId` và `receivedAt`.
 6. Publish vào Kafka.
-7. Trả `202 Accepted`.
+7. Trả `200 OK` sau khi Kafka acknowledge; trả `503` nếu publish không thể được xác nhận.
 
 ## Nguyên tắc
 

@@ -19,7 +19,9 @@ OpenSearch lưu log phục vụ search. Operational insights có thể đọc ag
 ## Mapping nguyên tắc
 
 - Control API hiện chỉ filter/sort; chưa gửi full-text query cho `message`.
-- Các field filter như `workspaceId`, `projectId`, `applicationId`, `level` và `service` cần query được dạng keyword.
+- `workspaceId`, `projectId`, `applicationId`, `environment`, `service`, `traceId` và `correlationId` dùng `keyword`; `level` dùng `integer`.
 - `timestamp` dùng date cho range query và sort.
 - Processor hiện index `LogEvent`, không giữ `receivedAt` hoặc `processedAt` trong document.
-- `metadata` cần thiết kế cẩn thận để tránh mapping explosion.
+- Mapping index được processor khởi tạo với `dynamic: false`.
+- `metadata` dùng `flat_object` để metadata key tùy ý không tạo field mapping mới. Metadata vẫn phù hợp cho lookup đơn giản, nhưng không phải nơi khai báo field có mapping chuyên biệt.
+- Processor fail fast nếu index hiện có không dùng mapping an toàn. Không thể đổi loại field của index đang tồn tại tại chỗ; dùng index mới/reindex rồi cập nhật `OpenSearch__Index` khi cần migration.

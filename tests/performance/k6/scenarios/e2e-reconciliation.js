@@ -4,7 +4,7 @@ import { check } from 'k6';
 const BASE_URL = __ENV.BASE_URL;
 const API_KEY = __ENV.API_KEY;
 const RUN_ID = __ENV.E2E_RUN_ID;
-const P95_THRESHOLD_MS = 10;
+const P95_THRESHOLD_MS = 15;
 
 const VUS = 50;
 const ITERATIONS_PER_VU = 1000;

@@ -52,7 +52,7 @@ TraceFlow phân loại lỗi theo stage xử lý thay vì chỉ theo exception c
 
 ## 4. Ingestion Reliability
 
-Ingestion API nằm trên request path của client application, nên reliability ở đây phải ưu tiên phản hồi rõ ràng và không tạo cảm giác sai cho client. Ingestion API chỉ trả `202 Accepted` sau khi event hợp lệ đã được Kafka accept theo publish policy. Response này không khẳng định log đã search được.
+Ingestion API nằm trên request path của client application, nên reliability ở đây phải ưu tiên phản hồi rõ ràng và không tạo cảm giác sai cho client. Ingestion API chỉ trả `200 OK` sau khi event hợp lệ đã được Kafka acknowledge theo publish policy. Response này không khẳng định log đã search được.
 
 ```text
 Client Application
@@ -61,7 +61,7 @@ Client Application
 -> Validate Payload
 -> Rate Limit Check
 -> Publish Kafka
--> 202 Accepted
+-> 200 OK
 ```
 
 ### 4.1. Success Boundary
@@ -70,7 +70,7 @@ Boundary thành công của ingestion là Kafka publish thành công. Nếu Kafk
 
 | Condition | Response | Reason |
 | :--- | :--- | :--- |
-| API key hợp lệ, payload hợp lệ, Kafka publish thành công. | `202 Accepted` | Event đã vào pipeline. |
+| API key hợp lệ, payload hợp lệ, Kafka publish thành công. | `200 OK` | Event đã vào pipeline. |
 | Payload sai format hoặc field không hợp lệ. | `400 Bad Request` | Lỗi từ client, không đưa vào Kafka. |
 | API key thiếu/sai/revoked/expired. | `401 Unauthorized` | Credential không hợp lệ, không đưa vào Kafka. |
 | Rate limit vượt ngưỡng. | `429 Too Many Requests` | Bảo vệ ingestion path. |
@@ -78,17 +78,9 @@ Boundary thành công của ingestion là Kafka publish thành công. Nếu Kafk
 
 ### 4.2. Batch Ingestion Policy
 
-Batch ingestion sử dụng all-or-nothing validation trước khi publish. Nếu một item trong batch không hợp lệ, cả batch bị reject trước khi publish Kafka. Quyết định này giúp contract phía client đơn giản và tránh tình trạng client phải suy luận item nào đã vào pipeline.
+Batch request được validate theo từng item sau khi API key và cấu trúc batch hợp lệ. Item invalid được trả `accepted: false` và không publish; item valid vẫn được publish. Nếu bất kỳ Kafka delivery nào không được xác nhận, response toàn batch là `503` và vẫn kèm kết quả từng item để client biết event nào cần retry.
 
-```text
-Batch request
--> validate API key once
--> validate whole batch
--> if any item invalid: reject whole batch
--> if all valid: publish events
-```
-
-Partial Kafka publish trong một batch là trường hợp khó hơn vì một số event có thể đã vào Kafka trước khi publish lỗi xảy ra. Thiết kế mục tiêu là Kafka publisher cần expose kết quả publish đủ rõ để Ingestion API không báo accepted sai. Trong implementation phase đầu, có thể chọn publish batch theo cách tuần tự và trả `503` nếu bất kỳ publish nào fail, đồng thời log rõ số lượng publish thành công để debug. Khi cần chặt hơn, có thể bổ sung idempotency key hoặc producer transaction, nhưng đó không phải yêu cầu core ban đầu.
+Mọi request dùng `Idempotency-Key`. Redis giữ mapping API-key fingerprint + idempotency key + payload thành `eventId` trong 24 giờ. Retry cùng payload dùng lại cùng event ID; dùng lại key với payload khác trả `409`. Điều này xử lý kết quả Kafka delivery mơ hồ mà không tuyên bố exactly-once giữa HTTP và Kafka.
 
 ### 4.3. Redis Behavior In Ingestion
 
@@ -328,7 +320,7 @@ flowchart TD
     D -- Yes --> F{Payload valid?}
     F -- No --> G[Reject 400]
     F -- Yes --> H{Kafka publish success?}
-    H -- Yes --> I[Return 202 Accepted]
+    H -- Yes --> I[Return 200 OK]
     H -- No --> J[Return 503 and log kafka_publish_failed]
 ```
 

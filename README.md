@@ -18,6 +18,7 @@ TraceFlow tập trung hóa quy trình đó:
 
 ```text
 Ứng dụng client
+  -> Nginx
   -> Ingestion API
   -> Kafka
   -> Log Processor
@@ -41,12 +42,14 @@ Project được xây dựng như một backend engineering portfolio project, t
 - **Data Plane API**: tiếp nhận log bằng API key, độc lập với JWT của user.
 - **Resolve tenant ở server**: client gửi log không được tự quyết định `workspaceId`, `projectId`, `applicationId` hoặc `environment`; các thông tin này được resolve từ API key.
 - **Single và batch ingestion**: hỗ trợ gửi một log hoặc nhiều log trong cùng một request.
+- **Idempotent retry**: mọi request ingestion dùng `Idempotency-Key`; retry cùng payload dùng lại `eventId` để không tạo log logic trùng.
 - **Xử lý bất đồng bộ bằng Kafka**: tách ingestion khỏi indexing để giảm coupling và hấp thụ traffic spike.
 - **Log Processor worker**: consume Kafka events, validate payload, gom batch và index vào OpenSearch bằng Bulk API.
-- **Dead letter handling**: event lỗi hoặc không hợp lệ có thể được đưa vào DLQ topic.
+- **Delivery và DLQ rõ ràng**: lỗi publish Kafka trả non-success; event processor không xử lý được được đưa vào DLQ trước khi offset được commit.
 - **Tìm kiếm theo project scope**: user chỉ có thể search log trong những project mà họ có quyền truy cập.
 - **Bảo vệ Control API**: sử dụng rate limiting built-in của ASP.NET Core, request body limits, forwarded header restrictions và production configuration guards.
-- **Bảo vệ Ingestion API**: sử dụng Redis cho tenant context cache và rate limiting ở Ingestion API.
+- **Bảo vệ Ingestion API**: kiểm tra revoke trước cache, dùng Redis cho tenant context cache/idempotency/rate limit và chỉ tin proxy network đã cấu hình.
+- **Safe OpenSearch mapping**: processor khởi tạo index template với `dynamic: false` và `metadata: flat_object` để tránh mapping explosion.
 
 ## 3. Kiến Trúc
 
@@ -77,7 +80,8 @@ flowchart LR
     ControlAPI --> Postgres[(PostgreSQL)]
     ControlAPI --> OpenSearch[(OpenSearch)]
 
-    Client[Ứng dụng client] -->|ApiKey| IngestionAPI[Ingestion API]
+    Client[Ứng dụng client] -->|ApiKey| Nginx[Nginx]
+    Nginx --> IngestionAPI[Ingestion API]
     IngestionAPI -->|validate API key| ControlAPI
     IngestionAPI -->|cache / rate limit| Redis[(Redis)]
     IngestionAPI -->|log event đã enrich| Kafka[(Kafka)]
@@ -94,7 +98,9 @@ Accepted = Kafka đã nhận event
 Indexed  = OpenSearch đã lưu document
 ```
 
-Ingestion API không phụ thuộc trực tiếp vào trạng thái của OpenSearch. Việc index log được xử lý bất đồng bộ bởi Log Processor, có thể retry hoặc đưa event lỗi vào DLQ.
+`200 OK` từ Ingestion API không đồng nghĩa log đã được search. Nó chỉ xác nhận Kafka đã acknowledge event theo publish policy. OpenSearch indexing xảy ra bất đồng bộ trong Log Processor.
+
+Nếu Kafka không xác nhận publish, single hoặc batch ingestion trả `503 Service Unavailable`; batch response vẫn kèm kết quả từng item. Client retry cùng `Idempotency-Key` và payload để dùng lại cùng `eventId`.
 
 ## 4. Bắt Đầu
 
@@ -165,20 +171,22 @@ Xóa volume local nếu muốn reset dữ liệu:
 docker compose down -v
 ```
 
-### Endpoint Local
+### Endpoint Docker Compose
 
 | Service | URL |
 | :--- | :--- |
-| Control API | `http://localhost:5075` |
-| Ingestion API | `http://localhost:5100` |
-| OpenSearch | `https://localhost:9200` |
-| Kafka | `localhost:9092` |
+| Nginx | `http://localhost` |
+| Control API (qua Nginx) | `http://localhost/control` |
+| Ingestion API (qua Nginx) | `http://localhost/ingestion` |
 
-Health checks:
+`control-api`, `ingestion-api`, Kafka và OpenSearch chỉ dùng mạng Docker nội bộ trong Compose mặc định. Chạy service trực tiếp bằng .NET CLI nếu cần gọi port development của từng service.
+
+Health checks qua Nginx:
 
 ```bash
-curl http://localhost:5075/health
-curl http://localhost:5100/health
+curl http://localhost/control/health
+curl http://localhost/ingestion/health/live
+curl http://localhost/ingestion/health/ready
 ```
 
 ### Chạy Từng Service Bằng .NET CLI
@@ -219,7 +227,7 @@ Luồng chính của hệ thống:
 Ví dụ gửi log:
 
 ```bash
-curl -X POST http://localhost:5100/v1/logs \
+curl -X POST http://localhost/ingestion/v1/logs \
   -H "Authorization: ApiKey <your-api-key>" \
   -H "Idempotency-Key: checkout-order-10001-log-1" \
   -H "Content-Type: application/json" \
@@ -237,7 +245,15 @@ curl -X POST http://localhost:5100/v1/logs \
   }'
 ```
 
-## 7. Build Và Test
+`Idempotency-Key` phải không rỗng, dài tối đa 128 ký tự. Khi timeout hoặc nhận `503`, gửi lại **cùng key và cùng payload**. Dùng lại key với payload khác trả `409 Conflict`.
+
+## 7. Độ Sẵn Sàng Và Mapping
+
+- `/ingestion/health/live` chỉ kiểm tra process Ingestion API còn sống.
+- `/ingestion/health/ready` kiểm tra Redis, Kafka topic có thể dùng và Control API validation endpoint.
+- Log Processor tạo/kiểm tra OpenSearch mapping khi khởi động. Nếu index hiện có không dùng `dynamic: false` và `metadata: flat_object`, processor fail fast; tạo index mới hoặc reindex trước khi đổi `OpenSearch__Index`.
+
+## 8. Build Và Test
 
 Build Control API:
 
@@ -263,7 +279,7 @@ Chạy test:
 dotnet test
 ```
 
-## 8. Cấu Trúc Thư Mục
+## 9. Cấu Trúc Thư Mục
 
 ```text
 .
@@ -283,7 +299,7 @@ dotnet test
 └── tools/                 Supporting developer tools
 ```
 
-## 9. Tài Liệu
+## 10. Tài Liệu
 
 Thiết kế hệ thống:
 
@@ -306,10 +322,10 @@ Tài liệu vận hành và service:
 - [Kafka Contracts](contracts/kafka/README.md)
 - [OpenSearch Contracts](contracts/opensearch/README.md)
 
-## 10. License
+## 11. License
 
 Project chưa khai báo license. Nếu public hoặc open-source, cần bổ sung file `LICENSE`.
 
-## 11. Maintainer
+## 12. Maintainer
 
 TraceFlow được duy trì bởi `ltthanh` như một backend engineering portfolio project, tập trung vào distributed systems, security, reliability và data pipeline design.

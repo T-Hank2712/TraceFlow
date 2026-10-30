@@ -16,7 +16,8 @@ Vì TraceFlow có cả user-facing API và ingestion API, tài liệu API phải
 - Convention chung về JSON, timestamp, ID, pagination và error format.
 - Authentication API quản lý đăng nhập, refresh token và user context.
 - Management API quản lý workspace/project/application/API key.
-- Ingestion API ưu tiên response nhanh, validate payload và publish Kafka.
+- Ingestion API xác thực API key, resolve tenant ở server, yêu cầu `Idempotency-Key` và chỉ trả thành công sau khi Kafka acknowledge event.
+- `200 OK` của ingestion không đồng nghĩa event đã được OpenSearch index; Kafka/Redis lỗi không xác nhận được delivery trả non-success để client retry an toàn.
 - Search API bắt buộc enforce tenant filter trước khi query OpenSearch.
 - Operational Insights/Dashboard API nếu bật dùng query/aggregation phục vụ số liệu tổng quan.
 - OpenAPI specs là contract máy đọc được để hỗ trợ client/test.

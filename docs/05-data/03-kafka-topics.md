@@ -14,6 +14,8 @@ traceflow.logs
 traceflow.logs.dlq
 ```
 
+Docker Compose hiện tạo `traceflow.logs` với 3 partitions và `traceflow.logs.dlq` với 1 partition, replication factor 1. Đây là cấu hình local/performance single-broker, không phải khuyến nghị production cluster.
+
 ## Topic mở rộng nếu cần
 
 ```text

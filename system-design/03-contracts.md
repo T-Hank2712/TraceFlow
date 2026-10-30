@@ -237,6 +237,8 @@ Redis là core supporting infrastructure, nhưng contract của Redis phải gi�
 | Use case | Key direction | Value | TTL |
 | :--- | :--- | :--- | :--- |
 | API key validation cache | `{TenantContextRedisCacheKeyPrefix}:{apiKeyFingerprint}:tenant-context` | Tenant context validation tối thiểu. | Theo `TenantContextRedisCacheTtlSeconds`. |
+| API key revoke marker | `{ApiKeyRevocationKeyPrefix}:{apiKeyId}` | Marker key đã revoke. | Theo thời hạn revoke policy. |
+| Idempotency record | `{IdempotencyKeyPrefix}:{apiKeyFingerprint}:{keyHash}:{itemIndex}` | `eventId` và payload hash. | Theo `IdempotencyKeyTtlSeconds`, mặc định 24 giờ. |
 | Rate limit counter | `{RateLimitKeyPrefix}:{apiKeyFingerprint}:{window}` | Counter request trong time window. | Theo `WindowSeconds`. |
 | Short usage counter | `usage:{projectId}:{window}` | Counter ngắn hạn phục vụ quota nếu bật. | Theo window. |
 
@@ -249,6 +251,7 @@ Redis value không được chứa full API key secret. Nếu cache miss hoặc 
 ```http
 POST /v1/logs
 Authorization: ApiKey {secret}
+Idempotency-Key: {stable-request-key}
 Content-Type: application/json
 ```
 
@@ -280,11 +283,14 @@ Accepted response:
 }
 ```
 
+Response thành công là `200 OK` sau Kafka acknowledgement, không có nghĩa document đã được OpenSearch index. Retry sau timeout hoặc `503` phải dùng cùng `Idempotency-Key` và cùng payload. Reuse key với payload khác trả `409 Conflict`; idempotency Redis unavailable trả `503`.
+
 ### 7.2. Batch Logs
 
 ```http
 POST /v1/batch-logs
 Authorization: ApiKey {secret}
+Idempotency-Key: {stable-request-key}
 Content-Type: application/json
 ```
 
@@ -307,6 +313,8 @@ Request:
   ]
 }
 ```
+
+Item invalid được trả trong `results` với `accepted: false` và không publish. Nếu Kafka delivery của bất kỳ item hợp lệ nào không được xác nhận, toàn response trả `503` nhưng vẫn kèm `results` để client retry an toàn với cùng idempotency key.
 
 Accepted response:
 
