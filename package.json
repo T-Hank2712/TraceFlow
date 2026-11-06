@@ -1,0 +1,12 @@
+{
+  "name": "traceflow",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "web:dev": "pnpm --filter @traceflow/web dev",
+    "web:build": "pnpm --filter @traceflow/web build",
+    "web:lint": "pnpm --filter @traceflow/web lint",
+    "web:typecheck": "pnpm --filter @traceflow/web typecheck",
+    "web:format": "pnpm --filter @traceflow/web format"
+  }
+}

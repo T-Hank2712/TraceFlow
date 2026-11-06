@@ -78,3 +78,8 @@ postgres-data/
 redis-data/
 
 AGENTS.MD
+
+# React
+apps/web/node_modules/
+apps/web/dist/
+apps/web/.env.local

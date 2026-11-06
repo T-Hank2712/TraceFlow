@@ -319,4 +319,4 @@ networks:
       driver: bridge
       ipam:
         config:
-          - subnet: 172.20.0.0/24
+          - subnet: ${TRACEFLOW_NETWORK_SUBNET}

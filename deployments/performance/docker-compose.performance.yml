@@ -423,11 +423,11 @@ networks:
     driver: bridge
     ipam:
       config:
-        - subnet: 172.22.0.0/24
+        - subnet: ${TRACEFLOW_PERFORMANCE_NETWORK_SUBNET}
 
   traceflow-external-network:
     name: traceflow-external-network
     driver: bridge
     ipam:
       config:
-        - subnet: 172.21.0.0/24
+        - subnet: ${TRACEFLOW_EXTERNAL_NETWORK_SUBNET}
