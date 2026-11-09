@@ -1,4 +1,9 @@
+import { Box } from 'lucide-react';
 import { createFileRoute } from '@tanstack/react-router';
+
+import { EmptyState } from '@/shared/components/states/empty-state';
+import { PageContainer } from '@/shared/components/layout/page-container';
+import { PageHeader } from '@/shared/components/layout/page-header';
 
 export const Route = createFileRoute('/')({
   component: HomePage,
@@ -6,13 +11,18 @@ export const Route = createFileRoute('/')({
 
 function HomePage() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background p-6">
-      <section className="space-y-2 text-center">
-        <h1 className="text-3xl font-semibold tracking-tight">TraceFlow</h1>
-        <p className="text-sm text-muted-foreground">
-          Frontend foundation is ready for feature development.
-        </p>
-      </section>
-    </main>
+    <PageContainer>
+      <PageHeader
+        title="TraceFlow"
+        description="Control-plane management console"
+      />
+
+      <EmptyState
+        className="mt-6"
+        icon={<Box className="size-8" />}
+        title="Frontend foundation is ready"
+        description="Feature screens will be added in upcoming iterations."
+      />
+    </PageContainer>
   );
 }
