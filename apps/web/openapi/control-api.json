@@ -13,9 +13,7 @@
   "paths": {
     "/api/v1/applications/{applicationId}/api-keys": {
       "post": {
-        "tags": [
-          "ApiKeys"
-        ],
+        "tags": ["ApiKeys"],
         "parameters": [
           {
             "name": "applicationId",
@@ -239,14 +237,12 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       },
       "get": {
-        "tags": [
-          "ApiKeys"
-        ],
+        "tags": ["ApiKeys"],
         "parameters": [
           {
             "name": "applicationId",
@@ -450,16 +446,14 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       }
     },
     "/api/v1/api-keys/{apiKeyId}": {
       "delete": {
-        "tags": [
-          "ApiKeys"
-        ],
+        "tags": ["ApiKeys"],
         "parameters": [
           {
             "name": "apiKeyId",
@@ -663,16 +657,14 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       }
     },
     "/api/v1/auth/register": {
       "post": {
-        "tags": [
-          "Auth"
-        ],
+        "tags": ["Auth"],
         "requestBody": {
           "content": {
             "application/json": {
@@ -886,16 +878,14 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       }
     },
     "/api/v1/auth/login": {
       "post": {
-        "tags": [
-          "Auth"
-        ],
+        "tags": ["Auth"],
         "requestBody": {
           "content": {
             "application/json": {
@@ -1109,16 +1099,14 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       }
     },
     "/api/v1/auth/me": {
       "get": {
-        "tags": [
-          "Auth"
-        ],
+        "tags": ["Auth"],
         "responses": {
           "200": {
             "description": "OK"
@@ -1312,16 +1300,14 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       }
     },
     "/api/v1/auth/refresh-token": {
       "post": {
-        "tags": [
-          "Auth"
-        ],
+        "tags": ["Auth"],
         "requestBody": {
           "content": {
             "application/json": {
@@ -1535,16 +1521,14 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       }
     },
     "/api/v1/auth/change-password": {
       "put": {
-        "tags": [
-          "Auth"
-        ],
+        "tags": ["Auth"],
         "requestBody": {
           "content": {
             "application/json": {
@@ -1758,16 +1742,14 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       }
     },
     "/api/v1/auth/logout": {
       "post": {
-        "tags": [
-          "Auth"
-        ],
+        "tags": ["Auth"],
         "requestBody": {
           "content": {
             "application/json": {
@@ -1981,16 +1963,14 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       }
     },
     "/internal/v1/api-keys/validate": {
       "post": {
-        "tags": [
-          "InternalApiKeys"
-        ],
+        "tags": ["InternalApiKeys"],
         "requestBody": {
           "content": {
             "application/json": {
@@ -2204,16 +2184,14 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       }
     },
     "/api/v1/workspaces/{workspaceId}/projects/{projectId}/logs": {
       "get": {
-        "tags": [
-          "Logs"
-        ],
+        "tags": ["Logs"],
         "parameters": [
           {
             "name": "workspaceId",
@@ -2294,10 +2272,7 @@
             "in": "query",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": ["integer", "string"],
               "format": "int32"
             }
           },
@@ -2306,10 +2281,7 @@
             "in": "query",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": ["integer", "string"],
               "format": "int32"
             }
           }
@@ -2507,16 +2479,14 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       }
     },
     "/api/v1/projects/{projectId}/invitations": {
       "post": {
-        "tags": [
-          "ProjectInvitations"
-        ],
+        "tags": ["ProjectInvitations"],
         "parameters": [
           {
             "name": "projectId",
@@ -2740,14 +2710,12 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       },
       "get": {
-        "tags": [
-          "ProjectInvitations"
-        ],
+        "tags": ["ProjectInvitations"],
         "parameters": [
           {
             "name": "projectId",
@@ -2951,16 +2919,14 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       }
     },
     "/api/v1/projects/invitations": {
       "get": {
-        "tags": [
-          "ProjectInvitations"
-        ],
+        "tags": ["ProjectInvitations"],
         "responses": {
           "200": {
             "description": "OK"
@@ -3154,16 +3120,14 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       }
     },
     "/api/v1/projects/invitations/{invitationId}/accept": {
       "post": {
-        "tags": [
-          "ProjectInvitations"
-        ],
+        "tags": ["ProjectInvitations"],
         "parameters": [
           {
             "name": "invitationId",
@@ -3367,16 +3331,14 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       }
     },
     "/api/v1/projects/invitations/{invitationId}/decline": {
       "post": {
-        "tags": [
-          "ProjectInvitations"
-        ],
+        "tags": ["ProjectInvitations"],
         "parameters": [
           {
             "name": "invitationId",
@@ -3580,16 +3542,14 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       }
     },
     "/api/v1/projects/invitations/{invitationId}": {
       "delete": {
-        "tags": [
-          "ProjectInvitations"
-        ],
+        "tags": ["ProjectInvitations"],
         "parameters": [
           {
             "name": "invitationId",
@@ -3793,16 +3753,14 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       }
     },
     "/api/v1/workspaces/{workspaceId}/projects": {
       "post": {
-        "tags": [
-          "Projects"
-        ],
+        "tags": ["Projects"],
         "parameters": [
           {
             "name": "workspaceId",
@@ -4026,14 +3984,12 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       },
       "get": {
-        "tags": [
-          "Projects"
-        ],
+        "tags": ["Projects"],
         "parameters": [
           {
             "name": "workspaceId",
@@ -4237,16 +4193,14 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       }
     },
     "/api/v1/projects/{projectId}": {
       "get": {
-        "tags": [
-          "Projects"
-        ],
+        "tags": ["Projects"],
         "parameters": [
           {
             "name": "projectId",
@@ -4450,14 +4404,12 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       },
       "patch": {
-        "tags": [
-          "Projects"
-        ],
+        "tags": ["Projects"],
         "parameters": [
           {
             "name": "projectId",
@@ -4681,14 +4633,12 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       },
       "delete": {
-        "tags": [
-          "Projects"
-        ],
+        "tags": ["Projects"],
         "parameters": [
           {
             "name": "projectId",
@@ -4892,16 +4842,14 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       }
     },
     "/api/v1/projects/{projectId}/members": {
       "get": {
-        "tags": [
-          "Projects"
-        ],
+        "tags": ["Projects"],
         "parameters": [
           {
             "name": "projectId",
@@ -5105,16 +5053,14 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       }
     },
     "/api/v1/projects/members/{memberId}": {
       "patch": {
-        "tags": [
-          "Projects"
-        ],
+        "tags": ["Projects"],
         "parameters": [
           {
             "name": "memberId",
@@ -5338,14 +5284,12 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       },
       "delete": {
-        "tags": [
-          "Projects"
-        ],
+        "tags": ["Projects"],
         "parameters": [
           {
             "name": "memberId",
@@ -5549,16 +5493,14 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       }
     },
     "/api/v1/projects/{projectId}/leave": {
       "post": {
-        "tags": [
-          "Projects"
-        ],
+        "tags": ["Projects"],
         "parameters": [
           {
             "name": "projectId",
@@ -5762,16 +5704,14 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       }
     },
     "/api/system/status": {
       "get": {
-        "tags": [
-          "System"
-        ],
+        "tags": ["System"],
         "responses": {
           "200": {
             "description": "OK"
@@ -5965,16 +5905,14 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       }
     },
     "/api/v1/projects/{projectId}/applications": {
       "post": {
-        "tags": [
-          "TraceApplications"
-        ],
+        "tags": ["TraceApplications"],
         "parameters": [
           {
             "name": "projectId",
@@ -6198,14 +6136,12 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       },
       "get": {
-        "tags": [
-          "TraceApplications"
-        ],
+        "tags": ["TraceApplications"],
         "parameters": [
           {
             "name": "projectId",
@@ -6409,16 +6345,14 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       }
     },
     "/api/v1/applications/{applicationId}": {
       "get": {
-        "tags": [
-          "TraceApplications"
-        ],
+        "tags": ["TraceApplications"],
         "parameters": [
           {
             "name": "applicationId",
@@ -6622,14 +6556,12 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       },
       "patch": {
-        "tags": [
-          "TraceApplications"
-        ],
+        "tags": ["TraceApplications"],
         "parameters": [
           {
             "name": "applicationId",
@@ -6853,14 +6785,12 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       },
       "delete": {
-        "tags": [
-          "TraceApplications"
-        ],
+        "tags": ["TraceApplications"],
         "parameters": [
           {
             "name": "applicationId",
@@ -7064,16 +6994,14 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       }
     },
     "/api/v1/users/me/profile": {
       "patch": {
-        "tags": [
-          "Users"
-        ],
+        "tags": ["Users"],
         "requestBody": {
           "content": {
             "application/json": {
@@ -7287,16 +7215,14 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       }
     },
     "/api/v1/workspaces/{workspaceId}/invitations": {
       "post": {
-        "tags": [
-          "WorkspaceInvitations"
-        ],
+        "tags": ["WorkspaceInvitations"],
         "parameters": [
           {
             "name": "workspaceId",
@@ -7520,14 +7446,12 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       },
       "get": {
-        "tags": [
-          "WorkspaceInvitations"
-        ],
+        "tags": ["WorkspaceInvitations"],
         "parameters": [
           {
             "name": "workspaceId",
@@ -7731,16 +7655,14 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       }
     },
     "/api/v1/workspaces/invitations": {
       "get": {
-        "tags": [
-          "WorkspaceInvitations"
-        ],
+        "tags": ["WorkspaceInvitations"],
         "responses": {
           "200": {
             "description": "OK"
@@ -7934,16 +7856,14 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       }
     },
     "/api/v1/workspaces/invitations/{invitationId}/accept": {
       "post": {
-        "tags": [
-          "WorkspaceInvitations"
-        ],
+        "tags": ["WorkspaceInvitations"],
         "parameters": [
           {
             "name": "invitationId",
@@ -8147,16 +8067,14 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       }
     },
     "/api/v1/workspaces/invitations/{invitationId}/decline": {
       "post": {
-        "tags": [
-          "WorkspaceInvitations"
-        ],
+        "tags": ["WorkspaceInvitations"],
         "parameters": [
           {
             "name": "invitationId",
@@ -8360,16 +8278,14 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       }
     },
     "/api/v1/workspaces/invitations/{invitationId}": {
       "delete": {
-        "tags": [
-          "WorkspaceInvitations"
-        ],
+        "tags": ["WorkspaceInvitations"],
         "parameters": [
           {
             "name": "invitationId",
@@ -8573,16 +8489,14 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       }
     },
     "/api/v1/workspaces": {
       "post": {
-        "tags": [
-          "Workspaces"
-        ],
+        "tags": ["Workspaces"],
         "requestBody": {
           "content": {
             "application/json": {
@@ -8796,14 +8710,12 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       },
       "get": {
-        "tags": [
-          "Workspaces"
-        ],
+        "tags": ["Workspaces"],
         "responses": {
           "200": {
             "description": "OK"
@@ -8997,16 +8909,14 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       }
     },
     "/api/v1/workspaces/{workspaceId}": {
       "get": {
-        "tags": [
-          "Workspaces"
-        ],
+        "tags": ["Workspaces"],
         "parameters": [
           {
             "name": "workspaceId",
@@ -9210,14 +9120,12 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       },
       "patch": {
-        "tags": [
-          "Workspaces"
-        ],
+        "tags": ["Workspaces"],
         "parameters": [
           {
             "name": "workspaceId",
@@ -9441,14 +9349,12 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       },
       "delete": {
-        "tags": [
-          "Workspaces"
-        ],
+        "tags": ["Workspaces"],
         "parameters": [
           {
             "name": "workspaceId",
@@ -9652,16 +9558,14 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       }
     },
     "/api/v1/workspaces/{workspaceId}/members": {
       "get": {
-        "tags": [
-          "Workspaces"
-        ],
+        "tags": ["Workspaces"],
         "parameters": [
           {
             "name": "workspaceId",
@@ -9865,16 +9769,14 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       }
     },
     "/api/v1/workspaces/members/{memberId}": {
       "patch": {
-        "tags": [
-          "Workspaces"
-        ],
+        "tags": ["Workspaces"],
         "parameters": [
           {
             "name": "memberId",
@@ -10098,14 +10000,12 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       },
       "delete": {
-        "tags": [
-          "Workspaces"
-        ],
+        "tags": ["Workspaces"],
         "parameters": [
           {
             "name": "memberId",
@@ -10309,16 +10209,14 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       }
     },
     "/api/v1/workspaces/{workspaceId}/leave": {
       "post": {
-        "tags": [
-          "Workspaces"
-        ],
+        "tags": ["Workspaces"],
         "parameters": [
           {
             "name": "workspaceId",
@@ -10522,16 +10420,14 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       }
     },
     "/api/v1/workspaces/{workspaceId}/transfer-ownership": {
       "post": {
-        "tags": [
-          "Workspaces"
-        ],
+        "tags": ["Workspaces"],
         "parameters": [
           {
             "name": "workspaceId",
@@ -10755,16 +10651,14 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       }
     },
     "/health/opensearch/config": {
       "get": {
-        "tags": [
-          "TraceFlow.Api"
-        ],
+        "tags": ["TraceFlow.Api"],
         "operationId": "OpenSearchConfigurationHealthCheck",
         "responses": {
           "200": {
@@ -10959,16 +10853,14 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       }
     },
     "/health/database/config": {
       "get": {
-        "tags": [
-          "TraceFlow.Api"
-        ],
+        "tags": ["TraceFlow.Api"],
         "operationId": "DatabaseConfigurationHealthCheck",
         "responses": {
           "200": {
@@ -11163,7 +11055,7 @@
         },
         "security": [
           {
-            "Bearer": [ ]
+            "Bearer": []
           }
         ]
       }
@@ -11172,9 +11064,7 @@
   "components": {
     "schemas": {
       "ChangeMemberRoleRequest": {
-        "required": [
-          "role"
-        ],
+        "required": ["role"],
         "type": "object",
         "properties": {
           "role": {
@@ -11183,11 +11073,7 @@
         }
       },
       "ChangePasswordRequest": {
-        "required": [
-          "currentPassword",
-          "newPassword",
-          "confirmNewPassword"
-        ],
+        "required": ["currentPassword", "newPassword", "confirmNewPassword"],
         "type": "object",
         "properties": {
           "currentPassword": {
@@ -11202,9 +11088,7 @@
         }
       },
       "ChangeProjectMemberRoleRequest": {
-        "required": [
-          "role"
-        ],
+        "required": ["role"],
         "type": "object",
         "properties": {
           "role": {
@@ -11213,11 +11097,7 @@
         }
       },
       "CreateApiKeyRequest": {
-        "required": [
-          "name",
-          "environment",
-          "expirationPolicy"
-        ],
+        "required": ["name", "environment", "expirationPolicy"],
         "type": "object",
         "properties": {
           "name": {
@@ -11228,20 +11108,13 @@
           },
           "expirationPolicy": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": ["integer", "string"],
             "format": "int32"
           }
         }
       },
       "CreateProjectRequest": {
-        "required": [
-          "name",
-          "slug",
-          "description"
-        ],
+        "required": ["name", "slug", "description"],
         "type": "object",
         "properties": {
           "name": {
@@ -11251,19 +11124,12 @@
             "type": "string"
           },
           "description": {
-            "type": [
-              "null",
-              "string"
-            ]
+            "type": ["null", "string"]
           }
         }
       },
       "CreateTraceApplicationRequest": {
-        "required": [
-          "name",
-          "slug",
-          "description"
-        ],
+        "required": ["name", "slug", "description"],
         "type": "object",
         "properties": {
           "name": {
@@ -11273,19 +11139,12 @@
             "type": "string"
           },
           "description": {
-            "type": [
-              "null",
-              "string"
-            ]
+            "type": ["null", "string"]
           }
         }
       },
       "CreateWorkspaceRequest": {
-        "required": [
-          "name",
-          "slug",
-          "description"
-        ],
+        "required": ["name", "slug", "description"],
         "type": "object",
         "properties": {
           "name": {
@@ -11295,18 +11154,12 @@
             "type": "string"
           },
           "description": {
-            "type": [
-              "null",
-              "string"
-            ]
+            "type": ["null", "string"]
           }
         }
       },
       "InviteProjectMemberRequest": {
-        "required": [
-          "identifier",
-          "role"
-        ],
+        "required": ["identifier", "role"],
         "type": "object",
         "properties": {
           "identifier": {
@@ -11318,10 +11171,7 @@
         }
       },
       "InviteWorkspaceMemberRequest": {
-        "required": [
-          "identifier",
-          "role"
-        ],
+        "required": ["identifier", "role"],
         "type": "object",
         "properties": {
           "identifier": {
@@ -11333,10 +11183,7 @@
         }
       },
       "LoginCommand": {
-        "required": [
-          "identifier",
-          "password"
-        ],
+        "required": ["identifier", "password"],
         "type": "object",
         "properties": {
           "identifier": {
@@ -11348,9 +11195,7 @@
         }
       },
       "LogoutRequest": {
-        "required": [
-          "refreshToken"
-        ],
+        "required": ["refreshToken"],
         "type": "object",
         "properties": {
           "refreshToken": {
@@ -11359,9 +11204,7 @@
         }
       },
       "RefreshSessionCommand": {
-        "required": [
-          "refreshToken"
-        ],
+        "required": ["refreshToken"],
         "type": "object",
         "properties": {
           "refreshToken": {
@@ -11370,14 +11213,7 @@
         }
       },
       "RegisterCommand": {
-        "required": [
-          "email",
-          "username",
-          "firstName",
-          "lastName",
-          "password",
-          "confirmPassword"
-        ],
+        "required": ["email", "username", "firstName", "lastName", "password", "confirmPassword"],
         "type": "object",
         "properties": {
           "email": {
@@ -11401,9 +11237,7 @@
         }
       },
       "TransferOwnershipRequest": {
-        "required": [
-          "targetUserId"
-        ],
+        "required": ["targetUserId"],
         "type": "object",
         "properties": {
           "targetUserId": {
@@ -11411,123 +11245,69 @@
           }
         }
       },
-      "Ulid": { },
+      "Ulid": {},
       "UpdateApplicationRequest": {
-        "required": [
-          "name",
-          "slug",
-          "description"
-        ],
+        "required": ["name", "slug", "description"],
         "type": "object",
         "properties": {
           "name": {
-            "type": [
-              "null",
-              "string"
-            ]
+            "type": ["null", "string"]
           },
           "slug": {
-            "type": [
-              "null",
-              "string"
-            ]
+            "type": ["null", "string"]
           },
           "description": {
-            "type": [
-              "null",
-              "string"
-            ]
+            "type": ["null", "string"]
           }
         }
       },
       "UpdateProfileRequest": {
-        "required": [
-          "userName",
-          "firstName",
-          "lastName"
-        ],
+        "required": ["userName", "firstName", "lastName"],
         "type": "object",
         "properties": {
           "userName": {
-            "type": [
-              "null",
-              "string"
-            ]
+            "type": ["null", "string"]
           },
           "firstName": {
-            "type": [
-              "null",
-              "string"
-            ]
+            "type": ["null", "string"]
           },
           "lastName": {
-            "type": [
-              "null",
-              "string"
-            ]
+            "type": ["null", "string"]
           }
         }
       },
       "UpdateProjectRequest": {
-        "required": [
-          "name",
-          "slug",
-          "description"
-        ],
+        "required": ["name", "slug", "description"],
         "type": "object",
         "properties": {
           "name": {
-            "type": [
-              "null",
-              "string"
-            ]
+            "type": ["null", "string"]
           },
           "slug": {
-            "type": [
-              "null",
-              "string"
-            ]
+            "type": ["null", "string"]
           },
           "description": {
-            "type": [
-              "null",
-              "string"
-            ]
+            "type": ["null", "string"]
           }
         }
       },
       "UpdateWorkspaceRequest": {
-        "required": [
-          "name",
-          "slug",
-          "description"
-        ],
+        "required": ["name", "slug", "description"],
         "type": "object",
         "properties": {
           "name": {
-            "type": [
-              "null",
-              "string"
-            ]
+            "type": ["null", "string"]
           },
           "slug": {
-            "type": [
-              "null",
-              "string"
-            ]
+            "type": ["null", "string"]
           },
           "description": {
-            "type": [
-              "null",
-              "string"
-            ]
+            "type": ["null", "string"]
           }
         }
       },
       "ValidateApiKeyRequest": {
-        "required": [
-          "apiKey"
-        ],
+        "required": ["apiKey"],
         "type": "object",
         "properties": {
           "apiKey": {

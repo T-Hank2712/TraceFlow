@@ -84,3 +84,7 @@ AGENTS.MD
 apps/web/node_modules/
 apps/web/dist/
 apps/web/.env.local
+
+# Local frontend UI preview
+/apps/web/ui-preview.html
+/apps/web/src/local-preview/
